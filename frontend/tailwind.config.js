@@ -8,8 +8,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Cormorant Garamond', 'serif'],
+        sans: ['Open Sans', 'Arial', 'Helvetica', 'sans-serif'],
+        display: ['Montserrat', 'sans-serif'],
       },
     },
   },

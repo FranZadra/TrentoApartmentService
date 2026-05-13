@@ -11,7 +11,7 @@
               </svg>
             </div>
             <div>
-              <h2 class="font-display text-3xl font-bold text-zinc-900">
+              <h2 class="text-3xl font-bold text-zinc-900">
                 Ricerca appartamento
               </h2>
               <p class="mt-3 max-w-xs text-sm leading-7 text-zinc-600">
@@ -35,7 +35,7 @@
               </svg>
             </div>
             <div>
-              <h2 class="font-display text-3xl font-bold text-zinc-900">
+              <h2 class="text-3xl font-bold text-zinc-900">
                 Gestione delle faccende interne
               </h2>
               <p class="mt-3 max-w-xs text-sm leading-7 text-zinc-600">
@@ -58,7 +58,7 @@
               </svg>
             </div>
             <div>
-              <h2 class="font-display text-3xl font-bold text-zinc-900">
+              <h2 class="text-3xl font-bold text-zinc-900">
                 Guasti e manutenzioni
               </h2>
               <p class="mt-3 max-w-xs text-sm leading-7 text-zinc-600">
