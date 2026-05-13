@@ -1,80 +1,85 @@
 FORMAT: 1A
-HOST: https://polls.apiblueprint.org/
+HOST: https://trento-apartment-service.onrender.com
 
-# trentoapartmentservice
+# Trento Apartment Service API
 
-Polls is a simple API allowing consumers to view polls and vote in them.
+API REST per la gestione degli appartamenti a Trento.
+Versione corrente: v1
 
-## Questions Collection [/questions]
+---
 
-### List All Questions [GET]
+# Group Utenti
 
-+ Response 200 (application/json)
+Endpoint relativi alla gestione degli account utente.
 
-        [
-            {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
-                    {
-                        "choice": "Swift",
-                        "votes": 2048
-                    }, {
-                        "choice": "Python",
-                        "votes": 1024
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 512
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 256
-                    }
-                ]
-            }
-        ]
+## Registrazione [/api/v1/users/register]
 
-### Create a New Question [POST]
+### Registra un nuovo utente [POST]
 
-You may create your own question using this action. It takes a JSON
-object containing a question and a collection of answers in the
-form of choices.
+Crea un nuovo account utente nel sistema.
+
+La password viene salvata nel database esclusivamente come hash bcrypt.
+La risposta non include mai la password (né in chiaro né hashata).
 
 + Request (application/json)
 
-        {
-            "question": "Favourite programming language?",
-            "choices": [
-                "Swift",
-                "Python",
-                "Objective-C",
-                "Ruby"
-            ]
-        }
-
-+ Response 201 (application/json)
-
-    + Headers
-
-            Location: /questions/2
+    + Attributes
+        + nome (string, required) - Nome dell'utente
+        + email (string, required) - Indirizzo email valido e univoco
+        + password (string, required) - Password scelta dall'utente
+        + ruolo (string, optional) - `inquilino` oppure `proprietario` (default: `inquilino`)
 
     + Body
 
             {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
-                    {
-                        "choice": "Swift",
-                        "votes": 0
-                    }, {
-                        "choice": "Python",
-                        "votes": 0
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 0
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 0
-                    }
-                ]
+                "nome": "Mario",
+                "email": "mario.rossi@example.com",
+                "password": "Password123",
+                "ruolo": "inquilino"
+            }
+
++ Response 201 (application/json)
+
+    Utente creato con successo.
+
+    + Body
+
+            {
+                "messaggio": "Utente registrato con successo",
+                "utente": {
+                    "id": "665f1a2b3c4d5e6f7a8b9c0d",
+                    "nome": "Mario",
+                    "email": "mario.rossi@example.com",
+                    "ruolo": "inquilino"
+                }
+            }
+
++ Response 400 (application/json)
+
+    Campo obbligatorio mancante o email con formato non valido.
+
+    + Body
+
+            {
+                "messaggio": "campo obbligatorio mancante"
+            }
+
++ Response 400 (application/json)
+
+    Formato email non valido (es. "user/gmail.com").
+
+    + Body
+
+            {
+                "messaggio": "email non valida"
+            }
+
++ Response 409 (application/json)
+
+    Esiste già un account con questa email.
+
+    + Body
+
+            {
+                "messaggio": "email già in uso"
             }
