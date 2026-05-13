@@ -250,10 +250,9 @@ async function getAppartamentiAdmin(req, res) {
 }
 
 module.exports = {
-  createApartment,
-  getAllApartments,
-  getApartmentById,
-  updateApartment,
-  deleteApartment,
-  getApartmentsByAdmin,
+  creaAppartamento,
+  getAppartamentoDaId,
+  aggiornaAppartamento,
+  eliminaAppartamento,
+  getAppartamentiAdmin,
 };
