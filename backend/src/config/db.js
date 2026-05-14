@@ -1,11 +1,16 @@
 // src/config/db.js — Connessione al database
 //
 // Configurato per MongoDB tramite Mongoose.
-// Ancora da decidere se usare Firestore
 
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
+  // In ambiente di sviluppo, se MONGODB_URI non è impostato, non bloccare l'app:
+  if (!process.env.MONGODB_URI) {
+    console.warn('MONGODB_URI non impostato — salto la connessione al DB (dev mode)');
+    return Promise.resolve();
+  }
+
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
     console.log(`MongoDB connesso: ${conn.connection.host}`);
