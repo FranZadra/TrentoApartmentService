@@ -1,80 +1,173 @@
 FORMAT: 1A
-HOST: https://polls.apiblueprint.org/
+HOST: http://localhost:3000
 
-# trentoapartmentservice
+# Trento Apartment Service API
 
-Polls is a simple API allowing consumers to view polls and vote in them.
+Documentazione dell'API per la ricerca e visualizzazione di annunci di appartamenti e camere a Trento.
 
-## Questions Collection [/questions]
+## Annunci Collection [/api/v1/annunci]
 
-### List All Questions [GET]
+### List All Active Announcements [GET]
+
+Ritorna tutti gli annunci con stato "Attivo". Usato dal frontend sia per la lista che per la mappa interattiva.
 
 + Response 200 (application/json)
 
-        [
-            {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
-                    {
-                        "choice": "Swift",
-                        "votes": 2048
-                    }, {
-                        "choice": "Python",
-                        "votes": 1024
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 512
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 256
-                    }
-                ]
-            }
-        ]
-
-### Create a New Question [POST]
-
-You may create your own question using this action. It takes a JSON
-object containing a question and a collection of answers in the
-form of choices.
-
-+ Request (application/json)
-
         {
-            "question": "Favourite programming language?",
-            "choices": [
-                "Swift",
-                "Python",
-                "Objective-C",
-                "Ruby"
+            "success": true,
+            "count": 2,
+            "data": [
+                {
+                    "_id": "annuncio_1",
+                    "stato": "Attivo",
+                    "descrizione": "Appartamento in centro, completamente ristrutturato",
+                    "dataPubbl": "2026-03-01",
+                    "appartamento": {
+                        "_id": "apt_1",
+                        "indirizzo": {
+                            "via": "Via Roma",
+                            "numero": 10,
+                            "città": "Trento",
+                            "CAP": "38100",
+                            "Stato": "IT"
+                        },
+                        "mqTot": 90,
+                        "numStanze": 3,
+                        "numBagni": 2,
+                        "terrazzo": true,
+                        "classeEnergetica": "B",
+                        "camere": [
+                            {
+                                "prezzo": 350,
+                                "tipo": "SINGOLA",
+                                "mq": 14,
+                                "numFinestre": 2,
+                                "disponibile": true
+                            },
+                            {
+                                "prezzo": 500,
+                                "tipo": "DOPPIA",
+                                "mq": 20,
+                                "numFinestre": 1,
+                                "disponibile": true
+                            }
+                        ]
+                    }
+                }
             ]
         }
 
-+ Response 201 (application/json)
+## Announcement Detail [/api/v1/annunci/{id}]
 
-    + Headers
+### Get Announcement by ID [GET]
 
-            Location: /questions/2
+Ritorna il dettaglio di un singolo annuncio. Usato quando l'utente clicca su un marker della mappa o su una card della lista.
 
-    + Body
++ Parameters
+    + id (string, required) - L'ID dell'annuncio
 
-            {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
-                    {
-                        "choice": "Swift",
-                        "votes": 0
-                    }, {
-                        "choice": "Python",
-                        "votes": 0
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 0
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 0
-                    }
-                ]
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "data": {
+                "_id": "annuncio_1",
+                "stato": "Attivo",
+                "descrizione": "Appartamento in centro, completamente ristrutturato",
+                "dataPubbl": "2026-03-01",
+                "appartamento": {
+                    "_id": "apt_1",
+                    "indirizzo": {
+                        "via": "Via Roma",
+                        "numero": 10,
+                        "città": "Trento",
+                        "CAP": "38100",
+                        "Stato": "IT"
+                    },
+                    "mqTot": 90,
+                    "numStanze": 3,
+                    "numBagni": 2,
+                    "terrazzo": true,
+                    "classeEnergetica": "B",
+                    "camere": [
+                        {
+                            "prezzo": 350,
+                            "tipo": "SINGOLA",
+                            "mq": 14,
+                            "numFinestre": 2,
+                            "disponibile": true
+                        }
+                    ]
+                }
             }
+        }
+
++ Response 404 (application/json)
+
+        {
+            "success": false,
+            "message": "Annuncio non trovato"
+        }
+
+## Search Announcements with Filters [/api/v1/annunci/search/filter{?numStanze,numBagni,terrazzo,classeEnergetica,mqMin,mqMax,prezzoMin,prezzoMax,tipoCam}]
+
+### Search Filtered Announcements [GET]
+
+Ricerca annunci filtrando per proprietà dell'appartamento e delle camere.
+
++ Parameters
+    + numStanze (number, optional) - Numero esatto di stanze
+    + numBagni (number, optional) - Numero esatto di bagni
+    + terrazzo (boolean, optional) - Se l'appartamento ha terrazzo (true/false)
+    + classeEnergetica (string, optional) - Classe energetica (A4, A3, A2, A1, B, C, D, E, F, G)
+    + mqMin (number, optional) - Metri quadri minimi
+    + mqMax (number, optional) - Metri quadri massimi
+    + prezzoMin (number, optional) - Prezzo minimo della camera (€)
+    + prezzoMax (number, optional) - Prezzo massimo della camera (€)
+    + tipoCam (string, optional) - Tipo di camera (SINGOLA o DOPPIA)
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "count": 1,
+            "data": [
+                {
+                    "_id": "annuncio_1",
+                    "stato": "Attivo",
+                    "descrizione": "Appartamento in centro, completamente ristrutturato",
+                    "dataPubbl": "2026-03-01",
+                    "appartamento": {
+                        "_id": "apt_1",
+                        "indirizzo": {
+                            "via": "Via Roma",
+                            "numero": 10,
+                            "città": "Trento",
+                            "CAP": "38100",
+                            "Stato": "IT"
+                        },
+                        "mqTot": 90,
+                        "numStanze": 3,
+                        "numBagni": 2,
+                        "terrazzo": true,
+                        "classeEnergetica": "B",
+                        "camere": [
+                            {
+                                "prezzo": 350,
+                                "tipo": "SINGOLA",
+                                "mq": 14,
+                                "numFinestre": 2,
+                                "disponibile": true
+                            },
+                            {
+                                "prezzo": 500,
+                                "tipo": "DOPPIA",
+                                "mq": 20,
+                                "numFinestre": 1,
+                                "disponibile": true
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
