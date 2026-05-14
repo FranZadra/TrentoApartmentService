@@ -1,11 +1,22 @@
 @import './base.css';
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Root layout wrapper */
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 1.5rem;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
   font-weight: 400;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: #1f2937;
 }
 
 /* Link primary color from theme */
@@ -14,7 +25,6 @@ a,
   text-decoration: none;
   color: var(--color-text-primary);
   transition: 0.2s ease-in-out;
-  padding: 3px;
 }
 
 @media (hover: hover) {
@@ -26,9 +36,5 @@ a,
 @media (min-width: 1024px) {
   body {
     display: block;
-  }
-
-  #app {
-    padding: 0 2rem;
   }
 }

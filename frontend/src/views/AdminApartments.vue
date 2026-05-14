@@ -1,29 +1,44 @@
 <template>
-  <div class="p-6 max-w-6xl mx-auto">
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-semibold">Gestione Appartamenti (Admin)</h1>
+  <div class="mx-auto w-full max-w-[1280px] px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
+    <!-- Intestazione sezione, simile al riferimento TAS -->
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <button @click="openCreate" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Nuovo Appartamento</button>
+        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#9a1528]">
+          Gestione appartamenti
+        </p>
+        <h1 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          I tuoi appartamenti
+        </h1>
+        <p class="mt-2 max-w-2xl text-sm text-zinc-500 sm:text-base">
+          Controlla gli annunci, modifica i dettagli e aggiungi nuovi appartamenti dalla tua area riservata.
+        </p>
       </div>
+
+      <button
+        @click="openCreate"
+        class="inline-flex items-center justify-center rounded-full bg-[#9a1528] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#7f1020]"
+      >
+        + Nuovo appartamento
+      </button>
     </div>
 
     <!-- Lista appartamenti dell'amministratore -->
-    <div v-if="loading" class="text-gray-600">Caricamento...</div>
+    <div v-if="loading" class="rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-600 shadow-sm">
+      Caricamento...
+    </div>
     <div v-else>
-      <div v-if="apartments.length === 0" class="text-gray-600">Nessun appartamento trovato.</div>
-      <ul class="space-y-4">
-        <li v-for="apt in apartments" :key="apt._id" class="p-4 border rounded shadow-sm flex justify-between items-start">
-          <div>
-            <div class="text-lg font-medium">{{ apt.indirizzo?.citta || 'Indirizzo non disponibile' }} — {{ apt.indirizzo?.via || '' }}</div>
-            <div class="text-sm text-gray-600">MQ: {{ apt.mqTot }} · Stanze: {{ apt.numStanze }} · Bagni: {{ apt.numBagni }}</div>
-          </div>
-
-          <div class="flex gap-2">
-            <button @click="viewDetails(apt._id)" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">Dettagli</button>
-            <button @click="editApartment(apt)" class="px-3 py-1 bg-yellow-100 rounded hover:bg-yellow-200">Modifica</button>
-          </div>
-        </li>
-      </ul>
+      <div v-if="apartments.length === 0" class="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-zinc-500 shadow-sm">
+        Nessun appartamento trovato.
+      </div>
+      <div class="space-y-4">
+        <ApartmentCard 
+          v-for="apt in apartments" 
+          :key="apt._id" 
+          :apt="apt"
+          @view="viewDetails(apt._id)"
+          @edit="editApartment(apt)"
+        />
+      </div>
     </div>
 
     <!-- Modale Dettagli -->
@@ -35,9 +50,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import ApartmentDetails from '../components/ApartmentDetails.vue'
 import ApartmentForm from '../components/ApartmentForm.vue'
+import ApartmentCard from '../components/ApartmentCard.vue'
 
 const apartments = ref([])
 const loading = ref(false)
@@ -47,6 +63,10 @@ const selectedId = ref(null)
 const formInitial = ref(null)
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+
+watch([showDetails, showForm], ([detailsOpen, formOpen]) => {
+  document.body.style.overflow = detailsOpen || formOpen ? 'hidden' : ''
+})
 
 function getAuthHeaders() {
   const token = localStorage.getItem('token') || ''
@@ -128,9 +148,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('admin:editApartment', onGlobalEdit)
+  document.body.style.overflow = ''
 })
 </script>
 
 <style scoped>
-/* Layout minimale: usiamo Tailwind per styling */
+/* Layout interamente gestito con Tailwind. */
 </style>

@@ -1,31 +1,26 @@
-/* color palette from <https://github.com/vuejs/theme> */
+/* color palette */
 :root {
   --vt-c-white: #ffffff;
-  --vt-c-white-soft: #fbfdff;
-  --vt-c-white-mute: #f3f6fb;
+  --vt-c-white-soft: #f8f8f8;
+  --vt-c-white-mute: #f2f2f2;
 
-  --vt-c-black: #0b1220;
-  --vt-c-black-soft: #111827;
-  --vt-c-black-mute: #1f2937;
+  --vt-c-black: #181818;
+  --vt-c-black-soft: #222222;
+  --vt-c-black-mute: #282828;
 
   --vt-c-indigo: #2c3e50;
 
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.18);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.08);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.45);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.28);
+  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
+  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
 
   --vt-c-text-light-1: var(--vt-c-indigo);
   --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-  --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.74);
 }
 
 /* semantic color variables for this project */
 :root {
-  /* Palette seguendo le linee guida */
-  --color-primary: #9a1528; /* colore principale richiesto */
-  --color-secondary: #1e40af; /* blu scuro (secondario rimane) */
+  --color-primary: #9a1528;
+  --color-secondary: #1e40af;
   --color-success: #16a34a;
   --color-danger: #ef4444;
 
@@ -37,26 +32,11 @@
   --color-border-hover: var(--vt-c-divider-light-1);
 
   --color-heading: var(--color-primary);
-  --color-text: var(--vt-c-text-light-2);
+  --color-text: var(--vt-c-text-light-1);
   --color-text-muted: rgba(60,60,60,0.5);
-  /* testo/accento primario */
   --color-text-primary: var(--color-primary);
 
-  --section-gap: 120px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
-
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
-
-    --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
-  }
+  --section-gap: 160px;
 }
 
 *,

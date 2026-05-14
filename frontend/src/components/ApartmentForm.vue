@@ -1,52 +1,71 @@
 <template>
-  <div class="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6">
-      <h2 class="text-xl font-semibold mb-4">{{ isEdit ? 'Modifica Appartamento' : 'Nuovo Appartamento' }}</h2>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" @click.self="$emit('close')">
+    <div class="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+      <div class="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[#9a1528]">Appartamento</p>
+          <h2 class="mt-1 text-2xl font-bold text-zinc-900">{{ isEdit ? 'Modifica appartamento' : 'Nuovo appartamento' }}</h2>
+        </div>
+        <button type="button" @click="$emit('close')" class="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900" aria-label="Chiudi">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-      <form @submit.prevent="onSubmit" class="space-y-4">
+      <form @submit.prevent="onSubmit" class="space-y-6">
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium">Città</label>
-            <input v-model="form.indirizzo.citta" class="mt-1 block w-full border rounded px-2 py-1" />
+            <label class="mb-2 block text-sm font-semibold text-gray-700">Città</label>
+            <input v-model="form.indirizzo.citta" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
           </div>
           <div>
-            <label class="block text-sm font-medium">Via</label>
-            <input v-model="form.indirizzo.via" class="mt-1 block w-full border rounded px-2 py-1" />
+            <label class="mb-2 block text-sm font-semibold text-gray-700">Via</label>
+            <input v-model="form.indirizzo.via" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
           </div>
         </div>
 
         <div class="grid grid-cols-3 gap-4">
           <div>
-            <label class="block text-sm font-medium">MQ Totali</label>
-            <input type="number" v-model.number="form.mqTot" class="mt-1 block w-full border rounded px-2 py-1" />
+            <label class="mb-2 block text-sm font-semibold text-gray-700">MQ Totali</label>
+            <input type="number" v-model.number="form.mqTot" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
           </div>
           <div>
-            <label class="block text-sm font-medium">Stanze</label>
-            <input type="number" v-model.number="form.numStanze" class="mt-1 block w-full border rounded px-2 py-1" />
+            <label class="mb-2 block text-sm font-semibold text-gray-700">Stanze</label>
+            <input type="number" v-model.number="form.numStanze" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
           </div>
           <div>
-            <label class="block text-sm font-medium">Bagni</label>
-            <input type="number" v-model.number="form.numBagni" class="mt-1 block w-full border rounded px-2 py-1" />
+            <label class="mb-2 block text-sm font-semibold text-gray-700">Bagni</label>
+            <input type="number" v-model.number="form.numBagni" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
           </div>
         </div>
 
-        <div class="flex gap-4">
-          <label class="inline-flex items-center"><input type="checkbox" v-model="form.perStudenti" class="mr-2" />Per studenti</label>
-          <label class="inline-flex items-center"><input type="checkbox" v-model="form.terrazzo" class="mr-2" />Terrazzo</label>
-          <label class="inline-flex items-center"><input type="checkbox" v-model="form.lavatrice" class="mr-2" />Lavatrice</label>
+        <div class="space-y-3">
+          <label class="flex items-center gap-3">
+            <input type="checkbox" v-model="form.perStudenti" class="h-4 w-4 rounded" />
+            <span class="text-sm font-medium text-gray-700">Per studenti</span>
+          </label>
+          <label class="flex items-center gap-3">
+            <input type="checkbox" v-model="form.terrazzo" class="h-4 w-4 rounded" />
+            <span class="text-sm font-medium text-gray-700">Terrazzo</span>
+          </label>
+          <label class="flex items-center gap-3">
+            <input type="checkbox" v-model="form.lavatrice" class="h-4 w-4 rounded" />
+            <span class="text-sm font-medium text-gray-700">Lavatrice</span>
+          </label>
         </div>
 
         <div>
-          <label class="block text-sm font-medium">Classe energetica</label>
-          <select v-model="form.classeEnergetica" class="mt-1 block w-48 border rounded px-2 py-1">
-            <option value="">—</option>
+          <label class="mb-2 block text-sm font-semibold text-gray-700">Classe energetica</label>
+          <select v-model="form.classeEnergetica" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none">
+            <option value="">Seleziona una classe</option>
             <option v-for="c in classes" :key="c" :value="c">{{ c }}</option>
           </select>
         </div>
 
-        <div class="flex justify-end gap-2">
-          <button type="button" @click="$emit('close')" class="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200">Annulla</button>
-          <button type="submit" class="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700">Salva</button>
+        <div class="flex justify-end gap-3 border-t border-zinc-200 pt-4">
+          <button type="button" @click="$emit('close')" class="rounded-full border border-zinc-300 px-5 py-2.5 font-semibold text-zinc-700 hover:bg-zinc-100">Annulla</button>
+          <button type="submit" class="rounded-full px-5 py-2.5 font-semibold text-white hover:bg-[#7f1020]" style="background-color: #9a1528">Salva</button>
         </div>
       </form>
     </div>
@@ -58,7 +77,7 @@
 // Props: initial (oggetto o null)
 // Emissioni: saved, close
 
-import { reactive, toRefs, watch, computed } from 'vue'
+import { reactive, watch, computed } from 'vue'
 
 const props = defineProps({ initial: { type: Object, default: null } })
 const emits = defineEmits(['saved', 'close'])
