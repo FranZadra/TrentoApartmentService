@@ -35,7 +35,7 @@ const AppartamentoSchema = new mongoose.Schema(
     },
     mqTot: {
       type: Number,
-      required: [true, 'I metri quadri totali sono obbligatori'],
+      required: false,
     },
     studentOnly: {
       type: Boolean,
