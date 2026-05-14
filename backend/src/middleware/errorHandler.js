@@ -4,7 +4,9 @@
 // grazie ai 4 parametri (err, req, res, next).
 
 const errorHandler = (err, req, res, next) => {
-  console.error('Errore:', err.message);
+  console.error('Errore completo:', err);
+  console.error('Errore messaggio:', err.message);
+  console.error('Errore stack:', err.stack);
 
   // Errore di ID MongoDB non valido (es. /annunci/id-non-valido)
   if (err.name === 'CastError') {

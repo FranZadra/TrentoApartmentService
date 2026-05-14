@@ -12,6 +12,7 @@
 // Le coordinate geografiche (latitudine/longitudine) sono necessarie per la mappa interattiva della US9: vanno discusse col team.
 
 const mongoose = require('mongoose');
+const CameraSchema = require('./Camera');
 
 // Sotto-schema per l'indirizzo (DataType Address dall'UML)
 // È un oggetto annidato, non una collezione separata
@@ -31,6 +32,10 @@ const AppartamentoSchema = new mongoose.Schema(
     indirizzo: {
       type: AddressSchema,
       required: true,
+    },
+    mqTot: {
+      type: Number,
+      required: false,
     },
     studentOnly: {
       type: Boolean,
@@ -68,14 +73,8 @@ const AppartamentoSchema = new mongoose.Schema(
       longitudine: { type: Number },
     },
 
-    // Relazione con Camera (Appartamento--comprende-->Camera 1..*)
-    // Le camere sono memorizzate come riferimenti separati
-    camere: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Camera',
-      },
-    ],
+    // Le camere sono memorizzate come sotto-documenti annidati (non reference)
+    camere: [CameraSchema],
   },
   {
     timestamps: true,

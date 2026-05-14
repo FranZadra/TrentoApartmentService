@@ -24,4 +24,10 @@ export const annunciService = {
   getById(id) {
     return api.get(`/annunci/${id}`)
   },
+
+  // GET /api/v1/annunci/search/filter — ricerca con filtri
+  // params può contenere: numStanze, numBagni, terrazzo, classeEnergetica, mqMin, mqMax, tipoCam, prezzoMin, prezzoMax
+  searchWithFilters(params = {}) {
+    return api.get('/annunci/search/filter', { params })
+  },
 }
