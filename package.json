@@ -1,0 +1,29 @@
+{
+  "name": "trento-apartment-service",
+  "version": "1.0.0",
+  "description": "API per la gestione di appartamenti, annunci e contratti",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev": "nodemon backend/src/server.js",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "swagger-gen": "swagger-jsdoc -d backend/src/config/swaggerJsDoc.js -o docs/openapi.json"
+  },
+  "keywords": ["apartment", "rental", "api"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1",
+    "mongodb": "^7.2.0",
+    "mongoose": "^7.0.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "dotenv": "^16.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

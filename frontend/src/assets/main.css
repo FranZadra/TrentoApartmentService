@@ -1,0 +1,34 @@
+@import './base.css';
+
+/* Root layout wrapper */
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  font-weight: 400;
+}
+
+/* Link primary color from theme */
+a,
+.green {
+  text-decoration: none;
+  color: var(--color-text-primary);
+  transition: 0.2s ease-in-out;
+  padding: 3px;
+}
+
+@media (hover: hover) {
+  a:hover {
+    background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  }
+}
+
+@media (min-width: 1024px) {
+  body {
+    display: block;
+  }
+
+  #app {
+    padding: 0 2rem;
+  }
+}
