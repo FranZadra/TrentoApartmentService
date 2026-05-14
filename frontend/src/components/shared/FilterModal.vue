@@ -247,13 +247,26 @@ const filtri = ref({
   prezzoMax: null,
 })
 
-// Quando la modale si apre, popola i filtri con quelli attuali
+// Quando la modale si apre, popola i filtri con quelli attuali.
+// Usiamo il merge con i valori di default: i campi assenti in filtriAttuali
+// rimangono al loro valore iniziale (null, '', false) invece di diventare
+// undefined, evitando che le <select> perdano la selezione "Qualsiasi".
 watch(
   () => props.isOpen,
   (newVal) => {
     if (newVal) {
-      // Carica i filtri attuali
-      filtri.value = { ...props.filtriAttuali }
+      filtri.value = {
+        numStanze: null,
+        numBagni: null,
+        terrazzo: false,
+        classeEnergetica: '',
+        mqMin: null,
+        mqMax: null,
+        tipoCam: '',
+        prezzoMin: null,
+        prezzoMax: null,
+        ...props.filtriAttuali,
+      }
     }
   }
 )

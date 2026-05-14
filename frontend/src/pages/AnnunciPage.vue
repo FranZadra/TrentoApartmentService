@@ -67,10 +67,15 @@
           v-if="annunci.length === 0"
           class="rounded-2xl border border-zinc-200 bg-white p-10 text-center text-zinc-500"
         >
-          <p class="text-lg font-semibold text-zinc-700">Nessun annuncio trovato.</p>
-          <p class="mt-2 text-sm">
-            Prova a modificare i filtri per trovare risultati.
-          </p>
+          <!-- Distingue tra "filtri troppo restrittivi" e "DB vuoto senza filtri" -->
+          <template v-if="Object.keys(filtriAttivi).length > 0">
+            <p class="text-lg font-semibold text-zinc-700">Nessun annuncio trovato con i filtri selezionati.</p>
+            <p class="mt-2 text-sm">Prova a modificare o rimuovere alcuni filtri.</p>
+          </template>
+          <template v-else>
+            <p class="text-lg font-semibold text-zinc-700">Nessun annuncio attivo al momento.</p>
+            <p class="mt-2 text-sm">Torna più tardi per nuove disponibilità.</p>
+          </template>
         </div>
 
         <!-- Griglia delle card annunci -->
