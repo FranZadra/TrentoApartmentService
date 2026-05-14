@@ -58,7 +58,88 @@ const getAnnuncioById = async (req, res, next) => {
   }
 };
 
+// GET /api/v1/annunci/search/filter
+// Ricerca annunci con filtri su appartamento e camere
+// Query parameters:
+//   - numStanze: numero esatto di stanze
+//   - numBagni: numero esatto di bagni
+//   - terrazzo: true/false
+//   - classeEnergetica: classe energetica (es. A, B, C, ecc.)
+//   - mqMin: metri quadri minimo
+//   - mqMax: metri quadri massimo
+//   - prezzoMin: prezzo minimo della camera
+//   - prezzoMax: prezzo massimo della camera
+//   - tipoCam: tipo di camera (SINGOLA/DOPPIA)
+// Esempio: GET /api/v1/annunci/search/filter?numStanze=3&terrazzo=true&prezzoMin=300&prezzoMax=500
+const searchAnnunciWithFilters = async (req, res, next) => {
+  try {
+    // Costruisce il filtro per l'appartamento
+    const filterApartment = { stato: 'Attivo' };
+    
+    // Filtri dell'appartamento
+    if (req.query.numStanze) {
+      filterApartment['appartamento.numStanze'] = Number(req.query.numStanze);
+    }
+    if (req.query.numBagni) {
+      filterApartment['appartamento.numBagni'] = Number(req.query.numBagni);
+    }
+    if (req.query.terrazzo !== undefined) {
+      filterApartment['appartamento.terrazzo'] = req.query.terrazzo === 'true';
+    }
+    if (req.query.classeEnergetica) {
+      filterApartment['appartamento.classeEnergetica'] = req.query.classeEnergetica;
+    }
+
+    // Filtri sui metri quadri
+    if (req.query.mqMin || req.query.mqMax) {
+      filterApartment['appartamento.mqTot'] = {};
+      if (req.query.mqMin) {
+        filterApartment['appartamento.mqTot']['$gte'] = Number(req.query.mqMin);
+      }
+      if (req.query.mqMax) {
+        filterApartment['appartamento.mqTot']['$lte'] = Number(req.query.mqMax);
+      }
+    }
+
+    // Filtri per le camere (usando $elemMatch per filtrare elementi dell'array)
+    if (req.query.prezzoMin || req.query.prezzoMax || req.query.tipoCam) {
+      const filterCamera = {};
+      if (req.query.prezzoMin) {
+        filterCamera['prezzo'] = { $gte: Number(req.query.prezzoMin) };
+      }
+      if (req.query.prezzoMax) {
+        if (filterCamera['prezzo']) {
+          filterCamera['prezzo']['$lte'] = Number(req.query.prezzoMax);
+        } else {
+          filterCamera['prezzo'] = { $lte: Number(req.query.prezzoMax) };
+        }
+      }
+      if (req.query.tipoCam) {
+        filterCamera['tipo'] = req.query.tipoCam;
+      }
+
+      // Almeno una camera deve soddisfare tutti i criteri
+      filterApartment['appartamento.camere'] = { $elemMatch: filterCamera };
+    }
+
+    // Esegue la query
+    const annunci = await Annuncio
+      .find(filterApartment)
+      .populate('appartamento')
+      .sort({ dataPubbl: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: annunci.length,
+      data: annunci,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAnnunciAttivi,
   getAnnuncioById,
+  searchAnnunciWithFilters,
 };

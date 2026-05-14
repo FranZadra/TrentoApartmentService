@@ -9,12 +9,19 @@ const router = express.Router();
 const {
   getAnnunciAttivi,
   getAnnuncioById,
+  searchAnnunciWithFilters,
 } = require('../controllers/annunciController');
 
 // GET /api/v1/annunci
 // Lista di tutti gli annunci attivi (per la lista e la mappa)
 // Accessibile da tutti, anche utenti anonimi (nessuna auth)
 router.get('/', getAnnunciAttivi);
+
+// GET /api/v1/annunci/search/filter
+// Ricerca annunci con filtri su appartamento e camere
+// Query parameters: numStanze, numBagni, terrazzo, classeEnergetica, mqMin, mqMax, prezzoMin, prezzoMax, tipoCam
+// Nota: questa rotta DEVE venire PRIMA di /:id per evitare che "search" sia interpretato come ID
+router.get('/search/filter', searchAnnunciWithFilters);
 
 // GET /api/v1/annunci/:id
 // Dettaglio di un singolo annuncio
