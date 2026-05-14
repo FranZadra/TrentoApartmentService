@@ -3,7 +3,7 @@
 
 const express = require('express');
 const errorHandler = require('./middleware/errorHandler');
-const annunciRoutes = require('./routes/annunci.routes');
+const annunciRoutes = require('./routes/annunciRoutes');
 
 const app = express();
 

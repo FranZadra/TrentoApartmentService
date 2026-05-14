@@ -9,7 +9,7 @@ const router = express.Router();
 const {
   getAnnunciAttivi,
   getAnnuncioById,
-} = require('../controllers/annunci.controller');
+} = require('../controllers/annunciController');
 
 // GET /api/v1/annunci
 // Lista di tutti gli annunci attivi (per la lista e la mappa)

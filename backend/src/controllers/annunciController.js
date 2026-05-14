@@ -7,6 +7,9 @@
 //   3. Manda la risposta (res) in formato JSON
 
 const Annuncio = require('../models/Annuncio');
+// Necessario importare Appartamento per registrare lo schema con Mongoose
+// prima di usare .populate('appartamento') nelle query
+require('../models/Appartamento');
 
 // GET /api/v1/annunci
 // Ritorna tutti gli annunci con stato "attivo", inclusi i dati dell'appartamento.
