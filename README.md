@@ -3,7 +3,9 @@ Repository GitHub per il progetto di Ingegneria del Software
 
 ## Breve descrizione del progetto 
 Il progetto Trento Apartment Service (TAS) nasce dalla necessità di risolvere la frammentazione informativa e operativa che caratterizza il mercato delle locazioni nella città di Trento.
-La soluzione proposta è un ecosistema digitale centralizzato che funge da unico punto di contatto per tutti gli attori coinvolti. 
+
+La soluzione proposta è un ecosistema digitale centralizzato che funge da unico punto di contatto per tutti gli attori coinvolti.
+
 La piattaforma digitalizza l'intero ciclo di vita della locazione: dalla ricerca dell'immobile fino alla gestione interna dell'appartamento e alla comunicazione con l'amministratore.
 
 ## Informazioni utili
@@ -17,7 +19,7 @@ Link documentazione delle API (Apiary): https://app.apiary.io/trentoapartmentser
 - **Features branches**: rami di sviluppo delle singole feature su cui lavorano direttamente i membri del team.
 
 ### Struttura del repository
-TRENTOAPART.../
+TrentoApartmentService/
 ├── backend/
 │   ├── node_modules/
 │   ├── src/
@@ -60,7 +62,11 @@ TRENTOAPART.../
 - **frontend/**: contiene l'applicazione client Vue.js sviluppata con Vite + Tailwind CSS.
 - **apiary.apib** – file Blueprint per la documentazione delle API su Apiary
 
+- **backend/**: contiene il server Node.js con tutta la logica applicativa lato server.
+- **frontend/**: contiene l'applicazione client Vue.js sviluppata con Vite + Tailwind CSS.
+- **apiary.apib**: file Blueprint per la documentazione delle API su Apiary.
+
 ## Autori
-Mikele Golemi
-Leonardo Tartini
-Francesco Zadra
+- Mikele Golemi
+- Leonardo Tartini
+- Francesco Zadra
