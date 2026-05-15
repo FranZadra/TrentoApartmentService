@@ -62,7 +62,7 @@ const showForm = ref(false)
 const selectedId = ref(null)
 const formInitial = ref(null)
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
 watch([showDetails, showForm], ([detailsOpen, formOpen]) => {
   document.body.style.overflow = detailsOpen || formOpen ? 'hidden' : ''
@@ -96,6 +96,24 @@ async function loadApartments() {
     loading.value = false
   }
 }
+async function loadAllApartments() {
+  loading.value = true
+  try {
+    const res = await fetch(`${API_BASE}/appartamenti?page=1&limit=10`, {
+      headers: getAuthHeaders(),
+    })
+    const body = await res.json()
+    if (res.ok && body && body.data) apartments.value = body.data
+    else apartments.value = []
+  } catch (err) {
+    console.error(err)
+    apartments.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+
 
 function viewDetails(id) {
   selectedId.value = id
@@ -124,12 +142,12 @@ function closeForm() {
 
 function onSaved() {
   closeForm()
-  loadApartments()
+  loadAllApartments()
 }
 
 function reload() {
   closeDetails()
-  loadApartments()
+  loadAllApartments()
 }
 
 // Ascolta evento globale emesso dal componente dettagli per aprire il form
@@ -142,7 +160,7 @@ function onGlobalEdit(e) {
 }
 
 onMounted(() => {
-  loadApartments()
+  loadAllApartments()
   window.addEventListener('admin:editApartment', onGlobalEdit)
 })
 

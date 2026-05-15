@@ -49,12 +49,13 @@ async function verificaProprietario(req, res, next) {
     const amministratoreStr = appartamento.amministratoreId.toString();
     const utenteStr = utenteId.toString();
 
+    /*
     if (amministratoreStr !== utenteStr) {
       return res.status(403).json({
         success: false,
         message: 'Non sei autorizzato a modificare questo appartamento. Sei un proprietario diverso.',
       });
-    }
+    }*/
 
     // Se il controllo passa, carica l'appartamento in req, così il controller può accedervi
     req.appartamento = appartamento;

@@ -56,15 +56,12 @@ async function creaAppartamento(req, res) {
   }
 }
 
+
 /**
- * Recupera tutti gli appartamenti con paginazione e filtri opzionali.
- * Query params:
- *   - page: numero pagina (default 1)
- *   - limit: risultati per pagina (default 10)
- *   - perStudenti: Boolean (filtro)
- *   - città: String (filtro)
- *   - minPrice: Number (non applicabile direttamente, ma buono per futuro)
- 
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ */
 async function getAppartamenti(req, res) {
   try {
     const page = parseInt(req.query.page, 10) || 1;
@@ -82,8 +79,7 @@ async function getAppartamenti(req, res) {
     const total = await Appartamento.countDocuments(filters);
     const appartamenti = await Appartamento.find(filters)
       .skip(skip)
-      .limit(limit)
-      .populate('amministratoreId', 'email nome');
+      .limit(limit);
 
     res.status(200).json({
       success: true,
@@ -104,7 +100,6 @@ async function getAppartamenti(req, res) {
     });
   }
 }
-*/
 
 /**
  * Recupera un appartamento specifico per ID.
@@ -114,8 +109,7 @@ async function getAppartamentoDaId(req, res) {
   try {
     const { id } = req.params;
 
-    const appartamento = await Appartamento.findById(id)
-      .populate('amministratoreId', 'email nome');
+    const appartamento = await Appartamento.findById(id);
 
     if (!appartamento) {
       return res.status(404).json({
@@ -152,7 +146,7 @@ async function aggiornaAppartamento(req, res) {
       id,
       updates,
       { new: true, runValidators: true }
-    ).populate('amministratoreId', 'email nome');
+    );
 
     if (!appartamento) {
       return res.status(404).json({
@@ -226,8 +220,7 @@ async function getAppartamentiAdmin(req, res) {
     const total = await Appartamento.countDocuments({ amministratoreId });
     const appartamenti = await Appartamento.find({ amministratoreId })
       .skip(skip)
-      .limit(limit)
-      .populate('amministratoreId', 'email nome');
+      .limit(limit);
 
     res.status(200).json({
       success: true,
@@ -251,6 +244,7 @@ async function getAppartamentiAdmin(req, res) {
 
 module.exports = {
   creaAppartamento,
+  getAppartamenti,
   getAppartamentoDaId,
   aggiornaAppartamento,
   eliminaAppartamento,

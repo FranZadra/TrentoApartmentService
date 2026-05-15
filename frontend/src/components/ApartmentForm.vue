@@ -121,7 +121,7 @@ watch(() => props.initial, (v) => {
   }
 }, { immediate: true })
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
 function getAuthHeaders() {
   const token = localStorage.getItem('token') || ''

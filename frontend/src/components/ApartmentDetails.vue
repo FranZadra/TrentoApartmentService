@@ -53,7 +53,7 @@ const emits = defineEmits(['close', 'updated'])
 const apt = ref(null)
 const loading = ref(false)
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
 function getAuthHeaders() {
   const token = localStorage.getItem('token') || ''

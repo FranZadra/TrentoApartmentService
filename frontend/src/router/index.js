@@ -1,14 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import HomeView from '../pages/HomeView.vue'
 // View per gestione amministratore
-const AdminApartments = () => import('../views/AdminApartments.vue')
+const AdminApartments = () => import('../pages/AdminApartments.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      redirect: '/admin/appartamenti',
+      name: 'home',
+      component: AdminApartments,
     },
     {
       path: '/about',
@@ -16,11 +17,21 @@ const router = createRouter({
       // route level code-splitting
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
+      component: () => import('../pages/AboutView.vue'),
     },
     {
       path: '/admin/appartamenti',
       name: 'admin-appartamenti',
+      component: AdminApartments,
+    },
+    {
+      path: '/annunci',
+      name: 'annunci',
+      component: AdminApartments,
+    },
+    {
+      path: '/signin',
+      name: 'signin',
       component: AdminApartments,
     },
   ],
