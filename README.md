@@ -19,6 +19,7 @@ Link documentazione delle API (Apiary): https://app.apiary.io/trentoapartmentser
 - **Features branches**: rami di sviluppo delle singole feature su cui lavorano direttamente i membri del team.
 
 ### Struttura del repository
+```
 TrentoApartmentService/
 ├── backend/
 │   ├── node_modules/
@@ -57,6 +58,8 @@ TrentoApartmentService/
 ├── .gitignore
 ├── apiary.apib
 └── README.md
+```
+
 
 - **backend/**: contiene il server Node.js con tutta la logica applicativa lato server.
 - **frontend/**: contiene l'applicazione client Vue.js sviluppata con Vite + Tailwind CSS.
