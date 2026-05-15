@@ -37,7 +37,7 @@ const AppartamentoSchema = new mongoose.Schema(
       type: Number,
       required: false,
     },
-    studentOnly: {
+    perStudenti: {
       type: Boolean,
       required: true,
       default: false,
@@ -66,13 +66,17 @@ const AppartamentoSchema = new mongoose.Schema(
       type: String,
       enum: ['A4', 'A3', 'A2', 'A1', 'B', 'C', 'D', 'E', 'F', 'G'],
     },
-
     // Coordinate geografiche
     posizione: {
       latitudine: { type: Number },
       longitudine: { type: Number },
     },
-
+    amministratoreId: 
+    { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'User', 
+      required: true 
+    },
     // Le camere sono memorizzate come sotto-documenti annidati (non reference)
     camere: [CameraSchema],
   },
