@@ -65,11 +65,7 @@ TrentoApartmentService/
 - **frontend/**: contiene l'applicazione client Vue.js sviluppata con Vite + Tailwind CSS.
 - **apiary.apib** – file Blueprint per la documentazione delle API su Apiary
 
-- **backend/**: contiene il server Node.js con tutta la logica applicativa lato server.
-- **frontend/**: contiene l'applicazione client Vue.js sviluppata con Vite + Tailwind CSS.
-- **apiary.apib**: file Blueprint per la documentazione delle API su Apiary.
-
 ## Autori
-- Mikele Golemi
-- Leonardo Tartini
-- Francesco Zadra
+- Mikele Golemi     mat. 243170
+- Leonardo Tartini    mat. 245119
+- Francesco Zadra    mat. 244544
