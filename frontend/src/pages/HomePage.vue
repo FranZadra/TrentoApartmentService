@@ -1,12 +1,12 @@
 <template>
-  <!-- Homepage: usa il componente placeholder finché non viene implementata -->
-  <PlaceholderPage
-    eyebrow="Benvenuto"
-    title="Trento Apartment Service"
-    description="Il portale per trovare alloggi a Trento, gestire le faccende domestiche e segnalare guasti."
-  />
+  <AppLayout>
+    <HeroSection />
+    <FeatureSection />
+  </AppLayout>
 </template>
 
 <script setup>
-import PlaceholderPage from '@/components/shared/PlaceholderPage.vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import HeroSection from '@/components/home/HeroSection.vue'
+import FeatureSection from '@/components/home/FeatureSection.vue'
 </script>
