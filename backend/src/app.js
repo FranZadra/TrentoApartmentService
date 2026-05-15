@@ -1,6 +1,6 @@
-// src/app.js — Express application setup
+// src/app.js — Setup applicazone Express 
 //
-// Configura Express con middleware, route e documentazione Swagger
+// Configura Express con middleware e routes
 
 const express = require('express');
 
@@ -14,15 +14,8 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS middleware (opzionale, commenta se non necessario)
-// const cors = require('cors');
-// app.use(cors());
-
-// Swagger UI — Documentazione interattiva
-// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
-//   customCss: '.swagger-ui .topbar { display: none }',
-//   customSiteTitle: 'Trento Apartment Service API Docs',
-// }));
+// API Routes
+app.use('/api/v1/appartamenti', routesAppartamenti);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -32,9 +25,6 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
-
-// API Routes
-app.use('/api/appartamenti', routesAppartamenti);
 
 // 404 handler per route non trovate
 app.use((req, res) => {
