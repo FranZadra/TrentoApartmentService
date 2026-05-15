@@ -1,6 +1,7 @@
 <template>
 	<header class="sticky top-0 z-40 border-b border-[#7f1020] bg-[#9a1528] text-white shadow-sm">
 		<div class="mx-auto flex max-w-[1200px] items-center justify-between gap-6 px-6 py-4 lg:px-8">
+			<!-- Logo + nome brand -->
 			<router-link to="/" class="group flex items-center gap-3">
 				<img
 					:src="tasLogo"
@@ -14,6 +15,7 @@
 				</div>
 			</router-link>
 
+			<!-- Navigazione principale -->
 			<nav class="flex items-center gap-6 text-sm font-semibold text-white sm:gap-8">
 				<router-link to="/" class="text-white/90 hover:text-white">Home</router-link>
 				<router-link to="/annunci" class="text-white/90 hover:text-white">

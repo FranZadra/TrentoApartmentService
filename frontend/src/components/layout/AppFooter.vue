@@ -2,6 +2,7 @@
 	<footer class="border-t border-[#7f1020] bg-[#9a1528] text-white">
 		<div class="mx-auto flex max-w-[1200px] flex-col gap-6 px-6 py-8 text-sm text-white/90 lg:px-8">
 			<div class="flex items-start justify-between gap-6">
+				<!-- Logo TAS -->
 				<div class="flex flex-col gap-2">
 					<img
 						:src="tasLogo"
@@ -13,6 +14,7 @@
 					</p>
 				</div>
 
+				<!-- Loghi istituzionali -->
 				<div class="flex items-center gap-5">
 					<img
 						:src="logoComune"

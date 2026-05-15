@@ -1,4 +1,5 @@
 <template>
+  <!-- Pagina segnaposto usata per le sezioni non ancora implementate -->
   <AppLayout>
     <section class="mx-auto flex min-h-[70vh] max-w-[1200px] items-center px-6 py-16 lg:px-8">
       <div class="max-w-2xl rounded-[2rem] border border-zinc-200 bg-white p-8 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
@@ -26,17 +27,8 @@
 import AppLayout from '@/components/layout/AppLayout.vue'
 
 defineProps({
-  eyebrow: {
-    type: String,
-    required: true,
-  },
-  title: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
+  eyebrow: { type: String, required: true },
+  title: { type: String, required: true },
+  description: { type: String, required: true },
 })
 </script>
