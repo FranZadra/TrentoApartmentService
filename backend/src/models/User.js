@@ -25,12 +25,19 @@ const utenteSchema = new mongoose.Schema(
       required: [true, 'La password è obbligatoria'],
     },
 
+    /*foto profuilo - opzionale, URL dell'immagine
+    fotoProfilo: {
+      type: String,
+      required: false,
+      default: null,
+    },*/
+    
     // Ruolo dell'utente nell'applicazione
     // 'inquilino'    = cerca appartamenti
     // 'proprietario' = pubblica annunci
     ruolo: {
       type: String,
-      enum: ['inquilino', 'proprietario'],
+      enum: ['utente base', 'inquilino', 'proprietario'],
       default: 'inquilino',
     },
   },

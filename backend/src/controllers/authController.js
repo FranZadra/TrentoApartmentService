@@ -19,26 +19,26 @@ const register = async (req, res) => {
   // --- Validazione 1: campi obbligatori ---
   // Controlla che nome, email e password siano presenti e non stringhe vuote
   if (!nome || nome.trim() === '') {
-    return res.status(400).json({ messaggio: 'campo obbligatorio mancante' });
+    return res.status(400).json({ messaggio: 'Nome: campo obbligatorio mancante' });
   }
   if (!email) {
-    return res.status(400).json({ messaggio: 'campo obbligatorio mancante' });
+    return res.status(400).json({ messaggio: 'Email: campo obbligatorio mancante' });
   }
   if (!password || password.trim() === '') {
-    return res.status(400).json({ messaggio: 'campo obbligatorio mancante' });
+    return res.status(400).json({ messaggio: 'Password: campo obbligatorio mancante' });
   }
 
   // --- Validazione 2: formato email ---
   // Usa la regex per verificare che l'email abbia la forma corretta (es. rifiuta "user/gmail.com")
   if (!REGEX_EMAIL.test(email)) {
-    return res.status(400).json({ messaggio: 'email non valida' });
+    return res.status(400).json({ messaggio: 'Email: formato non valido' });
   }
 
   // --- Validazione 3: email già registrata ---
   // Cerca nel DB un utente con la stessa email (ricerca case-insensitive grazie a lowercase:true nel modello)
   const utenteEsistente = await User.findOne({ email: email.toLowerCase() });
   if (utenteEsistente) {
-    return res.status(409).json({ messaggio: 'email già in uso' });
+    return res.status(409).json({ messaggio: 'Email già in uso' });
   }
 
   // --- Hashing della password ---
@@ -51,7 +51,7 @@ const register = async (req, res) => {
     nome: nome.trim(),
     email: email.toLowerCase().trim(),
     password: passwordHashata,
-    ruolo: ruolo || 'inquilino', // se non specificato, default inquilino
+    ruolo: 'utente base',
   });
 
   await nuovoUtente.save();

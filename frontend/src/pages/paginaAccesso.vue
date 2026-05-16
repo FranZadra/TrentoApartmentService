@@ -25,7 +25,7 @@
 
                     <div class="grid gap-4 sm:grid-cols-2">
                         <img :src="logoComune" alt="Comune di Trento" class="h-16 w-50 object-contain" />
-                        <img :src="logoUniversity" alt="Università di Trento" class="h-16 w-50 object-contain" />
+                        <img :src="logoUni" alt="Università di Trento" class="h-16 w-50 object-contain" />
                     </div>
 				</div>
 
@@ -42,5 +42,5 @@ import FormRegistrazione from '../components/formRegistrazione.vue'
 import castello from '../assets/images/TrentoCastello.jpg'
 import logo from '../assets/images/TasLogo.png'
 import logoComune from '../assets/images/logoComuneW.png'
-import logoUniversity from '../assets/images/logoUnitnW.png'
+import logoUni from '../assets/images/logoUnitnW.png'
 </script>
