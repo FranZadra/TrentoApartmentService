@@ -3,7 +3,8 @@ import { ref, computed } from 'vue'
 
 // Store Pinia per la gestione dell'autenticazione utente
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref(null)
+  const storedUser = localStorage.getItem('tas_user')
+  const user = ref(storedUser ? JSON.parse(storedUser) : null)
   const token = ref(localStorage.getItem('tas_token') || null)
 
   // true se l'utente ha un token valido in localStorage
@@ -16,10 +17,17 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   function login(userData, authToken) {
-    user.value = userData
-    token.value = authToken
-    localStorage.setItem('tas_token', authToken)
-    localStorage.setItem('tas_role', userData.ruolo)
+    user.value = userData || null
+    token.value = authToken || null
+    if (authToken) localStorage.setItem('tas_token', authToken)
+    if (userData) {
+      try {
+        localStorage.setItem('tas_user', JSON.stringify(userData))
+        localStorage.setItem('tas_role', userData.ruolo)
+      } catch (e) {
+        console.warn('Could not persist user to localStorage', e)
+      }
+    }
   }
 
   function logout() {
@@ -27,6 +35,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     localStorage.removeItem('tas_token')
     localStorage.removeItem('tas_role')
+    localStorage.removeItem('tas_user')
   }
 
   return { user, token, isAuthenticated, initials, login, logout }

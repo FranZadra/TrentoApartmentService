@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../pages/HomePage.vue'
 import PaginaAccesso from '../pages/paginaAccesso.vue'
+import PaginaProfilo from '../pages/paginaProfilo.vue'
 
 const routes = [
 	{
@@ -16,6 +17,12 @@ const routes = [
 		alias: ['/registrazione'],
 		meta: { title: 'TAS - Accesso' },
 	},
+	{
+		path: '/profilo',
+		name: 'profilo',
+		component: PaginaProfilo,
+		meta: { title: 'TAS - Profilo' },
+	}
 ]
 
 const router = createRouter({

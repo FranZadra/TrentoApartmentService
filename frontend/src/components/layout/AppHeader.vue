@@ -22,10 +22,10 @@
 					Ricerca appartamento
 				</router-link>
 				<router-link
-					to="/accesso"
+					:to="isLoggedIn ? '/profilo' : '/accesso'"
 					class="rounded-full border border-white px-4 py-2 text-white transition-colors hover:bg-white hover:text-[#9a1528]"
 				>
-					Sign in
+					{{ isLoggedIn ? 'Profilo' : 'Accedi' }}
 				</router-link>
 			</nav>
 		</div>
@@ -34,4 +34,9 @@
 
 <script setup>
 import tasLogo from '../../assets/images/TasLogo.png'
+import { useAuthStore } from '@/stores/authStore'
+import { ref, computed } from 'vue'
+
+const auth = useAuthStore()
+const isLoggedIn = computed(() => !!auth.token)
 </script>

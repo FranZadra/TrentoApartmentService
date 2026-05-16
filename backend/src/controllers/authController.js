@@ -7,7 +7,7 @@ const BCRYPT_SALT_ROUNDS = 10;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
-const RUOLI_VALIDI = ['utente', 'amministratore', 'dipendente comune'];
+const RUOLI_VALIDI = ['utente base', 'amministratore', 'dipendente comune'];
 
 /**
  * POST /api/v1/users/register
@@ -138,4 +138,57 @@ const register = async (req, res) => {
   });
 };
 
-module.exports = { register };
+const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  // --- Validazione campi obbligatori ---
+  if (!email) {
+    return res.status(400).json({ messaggio: 'Email: campo obbligatorio mancante' });
+  }
+  if (!password) {
+    return res.status(400).json({ messaggio: 'Password: campo obbligatorio mancante' });
+  }
+
+  // --- Validazione formato email ---
+  if (!REGEX_EMAIL.test(email)) {
+    return res.status(400).json({ messaggio: 'Email: formato non valido' });
+  }
+
+  // --- Ricerca utente per email ---
+  const utente = await User.findOne({ email: email.toLowerCase() });
+  if (!utente) {
+    return res.status(401).json({ messaggio: 'Utente non trovato' });
+  }
+
+  // --- Verifica password ---
+  const passwordValida = await bcrypt.compare(password, utente.password);
+  if (!passwordValida) {
+    return res.status(401).json({ messaggio: 'Password non valida' });
+  }
+
+  // --- Generazione JWT ---
+  const token = jwt.sign(
+    {
+      sub: utente._id.toString(),
+      email: utente.email,
+      ruolo: utente.ruolo,
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
+
+  // --- Risposta 200 ---
+  return res.status(200).json({
+    messaggio: 'Login effettuato con successo',
+    token,
+    utente: {
+      id: utente._id,
+      nome: utente.nome,
+      cognome: utente.cognome,
+      email: utente.email,
+      ruolo: utente.ruolo,
+    },
+  });
+};
+
+module.exports = { register, login };

@@ -22,7 +22,6 @@ export async function registerUser(userData) {
 }
 
 /**
- * (Placeholder per login futuro)
  * Effettua il login di un utente.
  * @param {Object} credentials - { email, password }
  * @returns {Promise}
@@ -33,8 +32,18 @@ export async function loginUser(credentials) {
     return { success: true, data: response.data }
   } catch (error) {
     const message = error.response?.data?.messaggio || 'Errore durante il login'
-    return { success: false, error: message }
+    return { success: false, error: message, status: error.response?.status }
   }
+}
+
+export function logoutUser() {
+  // Per il logout lato client, basta rimuovere il token e i dati utente dallo store
+  // La funzione effettiva di logout lato server dipende dall'implementazione (es. blacklist token)
+  // rimuoviamo le stesse chiavi usate dallo store
+  localStorage.removeItem('tas_token')
+  localStorage.removeItem('tas_user')
+  localStorage.removeItem('tas_role')
+  return { success: true }
 }
 
 export default apiClient
