@@ -9,7 +9,12 @@ const utenteSchema = new mongoose.Schema(
       required: [true, 'Il nome è obbligatorio'],
       trim: true,
     },
-
+    // Cognome dell'utente - campo obbligatorio, spazi iniziali/finali rimossi automaticamente
+    cognome: {
+      type: String,
+      required: [true, 'Il cognome è obbligatorio'],
+      trim: true,
+    },
     // Email - obbligatoria, univoca (nessun duplicato nel DB), salvata sempre in minuscolo
     email: {
       type: String,
@@ -39,6 +44,26 @@ const utenteSchema = new mongoose.Schema(
       type: String,
       enum: ['utente base', 'utente verificato', 'inquilino', 'amministratore', 'dipendente comune'],
       default: 'utente base',
+    },
+    // Per amministratori: true se account privato, false se agenzia
+    privato: {
+      type: Boolean,
+      required: function() { return this.ruolo === 'amministratore'; },
+    },
+    // Per agenzie: partita IVA obbligatoria (11 cifre)
+    pIVA: {
+      type: String,
+      required: function() { return this.ruolo === 'amministratore' && this.privato === false; },
+      match: [/^\d{11}$/, 'La partita IVA deve essere composta da 11 cifre'],
+    },
+    // Per dipendenti comunali: ruolo specifico e dipartimento
+    ruoloDipendente: {
+      type: String,
+      required: function() { return this.ruolo === 'dipendente comune'; },
+    },
+    dipartimento: {
+      type: String,
+      required: function() { return this.ruolo === 'dipendente comune'; },
     },
   },
   {
