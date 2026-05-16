@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" @click.self="$emit('close')">
-    <div class="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+    <div class="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8 max-h-[90vh] overflow-y-auto">
       <div class="mb-6 flex items-start justify-between gap-4">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[#9a1528]">Appartamento</p>
@@ -13,33 +13,52 @@
         </button>
       </div>
 
+      <!-- Errori di validazione restituiti dal backend (TC50) -->
+      <div v-if="erroriValidazione.length > 0" class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+        <p class="mb-2 text-sm font-semibold text-red-700">Correggi i seguenti errori:</p>
+        <ul class="list-inside list-disc space-y-1">
+          <li v-for="(err, i) in erroriValidazione" :key="i" class="text-sm text-red-600">{{ err }}</li>
+        </ul>
+      </div>
+
       <form @submit.prevent="onSubmit" class="space-y-6">
+        <!-- Indirizzo -->
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="mb-2 block text-sm font-semibold text-gray-700">Città</label>
-            <input v-model="form.indirizzo.citta" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
+            <input v-model="form.indirizzo.città" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
           </div>
           <div>
             <label class="mb-2 block text-sm font-semibold text-gray-700">Via</label>
             <input v-model="form.indirizzo.via" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
           </div>
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-gray-700">Numero civico</label>
+            <input type="number" v-model.number="form.indirizzo.numero" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
+          </div>
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-gray-700">CAP</label>
+            <input v-model="form.indirizzo.CAP" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
+          </div>
         </div>
 
+        <!-- Caratteristiche numeriche -->
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="mb-2 block text-sm font-semibold text-gray-700">MQ Totali</label>
-            <input type="number" v-model.number="form.mqTot" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
+            <input type="number" v-model.number="form.mqTot" min="0" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
           </div>
           <div>
             <label class="mb-2 block text-sm font-semibold text-gray-700">Stanze</label>
-            <input type="number" v-model.number="form.numStanze" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
+            <input type="number" v-model.number="form.numStanze" min="0" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
           </div>
           <div>
             <label class="mb-2 block text-sm font-semibold text-gray-700">Bagni</label>
-            <input type="number" v-model.number="form.numBagni" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
+            <input type="number" v-model.number="form.numBagni" min="0" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none" />
           </div>
         </div>
 
+        <!-- Checkbox -->
         <div class="space-y-3">
           <label class="flex items-center gap-3">
             <input type="checkbox" v-model="form.perStudenti" class="h-4 w-4 rounded" />
@@ -55,17 +74,50 @@
           </label>
         </div>
 
+        <!-- Classe energetica -->
         <div>
           <label class="mb-2 block text-sm font-semibold text-gray-700">Classe energetica</label>
           <select v-model="form.classeEnergetica" class="block w-full rounded border border-gray-300 px-3 py-2 transition-colors focus:border-[#9a1528] focus:outline-none">
             <option value="">Seleziona una classe</option>
-            <option v-for="c in classes" :key="c" :value="c">{{ c }}</option>
+            <option v-for="c in classi" :key="c" :value="c">{{ c }}</option>
           </select>
         </div>
 
+        <!-- Foto/Planimetrie (TC49): lista di URL inseribili manualmente -->
+        <div>
+          <label class="mb-2 block text-sm font-semibold text-gray-700">Foto (URL)</label>
+          <div v-for="(_, i) in form.foto" :key="i" class="mb-2 flex gap-2">
+            <input
+              v-model="form.foto[i]"
+              type="url"
+              placeholder="https://..."
+              class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm transition-colors focus:border-[#9a1528] focus:outline-none"
+            />
+            <button
+              type="button"
+              @click="rimuoviFoto(i)"
+              class="rounded border border-red-200 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+            >
+              Rimuovi
+            </button>
+          </div>
+          <button
+            type="button"
+            @click="aggiungiFoto"
+            class="mt-1 rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+          >
+            + Aggiungi foto
+          </button>
+        </div>
+
+        <!-- Pulsanti azione -->
         <div class="flex justify-end gap-3 border-t border-zinc-200 pt-4">
-          <button type="button" @click="$emit('close')" class="rounded-full border border-zinc-300 px-5 py-2.5 font-semibold text-zinc-700 hover:bg-zinc-100">Annulla</button>
-          <button type="submit" class="rounded-full px-5 py-2.5 font-semibold text-white hover:bg-[#7f1020]" style="background-color: #9a1528">Salva</button>
+          <button type="button" @click="$emit('close')" class="rounded-full border border-zinc-300 px-5 py-2.5 font-semibold text-zinc-700 hover:bg-zinc-100">
+            Annulla
+          </button>
+          <button type="submit" class="rounded-full bg-[#9a1528] px-5 py-2.5 font-semibold text-white hover:bg-[#7f1020]">
+            Salva
+          </button>
         </div>
       </form>
     </div>
@@ -74,18 +126,23 @@
 
 <script setup>
 // Form per creare o modificare un appartamento.
-// Props: initial (oggetto o null)
-// Emissioni: saved, close
+// Props: initial (oggetto appartamento per la modifica, null per la creazione)
+// Emissioni: saved (operazione riuscita), close (chiudi senza salvare)
 
-import { reactive, watch, computed } from 'vue'
+import { reactive, ref, watch, computed } from 'vue'
 
 const props = defineProps({ initial: { type: Object, default: null } })
 const emits = defineEmits(['saved', 'close'])
 
-const classes = ['A4','A3','A2','A1','B','C','D','E','F','G']
+const classi = ['A4', 'A3', 'A2', 'A1', 'B', 'C', 'D', 'E', 'F', 'G']
 
+// Errori di validazione restituiti dal backend (TC50)
+// Viene popolato quando il server risponde con 400 e un array di errori per campo
+const erroriValidazione = ref([])
+
+// Struttura iniziale del form (tutti i campi del modello Appartamento)
 const defaultForm = () => ({
-  indirizzo: { citta: '', via: '' },
+  indirizzo: { città: '', via: '', numero: null, CAP: '', Stato: 'Italia' },
   mqTot: null,
   perStudenti: false,
   numStanze: null,
@@ -101,16 +158,17 @@ const form = reactive(defaultForm())
 
 const isEdit = computed(() => !!props.initial)
 
+// Quando viene passato un appartamento esistente, popola il form con i suoi dati
 watch(() => props.initial, (v) => {
+  erroriValidazione.value = []
   if (v) {
-    // Popola il form con i dati per l'editing
     Object.assign(form, {
       indirizzo: { ...(v.indirizzo || {}) },
       mqTot: v.mqTot,
       perStudenti: !!v.perStudenti,
       numStanze: v.numStanze,
       numBagni: v.numBagni,
-      foto: v.foto || [],
+      foto: v.foto ? [...v.foto] : [],
       terrazzo: !!v.terrazzo,
       lavatrice: !!v.lavatrice,
       classeEnergetica: v.classeEnergetica || '',
@@ -121,41 +179,64 @@ watch(() => props.initial, (v) => {
   }
 }, { immediate: true })
 
-const API_BASE = import.meta.env.VITE_API_BASE || '/api'
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
 function getAuthHeaders() {
   const token = localStorage.getItem('token') || ''
-  return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
+  return token
+    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+    : { 'Content-Type': 'application/json' }
+}
+
+// Aggiunge una riga vuota alla lista foto (TC49)
+function aggiungiFoto() {
+  form.foto.push('')
+}
+
+// Rimuove una foto per indice (TC49)
+function rimuoviFoto(i) {
+  form.foto.splice(i, 1)
 }
 
 async function onSubmit() {
+  // Azzera errori precedenti prima di ogni invio
+  erroriValidazione.value = []
+
+  // Rimuove le URL foto vuote prima di inviare
+  const payload = { ...form, foto: form.foto.filter(url => url.trim() !== '') }
+
   try {
-    if (isEdit.value && props.initial && props.initial._id) {
-      const res = await fetch(`${API_BASE}/appartamenti/${props.initial._id}`, {
+    let res
+    if (isEdit.value && props.initial?._id) {
+      // Aggiornamento appartamento esistente (TC48)
+      res = await fetch(`${API_BASE}/appartamenti/${props.initial._id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
-      const body = await res.json()
-      if (res.ok) emits('saved', body.data)
-      else alert(body?.message || 'Errore aggiornamento')
     } else {
-      const res = await fetch(`${API_BASE}/appartamenti`, {
+      // Creazione nuovo appartamento
+      res = await fetch(`${API_BASE}/appartamenti`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
-      const body = await res.json()
-      if (res.status === 201 || res.ok) emits('saved', body.data)
-      else alert(body?.message || 'Errore creazione')
+    }
+
+    const body = await res.json()
+
+    if (res.ok) {
+      emits('saved', body.data)
+    } else if (res.status === 400 && body.errors) {
+      // Il backend ha restituito errori di validazione campo per campo (TC50)
+      erroriValidazione.value = body.errors
+    } else {
+      // Errore generico (es. 401, 403, 500)
+      erroriValidazione.value = [body?.message || 'Si è verificato un errore. Riprova.']
     }
   } catch (err) {
     console.error(err)
-    alert('Errore di rete')
+    erroriValidazione.value = ['Errore di rete. Assicurati che il backend sia avviato.']
   }
 }
 </script>
-
-<style scoped>
-/* Styling minimo: Tailwind gestisce la maggior parte */
-</style>

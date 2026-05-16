@@ -32,7 +32,7 @@
             {{ apt.indirizzo?.via || 'Indirizzo non disponibile' }}
           </h3>
           <p class="mt-1 text-sm text-zinc-500">
-            {{ apt.indirizzo?.citta || ' ' }}
+            {{ apt.indirizzo?.città || ' ' }}
           </p>
         </div>
 

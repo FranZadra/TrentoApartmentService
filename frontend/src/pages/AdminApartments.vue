@@ -62,7 +62,7 @@ const showForm = ref(false)
 const selectedId = ref(null)
 const formInitial = ref(null)
 
-const API_BASE = import.meta.env.VITE_API_BASE || '/api'
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
 watch([showDetails, showForm], ([detailsOpen, formOpen]) => {
   document.body.style.overflow = detailsOpen || formOpen ? 'hidden' : ''
@@ -142,12 +142,12 @@ function closeForm() {
 
 function onSaved() {
   closeForm()
-  loadAllApartments()
+  loadApartments()
 }
 
 function reload() {
   closeDetails()
-  loadAllApartments()
+  loadApartments()
 }
 
 // Ascolta evento globale emesso dal componente dettagli per aprire il form
@@ -160,7 +160,8 @@ function onGlobalEdit(e) {
 }
 
 onMounted(() => {
-  loadAllApartments()
+  // Carica solo gli appartamenti dell'admin loggato (filtrati per userId)
+  loadApartments()
   window.addEventListener('admin:editApartment', onGlobalEdit)
 })
 

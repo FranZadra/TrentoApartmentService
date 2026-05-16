@@ -17,7 +17,7 @@
 
       <div v-else>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div class="rounded-2xl bg-zinc-50 p-4"><span class="block text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Città</span><span class="mt-1 block text-sm font-semibold text-zinc-900">{{ apt.indirizzo?.citta || '-' }}</span></div>
+          <div class="rounded-2xl bg-zinc-50 p-4"><span class="block text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Città</span><span class="mt-1 block text-sm font-semibold text-zinc-900">{{ apt.indirizzo?.città || '-' }}</span></div>
           <div class="rounded-2xl bg-zinc-50 p-4"><span class="block text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Via</span><span class="mt-1 block text-sm font-semibold text-zinc-900">{{ apt.indirizzo?.via || '-' }}</span></div>
           <div class="rounded-2xl bg-zinc-50 p-4"><span class="block text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">MQ totali</span><span class="mt-1 block text-sm font-semibold text-zinc-900">{{ apt.mqTot || '-' }}</span></div>
           <div class="rounded-2xl bg-zinc-50 p-4"><span class="block text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Stanze</span><span class="mt-1 block text-sm font-semibold text-zinc-900">{{ apt.numStanze || '-' }}</span></div>
@@ -53,7 +53,7 @@ const emits = defineEmits(['close', 'updated'])
 const apt = ref(null)
 const loading = ref(false)
 
-const API_BASE = import.meta.env.VITE_API_BASE || '/api'
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
 function getAuthHeaders() {
   const token = localStorage.getItem('token') || ''

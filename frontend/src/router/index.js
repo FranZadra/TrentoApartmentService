@@ -1,7 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../pages/HomeView.vue'
-// View per gestione amministratore
+
+// Pagina gestione appartamenti (caricata in lazy per non appesantire il bundle iniziale)
 const AdminApartments = () => import('../pages/AdminApartments.vue')
+
+// Guardia di navigazione: controlla che l'utente abbia un token JWT in localStorage.
+// Se non ce l'ha, lo reindirizza alla pagina di login (TC51).
+function richiedeAutenticazione(_to, _from, next) {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    next({ name: 'signin' })
+  } else {
+    next()
+  }
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -9,30 +21,26 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: AdminApartments,
+      component: HomeView,
     },
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../pages/AboutView.vue'),
-    },
-    {
+      // Pagina gestione immobili: accessibile solo agli amministratori autenticati
       path: '/admin/appartamenti',
       name: 'admin-appartamenti',
       component: AdminApartments,
+      beforeEnter: richiedeAutenticazione,
     },
     {
-      path: '/annunci',
-      name: 'annunci',
-      component: AdminApartments,
-    },
-    {
+      // Pagina di login: da implementare (placeholder per ora)
       path: '/signin',
       name: 'signin',
-      component: AdminApartments,
+      component: HomeView,
+    },
+    {
+      // Placeholder per la route annunci (implementata in altri branch)
+      path: '/annunci',
+      name: 'annunci',
+      component: HomeView,
     },
   ],
 })
