@@ -1,14 +1,15 @@
 FORMAT: 1A
-HOST: https://trento-apartment-service.onrender.com
+HOST: http://localhost:3000
 
 # Trento Apartment Service API
 
-API REST per la gestione degli appartamenti a Trento.
-Versione corrente: v1
+Documentazione dell'API per la ricerca e visualizzazione di annunci di appartamenti e camere a Trento.
 
----
+## Annunci Collection [/api/v1/annunci]
 
-# Group Utenti
+### List All Active Announcements [GET]
+
+Ritorna tutti gli annunci con stato "Attivo". Usato dal frontend sia per la lista che per la mappa interattiva.
 
 Endpoint relativi alla gestione degli account utente.
 
@@ -21,7 +22,10 @@ Crea un nuovo account utente nel sistema.
 La password viene salvata nel database esclusivamente come hash bcrypt.
 La risposta non include mai la password (né in chiaro né hashata).
 
-+ Request (application/json)
++ Parameters
+    + id (string, required) - L'ID dell'annuncio
+
++ Response 200 (application/json)
 
     + Attributes
         + nome (string, required) - Nome dell'utente
@@ -83,3 +87,106 @@ La risposta non include mai la password (né in chiaro né hashata).
             {
                 "messaggio": "email già in uso"
             }
+        {
+            "success": true,
+            "data": {
+                "_id": "annuncio_1",
+                "stato": "Attivo",
+                "descrizione": "Appartamento in centro, completamente ristrutturato",
+                "dataPubbl": "2026-03-01",
+                "appartamento": {
+                    "_id": "apt_1",
+                    "indirizzo": {
+                        "via": "Via Roma",
+                        "numero": 10,
+                        "città": "Trento",
+                        "CAP": "38100",
+                        "Stato": "IT"
+                    },
+                    "mqTot": 90,
+                    "numStanze": 3,
+                    "numBagni": 2,
+                    "terrazzo": true,
+                    "classeEnergetica": "B",
+                    "camere": [
+                        {
+                            "prezzo": 350,
+                            "tipo": "SINGOLA",
+                            "mq": 14,
+                            "numFinestre": 2,
+                            "disponibile": true
+                        }
+                    ]
+                }
+            }
+        }
+
++ Response 404 (application/json)
+
+        {
+            "success": false,
+            "message": "Annuncio non trovato"
+        }
+
+## Search Announcements with Filters [/api/v1/annunci/search/filter{?numStanze,numBagni,terrazzo,classeEnergetica,mqMin,mqMax,prezzoMin,prezzoMax,tipoCam}]
+
+### Search Filtered Announcements [GET]
+
+Ricerca annunci filtrando per proprietà dell'appartamento e delle camere.
+
++ Parameters
+    + numStanze (number, optional) - Numero esatto di stanze
+    + numBagni (number, optional) - Numero esatto di bagni
+    + terrazzo (boolean, optional) - Se l'appartamento ha terrazzo (true/false)
+    + classeEnergetica (string, optional) - Classe energetica (A4, A3, A2, A1, B, C, D, E, F, G)
+    + mqMin (number, optional) - Metri quadri minimi
+    + mqMax (number, optional) - Metri quadri massimi
+    + prezzoMin (number, optional) - Prezzo minimo della camera (€)
+    + prezzoMax (number, optional) - Prezzo massimo della camera (€)
+    + tipoCam (string, optional) - Tipo di camera (SINGOLA o DOPPIA)
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "count": 1,
+            "data": [
+                {
+                    "_id": "annuncio_1",
+                    "stato": "Attivo",
+                    "descrizione": "Appartamento in centro, completamente ristrutturato",
+                    "dataPubbl": "2026-03-01",
+                    "appartamento": {
+                        "_id": "apt_1",
+                        "indirizzo": {
+                            "via": "Via Roma",
+                            "numero": 10,
+                            "città": "Trento",
+                            "CAP": "38100",
+                            "Stato": "IT"
+                        },
+                        "mqTot": 90,
+                        "numStanze": 3,
+                        "numBagni": 2,
+                        "terrazzo": true,
+                        "classeEnergetica": "B",
+                        "camere": [
+                            {
+                                "prezzo": 350,
+                                "tipo": "SINGOLA",
+                                "mq": 14,
+                                "numFinestre": 2,
+                                "disponibile": true
+                            },
+                            {
+                                "prezzo": 500,
+                                "tipo": "DOPPIA",
+                                "mq": 20,
+                                "numFinestre": 1,
+                                "disponibile": true
+                            }
+                        ]
+                    }
+                }
+            ]
+        }

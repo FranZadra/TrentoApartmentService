@@ -1,5 +1,4 @@
 teoria
 node_modules
-
-# File con variabili d'ambiente - NON committare mai (contiene la stringa di connessione MongoDB)
 .env
+.DS_Store

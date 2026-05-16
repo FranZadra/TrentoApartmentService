@@ -8,6 +8,14 @@ const errorHandler = (err, req, res, next) => {
   console.error('Errore messaggio:', err.message);
   console.error('Errore stack:', err.stack);
 
+  // Errore di ID MongoDB non valido (es. /annunci/id-non-valido)
+  if (err.name === 'CastError') {
+    return res.status(400).json({
+      success: false,
+      message: 'ID non valido',
+    });
+  }
+
   // Errore di validazione Mongoose (es. campo required mancante)
   if (err.name === 'ValidationError') {
     const messages = Object.values(err.errors).map((e) => e.message);
