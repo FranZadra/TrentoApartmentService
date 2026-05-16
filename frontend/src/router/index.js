@@ -5,7 +5,8 @@ import HomePage from '@/pages/HomePage.vue'
 import AnnunciPage from '@/pages/AnnunciPage.vue'
 import MansioniPage from '@/pages/MansioniPage.vue'
 import GuastiPage from '@/pages/GuastiPage.vue'
-import SignInPage from '@/pages/SignInPage.vue'
+import PaginaAccesso from '../pages/paginaAccesso.vue'
+import PaginaProfilo from '../pages/paginaProfilo.vue'
 
 // AnnuncioDetail caricato in lazy load (pagina pesante con mappa e galleria)
 const AnnuncioDetail = () => import('@/pages/AnnuncioDetail.vue')
@@ -38,11 +39,19 @@ const routes = [
     name: 'guasti',
     component: GuastiPage,
   },
-  {
-    path: '/signin',
-    name: 'signin',
-    component: SignInPage,
-  },
+	{
+		path: '/accesso',
+		name: 'accesso',
+		component: PaginaAccesso,
+		alias: ['/registrazione'],
+		meta: { title: 'TAS - Accesso' },
+	},
+	{
+		path: '/profilo',
+		name: 'profilo',
+		component: PaginaProfilo,
+		meta: { title: 'TAS - Profilo' },
+	}
 ]
 
 const router = createRouter({

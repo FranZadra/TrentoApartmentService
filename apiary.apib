@@ -11,63 +11,82 @@ Documentazione dell'API per la ricerca e visualizzazione di annunci di appartame
 
 Ritorna tutti gli annunci con stato "Attivo". Usato dal frontend sia per la lista che per la mappa interattiva.
 
-+ Response 200 (application/json)
+Endpoint relativi alla gestione degli account utente.
 
-        {
-            "success": true,
-            "count": 2,
-            "data": [
-                {
-                    "_id": "annuncio_1",
-                    "stato": "Attivo",
-                    "descrizione": "Appartamento in centro, completamente ristrutturato",
-                    "dataPubbl": "2026-03-01",
-                    "appartamento": {
-                        "_id": "apt_1",
-                        "indirizzo": {
-                            "via": "Via Roma",
-                            "numero": 10,
-                            "città": "Trento",
-                            "CAP": "38100",
-                            "Stato": "IT"
-                        },
-                        "mqTot": 90,
-                        "numStanze": 3,
-                        "numBagni": 2,
-                        "terrazzo": true,
-                        "classeEnergetica": "B",
-                        "camere": [
-                            {
-                                "prezzo": 350,
-                                "tipo": "SINGOLA",
-                                "mq": 14,
-                                "numFinestre": 2,
-                                "disponibile": true
-                            },
-                            {
-                                "prezzo": 500,
-                                "tipo": "DOPPIA",
-                                "mq": 20,
-                                "numFinestre": 1,
-                                "disponibile": true
-                            }
-                        ]
-                    }
-                }
-            ]
-        }
+## Registrazione [/api/v1/users/register]
 
-## Announcement Detail [/api/v1/annunci/{id}]
+### Registra un nuovo utente [POST]
 
-### Get Announcement by ID [GET]
+Crea un nuovo account utente nel sistema.
 
-Ritorna il dettaglio di un singolo annuncio. Usato quando l'utente clicca su un marker della mappa o su una card della lista.
+La password viene salvata nel database esclusivamente come hash bcrypt.
+La risposta non include mai la password (né in chiaro né hashata).
 
 + Parameters
     + id (string, required) - L'ID dell'annuncio
 
 + Response 200 (application/json)
 
+    + Attributes
+        + nome (string, required) - Nome dell'utente
+        + email (string, required) - Indirizzo email valido e univoco
+        + password (string, required) - Password scelta dall'utente
+        + ruolo (string, optional) - `inquilino` oppure `proprietario` (default: `inquilino`)
+
+    + Body
+
+            {
+                "nome": "Mario",
+                "email": "mario.rossi@example.com",
+                "password": "Password123",
+                "ruolo": "inquilino"
+            }
+
++ Response 201 (application/json)
+
+    Utente creato con successo.
+
+    + Body
+
+            {
+                "messaggio": "Utente registrato con successo",
+                "utente": {
+                    "id": "665f1a2b3c4d5e6f7a8b9c0d",
+                    "nome": "Mario",
+                    "email": "mario.rossi@example.com",
+                    "ruolo": "inquilino"
+                }
+            }
+
++ Response 400 (application/json)
+
+    Campo obbligatorio mancante o email con formato non valido.
+
+    + Body
+
+            {
+                "messaggio": "campo obbligatorio mancante"
+            }
+
++ Response 400 (application/json)
+
+    Formato email non valido (es. "user/gmail.com").
+
+    + Body
+
+            {
+                "messaggio": "email non valida"
+            }
+
++ Response 409 (application/json)
+
+    Esiste già un account con questa email.
+
+    + Body
+
+            {
+                "messaggio": "email già in uso"
+            }
         {
             "success": true,
             "data": {
