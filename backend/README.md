@@ -12,6 +12,7 @@ Backend REST API del progetto **Trento Apartment Service**, sviluppato con Node.
 | Express | ^5.2.1 | Framework HTTP |
 | Mongoose | ^9.6.2 | ODM per MongoDB |
 | bcrypt | ^6.0.0 | Hash delle password |
+| jsonwebtoken | ^9.x | Creazione token JWT |
 | dotenv | ^17.4.2 | Gestione variabili d'ambiente |
 
 ---
@@ -38,6 +39,8 @@ Apri `.env` e sostituisci i valori:
 ```
 MONGODB_URI=mongodb+srv://<utente>:<password>@<cluster>.mongodb.net/tas
 PORT=3000
+JWT_SECRET=<chiave_lunga_e_sicura>
+JWT_EXPIRES_IN=7d
 ```
 
 > Il file `.env` non va mai committato — è già incluso nel `.gitignore`.
@@ -115,6 +118,7 @@ Content-Type: application/json
 ```json
 {
   "messaggio": "Utente registrato con successo",
+  "token": "<jwt>",
   "utente": {
     "id": "665f1a2b3c4d5e6f7a8b9c0d",
     "nome": "Mario",
