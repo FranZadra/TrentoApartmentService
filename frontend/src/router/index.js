@@ -10,7 +10,18 @@ import PaginaProfilo from '../pages/paginaProfilo.vue'
 
 // AnnuncioDetail caricato in lazy load (pagina pesante con mappa e galleria)
 const AnnuncioDetail = () => import('@/pages/AnnuncioDetail.vue')
+const AdminApartments = () => import('../pages/AdminApartments.vue')
 
+// Guardia di navigazione: controlla che l'utente abbia un token JWT in localStorage.
+// Se non ce l'ha, lo reindirizza alla pagina di login (TC51).
+function richiedeAutenticazione(_to, _from, next) {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    next({ name: 'accesso' })
+  } else {
+    next()
+  }
+}
 const routes = [
   {
     path: '/',
@@ -22,6 +33,13 @@ const routes = [
     path: '/annunci',
     name: 'annunci',
     component: AnnunciPage,
+  },   
+  {
+      // Pagina gestione immobili: accessibile solo agli amministratori autenticati
+      path: '/admin/appartamenti',
+      name: 'admin-appartamenti',
+      component: AdminApartments,
+      beforeEnter: richiedeAutenticazione,
   },
   {
     // Dettaglio singolo annuncio — :id è il MongoDB ObjectId (US9, TC30-33)
