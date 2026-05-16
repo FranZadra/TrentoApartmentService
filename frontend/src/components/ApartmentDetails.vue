@@ -15,6 +15,8 @@
 
       <div v-if="loading" class="text-gray-600">Caricamento...</div>
 
+      <div v-else-if="!apt" class="text-sm text-red-600">Impossibile caricare i dati dell'appartamento.</div>
+
       <div v-else>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div class="rounded-2xl bg-zinc-50 p-4"><span class="block text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Città</span><span class="mt-1 block text-sm font-semibold text-zinc-900">{{ apt.indirizzo?.città || '-' }}</span></div>

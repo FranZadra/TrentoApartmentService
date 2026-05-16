@@ -151,7 +151,7 @@ const defaultForm = () => ({
   terrazzo: false,
   lavatrice: false,
   classeEnergetica: '',
-  amministratoreId: localStorage.getItem('userId') || '',
+  amministratoreId: getIdDalToken() || '',
 })
 
 const form = reactive(defaultForm())
@@ -172,7 +172,7 @@ watch(() => props.initial, (v) => {
       terrazzo: !!v.terrazzo,
       lavatrice: !!v.lavatrice,
       classeEnergetica: v.classeEnergetica || '',
-      amministratoreId: v.amministratoreId || localStorage.getItem('userId') || '',
+      amministratoreId: v.amministratoreId || getIdDalToken() || '',
     })
   } else {
     Object.assign(form, defaultForm())
@@ -186,6 +186,19 @@ function getAuthHeaders() {
   return token
     ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
     : { 'Content-Type': 'application/json' }
+}
+
+// Estrae l'ID amministratore dal payload del token JWT.
+// Usato per impostare amministratoreId al momento della creazione dell'appartamento.
+function getIdDalToken() {
+  const token = localStorage.getItem('token')
+  if (!token) return ''
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.id || payload._id || ''
+  } catch {
+    return ''
+  }
 }
 
 // Aggiunge una riga vuota alla lista foto (TC49)

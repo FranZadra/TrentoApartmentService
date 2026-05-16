@@ -41,12 +41,13 @@
       </div>
     </div>
 
-    <!-- Modale Dettagli -->
-    <ApartmentDetails v-if="showDetails" :apartmentId="selectedId" @close="closeDetails" @updated="reload" />
-
-    <!-- Form creazione/modifica -->
-    <ApartmentForm v-if="showForm" :initial="formInitial" @saved="onSaved" @close="closeForm" />
   </div>
+
+  <!-- Modale Dettagli -->
+  <ApartmentDetails v-if="showDetails" :apartmentId="selectedId" @close="closeDetails" @updated="reload" />
+
+  <!-- Form creazione/modifica -->
+  <ApartmentForm v-if="showForm" :initial="formInitial" @saved="onSaved" @close="closeForm" />
 </template>
 
 <script setup>
@@ -73,10 +74,23 @@ function getAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
 }
 
+// Estrae l'ID amministratore dal payload del token JWT salvato in localStorage.
+// Il payload JWT è la seconda parte del token (base64url), che contiene { id, iat, exp }.
+function getIdDalToken() {
+  const token = localStorage.getItem('token')
+  if (!token) return null
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.id || payload._id || null
+  } catch {
+    return null
+  }
+}
+
 async function loadApartments() {
   loading.value = true
   try {
-    const amministratoreId = localStorage.getItem('userId')
+    const amministratoreId = getIdDalToken()
     if (!amministratoreId) {
       apartments.value = []
       loading.value = false

@@ -44,8 +44,15 @@ async function verificaProprietario(req, res, next) {
       });
     }
 
+    // Verifica che l'appartamento abbia un amministratore assegnato
+    if (!appartamento.amministratoreId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Appartamento senza amministratore assegnato — operazione non consentita.',
+      });
+    }
+
     // Verifica che l'amministratore dell'appartamento sia l'utente loggato
-    // Confronta le stringhe in caso di ObjectId
     const amministratoreStr = appartamento.amministratoreId.toString();
     const utenteStr = utenteId.toString();
 
