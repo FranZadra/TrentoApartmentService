@@ -162,7 +162,8 @@ async function handleSubmit() {
 	try {
 		// Invia la richiesta al backend (concatena nome + cognome se necessario)
 		const userData = {
-			nome: form.nome.trim() + ' ' + form.cognome.trim(),
+			nome: form.nome.trim(),
+            cognome: form.cognome.trim(),
 			email: form.email.trim(),
 			password: form.password,
 		}

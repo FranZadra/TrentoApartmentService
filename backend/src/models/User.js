@@ -37,8 +37,8 @@ const utenteSchema = new mongoose.Schema(
     // 'proprietario' = pubblica annunci
     ruolo: {
       type: String,
-      enum: ['utente base', 'inquilino', 'proprietario'],
-      default: 'inquilino',
+      enum: ['utente base', 'utente verificato', 'inquilino', 'amministratore', 'dipendente comune'],
+      default: 'utente base',
     },
   },
   {

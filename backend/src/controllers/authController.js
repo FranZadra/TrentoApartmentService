@@ -14,7 +14,7 @@ const BCRYPT_SALT_ROUNDS = 10;
  */
 const register = async (req, res) => {
   // Estrae i campi dal corpo della richiesta
-  const { nome, email, password, ruolo } = req.body;
+  const { nome, cognome, email, password, ruolo } = req.body;
 
   // --- Validazione 1: campi obbligatori ---
   // Controlla che nome, email e password siano presenti e non stringhe vuote
@@ -48,10 +48,10 @@ const register = async (req, res) => {
   // --- Salvataggio nel DB ---
   // Crea il documento utente con la password già hashata
   const nuovoUtente = new User({
-    nome: nome.trim(),
+    nome: nome.trim() + ' ' + cognome.trim(),
     email: email.toLowerCase().trim(),
     password: passwordHashata,
-    ruolo: 'utente base',
+    ruolo: ruolo || 'utente base',
   });
 
   await nuovoUtente.save();
