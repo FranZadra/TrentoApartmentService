@@ -25,9 +25,14 @@ const user = computed(() => auth.user)
 const profileImage = computed(() => {
     // prova a usare user.foto, user.fotoProfilo o fallback
     const u = user.value
-    if (!u) return 'https://via.placeholder.com/80'
-    return u.foto || u.fotoProfilo || u.avatarUrl || 'https://via.placeholder.com/80'
-})
+    if (!u) {
+        const text = encodeURIComponent('--')
+        return `https://placehold.co/400?text=${text}&font=poppins`
+    }
+    const initials = ((u.nome?.trim()[0] || '') + (u.cognome?.trim()[0] || '')).toUpperCase() || '--'
+    const text = encodeURIComponent(initials)
+    return u.foto || u.fotoProfilo || u.avatarUrl || `https://placehold.co/400?text=${text}&font=poppins`
+    })
 </script>
 
 <style scoped>

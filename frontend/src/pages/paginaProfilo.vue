@@ -15,9 +15,13 @@
                         </RouterLink>
                     </div>
                     
+                    <!-- Messaggi -->
+                    <div v-if="errorMessage" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        {{ errorMessage }}
+                    </div>
                     <div v-if="successMessage" class="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-				        {{ successMessage }}
-			        </div>          
+                        {{ successMessage }}
+                    </div>         
                     
                     <div class="logout-section">
                         <button class="btn-logout" @click="logout">
@@ -35,13 +39,24 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import CardProfilo from '@/components/cardProfilo.vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { ref } from 'vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 
+const errorMessage = ref('')
+const successMessage = ref('')
+
 function logout() {
-    auth.logout()
-    router.push('/')
+    try {
+        auth.logout()
+        successMessage.value = 'Logout effettuato con successo'
+        setTimeout(() => {
+            router.push('/')
+        }, 1000)
+    } catch (error) {
+        errorMessage.value = 'Errore durante il logout'
+    }
 }
 </script>
 
