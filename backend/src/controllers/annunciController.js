@@ -9,21 +9,52 @@
 const Annuncio = require('../models/Annuncio');
 const Appartamento = require('../models/Appartamento');
 
+const normalizeAnnuncioAppartamento = (annuncio) => {
+  const obj = annuncio.toObject ? annuncio.toObject() : { ...annuncio };
+
+  const appartamentoPopolato =
+    obj.appartamento && typeof obj.appartamento === 'object' && !Array.isArray(obj.appartamento)
+      ? obj.appartamento
+      : null;
+
+  const appartamentoIdPopolato =
+    obj.appartamentoId && typeof obj.appartamentoId === 'object' && !Array.isArray(obj.appartamentoId)
+      ? obj.appartamentoId
+      : null;
+
+  const appartamentoCompleto = appartamentoPopolato || appartamentoIdPopolato;
+
+  if (appartamentoCompleto) {
+    if (appartamentoCompleto.perStudenti !== undefined && appartamentoCompleto.perStudenti === undefined) {
+      appartamentoCompleto.perStudenti = appartamentoCompleto.perStudenti;
+    }
+
+    obj.appartamento = appartamentoCompleto;
+    obj.appartamentoId = appartamentoCompleto._id || obj.appartamentoId || obj.appartamento;
+  } else {
+    obj.appartamento = obj.appartamento || obj.appartamentoId || null;
+  }
+
+  return obj;
+};
+
 // GET /api/v1/annunci
 // Ritorna tutti gli annunci con stato "attivo", inclusi i dati dell'appartamento.
 // Usato dal frontend sia per la lista che per la mappa interattiva.
 const getAnnunciAttivi = async (req, res, next) => {
   try {
     const annunci = await Annuncio
-      .find({ stato: 'Attivo' })         // Filtra solo gli annunci attivi
-      .populate('appartamento')          // Sostituisce l'ID con i dati completi
-      .sort({ dataPubbl: -1 });          // In ordine dal più recente al più vecchio
+      .find({ stato: 'Attivo' })
+      .populate('appartamento')
+      .populate('appartamentoId')
+      .sort({ dataPubbl: -1 });
 
-    // Risposta di successo
+    const annunciResponse = annunci.map(normalizeAnnuncioAppartamento);
+
     res.status(200).json({
       success: true,
-      count: annunci.length,             // Utile per il frontend
-      data: annunci,
+      count: annunci.length,
+      data: annunciResponse,
     });
   } catch (error) {
     console.error('Errore in getAnnunciAttivi:', error);
@@ -38,7 +69,8 @@ const getAnnuncioById = async (req, res, next) => {
   try {
     const annuncio = await Annuncio
       .findById(req.params.id)
-      .populate('appartamento');
+      .populate('appartamento')
+      .populate('appartamentoId');
 
     // Se l'annuncio non esiste, rispondiamo con 404
     if (!annuncio) {
@@ -50,7 +82,7 @@ const getAnnuncioById = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: annuncio,
+      data: normalizeAnnuncioAppartamento(annuncio),
     });
   } catch (error) {
     next(error);
@@ -117,14 +149,23 @@ const searchAnnunciWithFilters = async (req, res, next) => {
 
     // Passo 3: trova gli annunci attivi che referenziano quegli appartamenti
     const annunci = await Annuncio
-      .find({ stato: 'Attivo', appartamento: { $in: idAppartamenti } })
+      .find({
+        stato: 'Attivo',
+        $or: [
+          { appartamentoId: { $in: idAppartamenti } },
+          { appartamento: { $in: idAppartamenti } },
+        ],
+      })
       .populate('appartamento')
+      .populate('appartamentoId')
       .sort({ dataPubbl: -1 });
+
+    const annunciResponse = annunci.map(normalizeAnnuncioAppartamento);
 
     res.status(200).json({
       success: true,
       count: annunci.length,
-      data: annunci,
+      data: annunciResponse,
     });
   } catch (error) {
     next(error);

@@ -58,7 +58,7 @@ const loading = ref(false)
 const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('token') || ''
+  const token = localStorage.getItem('tas_token') || localStorage.getItem('token') || ''
   return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
 }
 

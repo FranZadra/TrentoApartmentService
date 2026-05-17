@@ -182,7 +182,7 @@ watch(() => props.initial, (v) => {
 const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('token') || ''
+  const token = localStorage.getItem('tas_token') || localStorage.getItem('token') || ''
   return token
     ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
     : { 'Content-Type': 'application/json' }
@@ -191,12 +191,13 @@ function getAuthHeaders() {
 // Estrae l'ID amministratore dal payload del token JWT.
 // Usato per impostare amministratoreId al momento della creazione dell'appartamento.
 function getIdDalToken() {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('tas_token') || localStorage.getItem('token')
   if (!token) return ''
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.id || payload._id || ''
-  } catch {
+    return payload.id || payload._id || payload.sub
+  } catch (err) {
+    console.error('Errore durante la decodifica del token:', err)
     return ''
   }
 }
@@ -216,7 +217,12 @@ async function onSubmit() {
   erroriValidazione.value = []
 
   // Rimuove le URL foto vuote prima di inviare
-  const payload = { ...form, foto: form.foto.filter(url => url.trim() !== '') }
+  const amministratoreId = getIdDalToken()
+  const payload = {
+    ...form,
+    foto: form.foto.filter(url => url.trim() !== ''),
+    ...(amministratoreId ? { amministratoreId } : {}),
+  }
 
   try {
     let res

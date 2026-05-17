@@ -25,6 +25,14 @@ const Annuncio = require('../models/Annuncio');
 async function creaAppartamento(req, res) {
   try {
     const data = req.body;
+    const amministratoreId = data.amministratoreId || req.user?.id || req.user?._id || req.user?.sub;
+
+    if (!amministratoreId) {
+      return res.status(400).json({
+        success: false,
+        message: 'amministratoreId è obbligatorio',
+      });
+    }
 
     const appartamento = new Appartamento({
       indirizzo: data.indirizzo,
@@ -36,7 +44,7 @@ async function creaAppartamento(req, res) {
       terrazzo: data.terrazzo || false,
       lavatrice: data.lavatrice || false,
       classeEnergetica: data.classeEnergetica,
-      amministratoreId: data.amministratoreId,
+      amministratoreId,
       posizione: data.posizione,
     });
 
@@ -179,7 +187,9 @@ async function eliminaAppartamento(req, res) {
     const { id } = req.params;
 
     // Verifica se ci sono annunci associati (opzionale, a seconda della policy)
-    const annunciAssociati = await Annuncio.countDocuments({ appartamentoId: id });
+    const annunciAssociati = await Annuncio.countDocuments({
+      $or: [{ appartamento: id }, { appartamentoId: id }],
+    });
 
     const appartamento = await Appartamento.findByIdAndDelete(id);
 
@@ -206,13 +216,21 @@ async function eliminaAppartamento(req, res) {
 }
 
 /**
- * Recupera tutti gli appartamenti gestiti dall'amministratore (proprietario) specificato.
- * Params: amministratoreId
+ * Recupera tutti gli appartamenti gestiti dall'amministratore autenticato.
+ * L'ID viene estratto dal JWT già verificato dal middleware auth.
  * Query: page, limit (come getAllApartments)
  */
 async function getAppartamentiAdmin(req, res) {
   try {
-    const { amministratoreId } = req.params;
+    const amministratoreId = req.user?.id || req.user?._id || req.user?.sub; // A seconda di come è strutturato il token JWT, potrebbe essere in req.user.id o req.user.sub
+
+    if (!amministratoreId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Utente non autenticato',
+      });
+    }
+
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
