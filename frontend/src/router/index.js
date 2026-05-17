@@ -24,18 +24,19 @@ function richiedeAutenticazione(_to, _from, next) {
 }
 const routes = [
   {
+    // Pagina iniziale con presentazione del servizio.
     path: '/',
     name: 'home',
     component: HomePage,
   },
   {
-    // Lista degli annunci attivi + mappa interattiva (US9)
+    // Lista degli annunci attivi + mappa interattiva (US9).
     path: '/annunci',
     name: 'annunci',
     component: AnnunciPage,
   },   
   {
-      // Pagina gestione immobili: accessibile solo agli amministratori autenticati
+      // Pagina gestione immobili: accessibile solo agli amministratori autenticati.
       path: '/admin/appartamenti',
       name: 'admin-appartamenti',
       component: AdminApartments,
@@ -48,6 +49,7 @@ const routes = [
     component: AnnuncioDetail,
   },
   {
+    // Pagine di servizio mostrate in modo coerente con il resto del sito.
     path: '/mansioni',
     name: 'mansioni',
     component: MansioniPage,
@@ -58,6 +60,7 @@ const routes = [
     component: GuastiPage,
   },
 	{
+    // Pagina di accesso e registrazione, con alias per il vecchio percorso.
 		path: '/accesso',
 		name: 'accesso',
 		component: PaginaAccesso,
@@ -65,6 +68,7 @@ const routes = [
 		meta: { title: 'TAS - Accesso' },
 	},
 	{
+    // Profilo utente con informazioni salvate lato client.
 		path: '/profilo',
 		name: 'profilo',
 		component: PaginaProfilo,

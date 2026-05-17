@@ -86,7 +86,7 @@ import castello from '../assets/images/TrentoCastello.jpg'
 import logoComune from '../assets/images/logoComuneW.png'
 import logoUni from '../assets/images/logoUnitnW.png'
 
-// Controlla se arriviamo da un link esterno con ?view=register
+// Se l'URL contiene ?view=register, la pagina parte già sulla scheda di registrazione.
 import { useRoute } from 'vue-router'
 const route = useRoute()
 const view = ref(route.query.view === 'register' ? 'register' : 'login')

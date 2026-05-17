@@ -1,5 +1,6 @@
 <template>
   <AppLayout>
+    <!-- La home mostra il banner iniziale e le funzioni principali della piattaforma. -->
     <HeroSection />
     <FeatureSection />
   </AppLayout>
