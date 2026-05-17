@@ -10,9 +10,31 @@ const Annuncio = require('../models/Annuncio');
 const Appartamento = require('../models/Appartamento');
 
 const normalizeAnnuncioAppartamento = (annuncio) => {
-  const obj = annuncio.toObject();
-  obj.appartamento = obj.appartamento || obj.appartamentoId || null;
-  obj.appartamentoId = obj.appartamento;
+  const obj = annuncio.toObject ? annuncio.toObject() : { ...annuncio };
+
+  const appartamentoPopolato =
+    obj.appartamento && typeof obj.appartamento === 'object' && !Array.isArray(obj.appartamento)
+      ? obj.appartamento
+      : null;
+
+  const appartamentoIdPopolato =
+    obj.appartamentoId && typeof obj.appartamentoId === 'object' && !Array.isArray(obj.appartamentoId)
+      ? obj.appartamentoId
+      : null;
+
+  const appartamentoCompleto = appartamentoPopolato || appartamentoIdPopolato;
+
+  if (appartamentoCompleto) {
+    if (appartamentoCompleto.perStudenti !== undefined && appartamentoCompleto.perStudenti === undefined) {
+      appartamentoCompleto.perStudenti = appartamentoCompleto.perStudenti;
+    }
+
+    obj.appartamento = appartamentoCompleto;
+    obj.appartamentoId = appartamentoCompleto._id || obj.appartamentoId || obj.appartamento;
+  } else {
+    obj.appartamento = obj.appartamento || obj.appartamentoId || null;
+  }
+
   return obj;
 };
 
@@ -22,17 +44,16 @@ const normalizeAnnuncioAppartamento = (annuncio) => {
 const getAnnunciAttivi = async (req, res, next) => {
   try {
     const annunci = await Annuncio
-      .find({ stato: 'Attivo' })         // Filtra solo gli annunci attivi
-      .populate('appartamento')          // Sostituisce l'ID con i dati completi
+      .find({ stato: 'Attivo' })
+      .populate('appartamento')
       .populate('appartamentoId')
-      .sort({ dataPubbl: -1 });          // In ordine dal più recente al più vecchio
+      .sort({ dataPubbl: -1 });
 
     const annunciResponse = annunci.map(normalizeAnnuncioAppartamento);
 
-    // Risposta di successo
     res.status(200).json({
       success: true,
-      count: annunci.length,             // Utile per il frontend
+      count: annunci.length,
       data: annunciResponse,
     });
   } catch (error) {
@@ -131,8 +152,8 @@ const searchAnnunciWithFilters = async (req, res, next) => {
       .find({
         stato: 'Attivo',
         $or: [
-          { appartamento: { $in: idAppartamenti } },
           { appartamentoId: { $in: idAppartamenti } },
+          { appartamento: { $in: idAppartamenti } },
         ],
       })
       .populate('appartamento')

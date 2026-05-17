@@ -25,7 +25,8 @@ async function verificaProprietario(req, res, next) {
     }
 
     // Estrai l'ID utente dal token (il middleware auth.js ha già caricato req.user)
-    const utenteId = req.user.id || req.user._id;
+    // Il JWT contiene l'ID come 'sub' (standard), ma fallback anche a 'id' e '_id'
+    const utenteId = req.user.id || req.user._id || req.user.sub;
 
     if (!utenteId) {
       return res.status(401).json({

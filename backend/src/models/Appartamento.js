@@ -1,7 +1,7 @@
 // src/models/Appartamento.js — Modello Appartamento
 //
 // Attributi dall'UML delle classi:
-//   indirizzo : Address, studentOnly : Boolean, numStanze : Integer,
+//   indirizzo : Address, perStudenti : Boolean, numStanze : Integer,
 //   numBagni : Integer, foto : Image[0..*], terrazzo : Boolean,
 //   lavatrice : Boolean, classeEnergetica : String
 //
