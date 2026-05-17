@@ -1,4 +1,5 @@
 <template>
+  <!-- Pagina segnaposto per ticket, guasti e interventi di manutenzione. -->
   <PlaceholderPage
     eyebrow="Assistenza e manutenzione"
     title="Gestisci guasti e interventi"

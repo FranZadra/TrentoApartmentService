@@ -1,6 +1,8 @@
 import { writable } from 'svelte/store';
 import { defineStore } from 'pinia';
 
+// Stato utente condiviso usato da più parti dell'interfaccia.
+// Mantiene i dati essenziali del profilo in una forma semplice da leggere e aggiornare.
 function createUserStore() {
     const { subscribe, set, update } = writable({
         nome: '',
