@@ -21,6 +21,14 @@
 				<router-link to="/annunci" class="text-white/90 hover:text-white">
 					Ricerca appartamento
 				</router-link>
+				<!-- Link visibile solo agli amministratori -->
+				<router-link
+					v-if="isAdmin"
+					to="/admin/appartamenti"
+					class="text-white/90 hover:text-white"
+				>
+					I tuoi appartamenti
+				</router-link>
 				<router-link
 					:to="isLoggedIn ? '/profilo' : '/accesso'"
 					class="rounded-full border border-white px-4 py-2 text-white transition-colors hover:bg-white hover:text-[#9a1528]"
@@ -39,4 +47,7 @@ import { ref, computed } from 'vue'
 
 const auth = useAuthStore()
 const isLoggedIn = computed(() => !!auth.token)
+const isAdmin = computed(() => {
+	return !!(auth.user && auth.user.ruolo && auth.user.ruolo === 'amministratore')
+})
 </script>
