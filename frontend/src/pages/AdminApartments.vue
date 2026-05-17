@@ -26,12 +26,13 @@
       <!-- Griglia appartamenti -->
       <div v-if="loading" class="text-gray-600">Caricamento...</div>
       <div v-else-if="apartments.length === 0" class="text-gray-600">Nessun appartamento trovato. Clicca su "Nuovo appartamento" per aggiungerne uno!</div>
-      <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-else class="flex flex-col gap-6">
         <ApartmentCard
           v-for="apt in apartments"
           :key="apt._id"
-          :apartment="apt"
-          @view-details="viewDetails(apt._id)"
+          :apt="apt"
+          @view="viewDetails(apt._id)"
+          @edit="editApartment(apt)"
         />
       </div>
     </div>
