@@ -1,0 +1,294 @@
+<template>
+  <AppLayout>
+    <div class="mx-auto max-w-[1200px] px-6 py-12 lg:px-8">
+
+      <!-- Stato di caricamento -->
+      <div v-if="caricamento" class="flex items-center justify-center py-24">
+        <div class="h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-[#9a1528]"></div>
+      </div>
+
+      <!-- Errore (es. annuncio non trovato o ID non valido) -->
+      <div
+        v-else-if="errore"
+        class="rounded-2xl border border-red-200 bg-red-50 p-8 text-center text-red-700"
+      >
+        <p class="font-semibold text-lg">{{ errore }}</p>
+        <router-link
+          :to="{ name: 'annunci' }"
+          class="mt-4 inline-block rounded-full bg-[#9a1528] px-5 py-2 text-sm font-semibold text-white hover:bg-[#7f1020]"
+        >
+          ← Torna agli annunci
+        </router-link>
+      </div>
+
+      <!-- Contenuto del dettaglio annuncio (TC30) -->
+      <template v-else-if="annuncio">
+
+        <!-- Breadcrumb di navigazione -->
+        <nav class="mb-6 flex items-center gap-2 text-sm text-zinc-500">
+          <router-link :to="{ name: 'annunci' }" class="hover:text-[#9a1528]">Annunci</router-link>
+          <span>/</span>
+          <span class="text-zinc-900 font-medium">{{ indirizzoBreve }}</span>
+        </nav>
+
+        <!-- ──────────────────────────────────────────────────────── -->
+        <!-- GALLERIA FOTOGRAFICA (TC31 + TC33)                      -->
+        <!-- ──────────────────────────────────────────────────────── -->
+        <section class="mb-10">
+          <!-- Nessuna foto: mostra placeholder (TC33) -->
+          <div
+            v-if="!haFoto"
+            class="flex h-72 w-full flex-col items-center justify-center gap-3 rounded-2xl bg-zinc-100 text-zinc-400"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M3 9.75L12 3l9 6.75V21a.75.75 0 01-.75.75H15v-6H9v6H3.75A.75.75 0 013 21V9.75z" />
+            </svg>
+            <p class="text-sm font-medium">Nessuna foto disponibile per questo annuncio</p>
+          </div>
+
+          <!-- Galleria con scorrimento orizzontale (TC31) -->
+          <div v-else class="relative">
+            <!-- Immagine principale: mostra quella selezionata dall'indice -->
+            <div class="relative h-80 w-full overflow-hidden rounded-2xl bg-zinc-100 sm:h-96">
+              <img
+                :src="foto[fotoCorrente]"
+                :alt="`Foto ${fotoCorrente + 1} di ${indirizzoBreve}`"
+                class="h-full w-full object-cover"
+              />
+
+              <!-- Freccia sinistra (nascosta se è la prima foto) -->
+              <button
+                v-if="foto.length > 1 && fotoCorrente > 0"
+                @click="fotoCorrente--"
+                class="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/60"
+                aria-label="Foto precedente"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <!-- Freccia destra (nascosta se è l'ultima foto) -->
+              <button
+                v-if="foto.length > 1 && fotoCorrente < foto.length - 1"
+                @click="fotoCorrente++"
+                class="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white hover:bg-black/60"
+                aria-label="Foto successiva"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              <!-- Indicatore posizione: "2 / 5" -->
+              <span
+                v-if="foto.length > 1"
+                class="absolute bottom-3 right-4 rounded-full bg-black/50 px-3 py-1 text-xs text-white"
+              >
+                {{ fotoCorrente + 1 }} / {{ foto.length }}
+              </span>
+            </div>
+
+            <!-- Thumbnails cliccabili sotto la foto principale -->
+            <div v-if="foto.length > 1" class="mt-3 flex gap-2 overflow-x-auto pb-1">
+              <button
+                v-for="(url, i) in foto"
+                :key="i"
+                @click="fotoCorrente = i"
+                :class="[
+                  'h-16 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all',
+                  i === fotoCorrente ? 'border-[#9a1528]' : 'border-transparent opacity-60 hover:opacity-100',
+                ]"
+              >
+                <img :src="url" :alt="`Miniatura ${i + 1}`" class="h-full w-full object-cover" />
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ──────────────────────────────────────────────────────── -->
+        <!-- INFORMAZIONI PRINCIPALI (TC30)                          -->
+        <!-- ──────────────────────────────────────────────────────── -->
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+
+          <!-- Colonna sinistra: dettagli principali (occupa 2/3 su desktop) -->
+          <div class="lg:col-span-2 space-y-8">
+
+            <!-- Titolo e indirizzo completo -->
+            <div>
+              <h1 class="font-display text-3xl font-bold text-zinc-900">
+                {{ indirizzoBreve }}
+              </h1>
+              <p class="mt-1 text-sm text-zinc-500">
+                {{ indirizzoCompleto }}
+              </p>
+            </div>
+
+            <!-- Descrizione dell'annuncio -->
+            <div>
+              <h2 class="mb-2 font-display text-lg font-bold text-zinc-800">Descrizione</h2>
+              <p class="text-zinc-600 leading-relaxed whitespace-pre-line">
+                {{ annuncio.descrizione }}
+              </p>
+            </div>
+
+            <!-- Servizi e dotazioni -->
+            <div>
+              <h2 class="mb-3 font-display text-lg font-bold text-zinc-800">Dotazioni</h2>
+              <div class="flex flex-wrap gap-2">
+                <span class="chip-dettaglio">
+                  🛏 {{ annuncio.appartamento.numStanze }}
+                  {{ annuncio.appartamento.numStanze === 1 ? 'stanza' : 'stanze' }}
+                </span>
+                <span class="chip-dettaglio">
+                  🚿 {{ annuncio.appartamento.numBagni }}
+                  {{ annuncio.appartamento.numBagni === 1 ? 'bagno' : 'bagni' }}
+                </span>
+                <span v-if="annuncio.appartamento.terrazzo" class="chip-dettaglio">🌿 Terrazzo</span>
+                <span v-if="annuncio.appartamento.lavatrice" class="chip-dettaglio">🫧 Lavatrice</span>
+                <span v-if="annuncio.appartamento.studentOnly" class="chip-dettaglio bg-[#9a1528]/10 text-[#9a1528]">
+                  🎓 Solo studenti
+                </span>
+                <span
+                  v-if="annuncio.appartamento.classeEnergetica"
+                  class="chip-dettaglio bg-emerald-50 text-emerald-700"
+                >
+                  ⚡ Classe {{ annuncio.appartamento.classeEnergetica }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Colonna destra: scheda riepilogativa -->
+          <div>
+            <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#9a1528]">
+                Annuncio attivo
+              </p>
+              <p class="mt-3 text-sm text-zinc-500">
+                Pubblicato il
+                <span class="font-semibold text-zinc-800">{{ dataFormattata }}</span>
+              </p>
+              <hr class="my-4 border-zinc-100" />
+              <p class="text-sm text-zinc-600 leading-relaxed">
+                Per maggiori informazioni su questo appartamento, contatta il gestore della piattaforma TAS.
+              </p>
+              <router-link
+                :to="{ name: 'annunci' }"
+                class="mt-4 inline-block w-full rounded-full border border-zinc-300 px-4 py-2 text-center text-sm font-semibold text-zinc-700 hover:border-[#9a1528] hover:text-[#9a1528] transition-colors"
+              >
+                ← Tutti gli annunci
+              </router-link>
+            </div>
+          </div>
+        </div>
+
+        <!-- ──────────────────────────────────────────────────────── -->
+        <!-- MAPPA POSIZIONE APPARTAMENTO (TC32)                      -->
+        <!-- ──────────────────────────────────────────────────────── -->
+        <section
+          v-if="haCoordinate"
+          class="mt-12"
+        >
+          <h2 class="mb-4 font-display text-xl font-bold text-zinc-900">Posizione</h2>
+          <MappaDettaglio
+            :latitudine="annuncio.appartamento.posizione.latitudine"
+            :longitudine="annuncio.appartamento.posizione.longitudine"
+            :etichetta="indirizzoBreve"
+          />
+        </section>
+
+        <!-- Avviso se le coordinate non sono disponibili nel DB -->
+        <div
+          v-else
+          class="mt-12 rounded-2xl border border-zinc-100 bg-zinc-50 p-5 text-sm text-zinc-500"
+        >
+          Posizione sulla mappa non disponibile per questo annuncio.
+        </div>
+
+      </template>
+    </div>
+  </AppLayout>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import MappaDettaglio from '@/components/shared/MappaDettaglio.vue'
+import { annunciService } from '@/services/annunciService.js'
+
+const route = useRoute()
+const router = useRouter()
+
+// Stato della pagina
+const annuncio = ref(null)  // dati dell'annuncio con appartamento popolato
+const caricamento = ref(true)
+const errore = ref(null)
+const fotoCorrente = ref(0) // indice della foto mostrata nella galleria
+
+// Array di foto dell'appartamento (può essere vuoto → TC33)
+const foto = computed(() => annuncio.value?.appartamento?.foto ?? [])
+const haFoto = computed(() => foto.value.length > 0)
+
+// true se il DB contiene le coordinate geografiche (necessario per TC32)
+const haCoordinate = computed(() => {
+  const pos = annuncio.value?.appartamento?.posizione
+  return !!(pos?.latitudine && pos?.longitudine)
+})
+
+// "Via Manci 5, Trento" — usato nel titolo e nel breadcrumb
+const indirizzoBreve = computed(() => {
+  const a = annuncio.value?.appartamento?.indirizzo
+  if (!a) return ''
+  return `${a.via} ${a.numero}, ${a.città}`
+})
+
+// Indirizzo completo con CAP e stato — usato sotto il titolo
+const indirizzoCompleto = computed(() => {
+  const a = annuncio.value?.appartamento?.indirizzo
+  if (!a) return ''
+  return `${a.CAP} ${a.città} — ${a.Stato}`
+})
+
+// Data in formato leggibile: "1 mag 2026"
+const dataFormattata = computed(() => {
+  if (!annuncio.value?.dataPubbl) return ''
+  return new Date(annuncio.value.dataPubbl).toLocaleDateString('it-IT', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+})
+
+// Carica il dettaglio dell'annuncio dal backend usando l'ID nell'URL
+async function caricaDettaglio() {
+  caricamento.value = true
+  errore.value = null
+  try {
+    const risposta = await annunciService.getById(route.params.id)
+    annuncio.value = risposta.data.data
+  } catch (err) {
+    const status = err.response?.status
+    if (status === 404) {
+      errore.value = 'Annuncio non trovato. Potrebbe essere stato rimosso.'
+    } else if (status === 400) {
+      errore.value = 'ID annuncio non valido.'
+    } else {
+      errore.value = 'Errore nel caricamento. Assicurati che il backend sia avviato.'
+    }
+  } finally {
+    caricamento.value = false
+  }
+}
+
+onMounted(caricaDettaglio)
+</script>
+
+<style scoped>
+/* Chip usato nelle dotazioni della scheda dettaglio */
+.chip-dettaglio {
+  @apply rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700;
+}
+</style>

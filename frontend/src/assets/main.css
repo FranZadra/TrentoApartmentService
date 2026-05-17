@@ -1,0 +1,37 @@
+@import './base.css';
+@import "tailwindcss";
+
+/* Root layout wrapper */
+#app {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: #1f2937;
+}
+
+/* Link primary color from theme */
+a,
+.green {
+  text-decoration: none;
+  color: var(--color-text-primary);
+  transition: 0.2s ease-in-out;
+}
+
+@media (hover: hover) {
+  a:hover {
+    background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  }
+}
+
+@media (min-width: 1024px) {
+  body {
+    display: block;
+  }
+}

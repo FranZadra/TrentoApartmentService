@@ -1,0 +1,45 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+
+// Store Pinia per la gestione dell'autenticazione utente
+export const useAuthStore = defineStore('auth', () => {
+  // I dati vengono letti subito da localStorage per mantenere la sessione dopo il refresh.
+  const storedUser = localStorage.getItem('tas_user')
+  const user = ref(storedUser ? JSON.parse(storedUser) : null)
+  const token = ref(localStorage.getItem('tas_token') || null)
+
+  // true se l'utente ha un token valido in localStorage
+  const isAuthenticated = computed(() => !!token.value)
+
+  // Iniziali nome+cognome per avatar (es. "MG")
+  const initials = computed(() => {
+    if (!user.value) return ''
+    return `${user.value.nome?.[0] ?? ''}${user.value.cognome?.[0] ?? ''}`.toUpperCase()
+  })
+
+  function login(userData, authToken) {
+    // Salva utente e token sia nello stato reattivo che nel browser.
+    user.value = userData || null
+    token.value = authToken || null
+    if (authToken) localStorage.setItem('tas_token', authToken)
+    if (userData) {
+      try {
+        localStorage.setItem('tas_user', JSON.stringify(userData))
+        localStorage.setItem('tas_role', userData.ruolo)
+      } catch (e) {
+        console.warn('Could not persist user to localStorage', e)
+      }
+    }
+  }
+
+  function logout() {
+    // Pulisce tutto in una volta e riporta l'app allo stato iniziale.
+    user.value = null
+    token.value = null
+    localStorage.removeItem('tas_token')
+    localStorage.removeItem('tas_role')
+    localStorage.removeItem('tas_user')
+  }
+
+  return { user, token, isAuthenticated, initials, login, logout }
+})
