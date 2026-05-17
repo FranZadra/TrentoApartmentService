@@ -75,7 +75,7 @@ function getIdDalToken() {
   if (!token) return null
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.id || payload._id || null
+    return payload.id || payload._id || payload.sub
   } catch {
     return null
   }

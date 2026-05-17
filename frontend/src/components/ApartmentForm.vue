@@ -195,8 +195,9 @@ function getIdDalToken() {
   if (!token) return ''
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.id || payload._id || ''
-  } catch {
+    return payload.id || payload._id || payload.sub
+  } catch (err) {
+    console.error('Errore durante la decodifica del token:', err)
     return ''
   }
 }
@@ -216,7 +217,12 @@ async function onSubmit() {
   erroriValidazione.value = []
 
   // Rimuove le URL foto vuote prima di inviare
-  const payload = { ...form, foto: form.foto.filter(url => url.trim() !== '') }
+  const amministratoreId = getIdDalToken()
+  const payload = {
+    ...form,
+    foto: form.foto.filter(url => url.trim() !== ''),
+    ...(amministratoreId ? { amministratoreId } : {}),
+  }
 
   try {
     let res

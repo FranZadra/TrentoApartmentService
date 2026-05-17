@@ -25,6 +25,14 @@ const Annuncio = require('../models/Annuncio');
 async function creaAppartamento(req, res) {
   try {
     const data = req.body;
+    const amministratoreId = data.amministratoreId || req.user?.id;
+
+    if (!amministratoreId) {
+      return res.status(400).json({
+        success: false,
+        message: 'amministratoreId è obbligatorio',
+      });
+    }
 
     const appartamento = new Appartamento({
       indirizzo: data.indirizzo,
@@ -36,7 +44,7 @@ async function creaAppartamento(req, res) {
       terrazzo: data.terrazzo || false,
       lavatrice: data.lavatrice || false,
       classeEnergetica: data.classeEnergetica,
-      amministratoreId: data.amministratoreId,
+      amministratoreId,
       posizione: data.posizione,
     });
 
