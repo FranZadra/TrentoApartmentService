@@ -1,57 +1,51 @@
 <template>
-  <div class="mx-auto w-full max-w-[1280px] px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
-    <!-- Intestazione sezione, simile al riferimento TAS -->
-    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#9a1528]">
-          Gestione appartamenti
-        </p>
-        <h1 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-          I tuoi appartamenti
-        </h1>
-        <p class="mt-2 max-w-2xl text-sm text-zinc-500 sm:text-base">
-          Controlla gli annunci, modifica i dettagli e aggiungi nuovi appartamenti dalla tua area riservata.
-        </p>
+  <AppLayout>
+    <div class="mx-auto w-full max-w-[1280px] px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
+      <!-- Intestazione sezione, simile al riferimento TAS -->
+      <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#9a1528]">
+            Gestione appartamenti
+          </p>
+          <h1 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+            I tuoi appartamenti
+          </h1>
+          <p class="mt-2 max-w-2xl text-sm text-zinc-500 sm:text-base">
+            Controlla gli annunci, modifica i dettagli e aggiungi nuovi appartamenti dalla tua area riservata.
+          </p>
+        </div>
+
+        <button
+          @click="openCreate"
+          class="inline-flex items-center justify-center rounded-full bg-[#9a1528] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#7f1020]"
+        >
+          + Nuovo appartamento
+        </button>
       </div>
 
-      <button
-        @click="openCreate"
-        class="inline-flex items-center justify-center rounded-full bg-[#9a1528] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#7f1020]"
-      >
-        + Nuovo appartamento
-      </button>
-    </div>
-
-    <!-- Lista appartamenti dell'amministratore -->
-    <div v-if="loading" class="rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-600 shadow-sm">
-      Caricamento...
-    </div>
-    <div v-else>
-      <div v-if="apartments.length === 0" class="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-zinc-500 shadow-sm">
-        Nessun appartamento trovato.
-      </div>
-      <div class="space-y-4">
-        <ApartmentCard 
-          v-for="apt in apartments" 
-          :key="apt._id" 
-          :apt="apt"
-          @view="viewDetails(apt._id)"
-          @edit="editApartment(apt)"
+      <!-- Griglia appartamenti -->
+      <div v-if="loading" class="text-gray-600">Caricamento...</div>
+      <div v-else-if="apartments.length === 0" class="text-gray-600">Nessun appartamento trovato. Clicca su "Nuovo appartamento" per aggiungerne uno!</div>
+      <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <ApartmentCard
+          v-for="apt in apartments"
+          :key="apt._id"
+          :apartment="apt"
+          @view-details="viewDetails(apt._id)"
         />
       </div>
     </div>
-
-  </div>
-
   <!-- Modale Dettagli -->
   <ApartmentDetails v-if="showDetails" :apartmentId="selectedId" @close="closeDetails" @updated="reload" />
 
   <!-- Form creazione/modifica -->
   <ApartmentForm v-if="showForm" :initial="formInitial" @saved="onSaved" @close="closeForm" />
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import AppLayout from '../components/layout/AppLayout.vue'
 import ApartmentDetails from '../components/ApartmentDetails.vue'
 import ApartmentForm from '../components/ApartmentForm.vue'
 import ApartmentCard from '../components/ApartmentCard.vue'
@@ -70,14 +64,14 @@ watch([showDetails, showForm], ([detailsOpen, formOpen]) => {
 })
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('token') || ''
+  const token = localStorage.getItem('tas_token') || localStorage.getItem('token') || ''
   return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
 }
 
 // Estrae l'ID amministratore dal payload del token JWT salvato in localStorage.
 // Il payload JWT è la seconda parte del token (base64url), che contiene { id, iat, exp }.
 function getIdDalToken() {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('tas_token') || localStorage.getItem('token')
   if (!token) return null
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))

@@ -18,7 +18,7 @@ const { verificaProprietario } = require('../middleware/verificaPropr')
 router.get('/', getAppartamenti)
 
 // Crea appartamento
-router.post('/', verificaBodyCreazione, creaAppartamento)
+router.post('/appartamenti', verificaBodyCreazione, creaAppartamento)
 
 // Lista appartamenti per amministratore
 router.get('/admin/:amministratoreId', autenticaToken, getAppartamentiAdmin)

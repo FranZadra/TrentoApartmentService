@@ -179,7 +179,9 @@ async function eliminaAppartamento(req, res) {
     const { id } = req.params;
 
     // Verifica se ci sono annunci associati (opzionale, a seconda della policy)
-    const annunciAssociati = await Annuncio.countDocuments({ appartamentoId: id });
+    const annunciAssociati = await Annuncio.countDocuments({
+      $or: [{ appartamento: id }, { appartamentoId: id }],
+    });
 
     const appartamento = await Appartamento.findByIdAndDelete(id);
 

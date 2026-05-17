@@ -143,7 +143,7 @@ async function handleSubmit() {
 				if (ruolo === 'dipendente comune') {
 					router.push('/dashboardComune')
 				} else if (ruolo === 'amministratore') {
-					router.push('/admin/appartamenti')
+							router.push({ name: 'admin-appartamenti' })
 				} else {
 					router.push('/')
 				}

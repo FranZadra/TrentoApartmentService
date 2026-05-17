@@ -15,7 +15,7 @@ const AdminApartments = () => import('../pages/AdminApartments.vue')
 // Guardia di navigazione: controlla che l'utente abbia un token JWT in localStorage.
 // Se non ce l'ha, lo reindirizza alla pagina di login (TC51).
 function richiedeAutenticazione(_to, _from, next) {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('tas_token') || localStorage.getItem('token')
   if (!token) {
     next({ name: 'accesso' })
   } else {
