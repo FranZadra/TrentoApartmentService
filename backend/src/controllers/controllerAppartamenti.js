@@ -216,13 +216,21 @@ async function eliminaAppartamento(req, res) {
 }
 
 /**
- * Recupera tutti gli appartamenti gestiti dall'amministratore (proprietario) specificato.
- * Params: amministratoreId
+ * Recupera tutti gli appartamenti gestiti dall'amministratore autenticato.
+ * L'ID viene estratto dal JWT già verificato dal middleware auth.
  * Query: page, limit (come getAllApartments)
  */
 async function getAppartamentiAdmin(req, res) {
   try {
-    const { amministratoreId } = req.params;
+    const amministratoreId = req.user?.id || req.user?._id || req.user?.sub; // A seconda di come è strutturato il token JWT, potrebbe essere in req.user.id o req.user.sub
+
+    if (!amministratoreId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Utente non autenticato',
+      });
+    }
+
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
