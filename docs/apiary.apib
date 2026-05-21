@@ -1,0 +1,1055 @@
+FORMAT: 1A
+HOST: http://localhost:3000
+
+# Trento Apartment Service API
+
+API REST per la piattaforma di ricerca e gestione di appartamenti e annunci a Trento.
+
+Gli endpoint protetti richiedono un token JWT nell'header `Authorization: Bearer <token>`.
+Il token viene rilasciato al login o alla registrazione e ha una durata di 7 giorni (configurabile via `JWT_EXPIRES_IN`).
+
+**Ruoli utente disponibili:**
+- `utente base` *(default)* — cerca annunci
+- `utente verificato` — cerca annunci (account verificato)
+- `amministratore` — gestisce appartamenti e annunci; può essere privato o agenzia (con partita IVA)
+- `dipendente comune` — operatore del comune con ruolo e dipartimento
+- `inquilino` — cerca appartamenti
+
+---
+
+# Data Structures
+
+## Camera (object)
+- prezzo: 350 (number, required) - Prezzo mensile in euro
+- mq: 14 (number, required) - Superficie della camera in metri quadri
+- tipo: `SINGOLA` (enum[string], required)
+    - `SINGOLA` - Camera singola
+    - `DOPPIA` - Camera doppia
+- numFinestre: 1 (number, optional) - Numero di finestre (default: 1)
+- disponibile: true (boolean, optional) - Disponibilità camera (default: true)
+
+## Indirizzo (object)
+- via: `Via Roma` (string, required)
+- numero: 10 (number, required)
+- città: `Trento` (string, required)
+- CAP: `38100` (string, required)
+- Stato: `IT` (string, required)
+
+## Posizione (object)
+- latitudine: 46.0748 (number, optional)
+- longitudine: 11.1217 (number, optional)
+
+## Appartamento (object)
+- _id: `665f1a2b3c4d5e6f7a8b9c0d` (string)
+- indirizzo (Indirizzo, required)
+- mqTot: 90 (number, optional) - Superficie totale in metri quadri
+- perStudenti: false (boolean, required) - Adatto a studenti (default: false)
+- numStanze: 3 (number, required)
+- numBagni: 2 (number, required)
+- foto (array[string], optional) - URL delle immagini
+- terrazzo: false (boolean, optional) - default: false
+- lavatrice: false (boolean, optional) - default: false
+- classeEnergetica: `B` (enum[string], optional)
+    - `A4`
+    - `A3`
+    - `A2`
+    - `A1`
+    - `B`
+    - `C`
+    - `D`
+    - `E`
+    - `F`
+    - `G`
+- posizione (Posizione, optional) - Coordinate geografiche per la mappa
+- amministratoreId: `665f1a2b3c4d5e6f7a8b9c01` (string, required) - ID utente proprietario
+- camere (array[Camera], optional) - Sotto-documenti annidati
+
+## Annuncio (object)
+- _id: `annuncio_1` (string)
+- stato: `Attivo` (enum[string])
+    - `Creato`
+    - `Attivo`
+    - `Archiviato`
+- descrizione: `Appartamento in centro, completamente ristrutturato` (string, required)
+- dataPubbl: `2026-03-01T00:00:00.000Z` (string, optional) - Data di pubblicazione (ISO 8601)
+- appartamento (Appartamento, optional) - Dati appartamento popolati
+
+## Utente (object)
+- id: `665f1a2b3c4d5e6f7a8b9c0d` (string)
+- nome: `Mario` (string)
+- cognome: `Rossi` (string)
+- email: `mario.rossi@example.com` (string)
+- ruolo: `utente base` (string)
+
+## Paginazione (object)
+- currentPage: 1 (number)
+- totalPages: 5 (number)
+- totalItems: 48 (number)
+- itemsPerPage: 10 (number)
+
+---
+
+# Group Health
+
+## Health Check [/health]
+
+### Verifica stato server [GET]
+
+Endpoint per verificare che il server sia operativo. Non richiede autenticazione.
+
++ Response 200 (application/json)
+
+        {
+            "status": "ok",
+            "message": "Server funzionante"
+        }
+
+---
+
+# Group Annunci
+
+Endpoint per la consultazione degli annunci pubblicati.
+Tutti gli endpoint di questo gruppo sono **pubblici** (nessuna autenticazione richiesta).
+
+## Annunci Collection [/api/v1/annunci]
+
+### Lista annunci attivi [GET]
+
+Restituisce tutti gli annunci con stato `Attivo`, con i dati dell'appartamento popolati.
+Usato dal frontend sia per la lista che per la mappa interattiva.
+Risultato ordinato per data di pubblicazione decrescente.
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "count": 2,
+            "data": [
+                {
+                    "_id": "annuncio_1",
+                    "stato": "Attivo",
+                    "descrizione": "Appartamento in centro, completamente ristrutturato",
+                    "dataPubbl": "2026-03-01T00:00:00.000Z",
+                    "appartamento": {
+                        "_id": "apt_1",
+                        "indirizzo": {
+                            "via": "Via Roma",
+                            "numero": 10,
+                            "città": "Trento",
+                            "CAP": "38100",
+                            "Stato": "IT"
+                        },
+                        "mqTot": 90,
+                        "perStudenti": false,
+                        "numStanze": 3,
+                        "numBagni": 2,
+                        "foto": [],
+                        "terrazzo": true,
+                        "lavatrice": false,
+                        "classeEnergetica": "B",
+                        "posizione": {
+                            "latitudine": 46.0748,
+                            "longitudine": 11.1217
+                        },
+                        "amministratoreId": "665f1a2b3c4d5e6f7a8b9c01",
+                        "camere": [
+                            {
+                                "prezzo": 350,
+                                "tipo": "SINGOLA",
+                                "mq": 14,
+                                "numFinestre": 2,
+                                "disponibile": true
+                            }
+                        ]
+                    }
+                },
+                {
+                    "_id": "annuncio_2",
+                    "stato": "Attivo",
+                    "descrizione": "Monolocale arredato vicino all'università",
+                    "dataPubbl": "2026-02-15T00:00:00.000Z",
+                    "appartamento": {
+                        "_id": "apt_2",
+                        "indirizzo": {
+                            "via": "Via Verdi",
+                            "numero": 5,
+                            "città": "Trento",
+                            "CAP": "38122",
+                            "Stato": "IT"
+                        },
+                        "mqTot": 35,
+                        "perStudenti": true,
+                        "numStanze": 1,
+                        "numBagni": 1,
+                        "terrazzo": false,
+                        "lavatrice": true,
+                        "classeEnergetica": "D",
+                        "camere": [
+                            {
+                                "prezzo": 500,
+                                "tipo": "DOPPIA",
+                                "mq": 20,
+                                "numFinestre": 1,
+                                "disponibile": true
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+
++ Response 500 (application/json)
+
+    Errore interno del server.
+
+        {
+            "success": false,
+            "message": "Errore interno del server"
+        }
+
+## Ricerca Annunci con Filtri [/api/v1/annunci/search/filter{?numStanze,numBagni,terrazzo,classeEnergetica,mqMin,mqMax,prezzoMin,prezzoMax,tipoCam}]
+
+### Ricerca annunci filtrata [GET]
+
+Ricerca annunci attivi filtrando per proprietà dell'appartamento e delle camere.
+Tutti i parametri sono opzionali; se omessi non viene applicato alcun filtro sul campo corrispondente.
+
+Il filtro sulle camere (`prezzoMin`, `prezzoMax`, `tipoCam`) usa `$elemMatch`, quindi almeno
+una camera dell'appartamento deve soddisfare **tutti** i criteri indicati contemporaneamente.
+
++ Parameters
+    + numStanze (number, optional) - Numero esatto di stanze
+    + numBagni (number, optional) - Numero esatto di bagni
+    + terrazzo (boolean, optional) - Presenza terrazzo (`true` o `false`)
+    + classeEnergetica (string, optional) - Classe energetica (es. `A4`, `B`, `C`)
+    + mqMin (number, optional) - Superficie minima totale in mq
+    + mqMax (number, optional) - Superficie massima totale in mq
+    + prezzoMin (number, optional) - Prezzo minimo della camera (€/mese)
+    + prezzoMax (number, optional) - Prezzo massimo della camera (€/mese)
+    + tipoCam (string, optional) - Tipo di camera (`SINGOLA` o `DOPPIA`)
+
++ Response 200 (application/json)
+
+    Esempio: `GET /api/v1/annunci/search/filter?numStanze=3&terrazzo=true&prezzoMin=300&prezzoMax=500`
+
+        {
+            "success": true,
+            "count": 1,
+            "data": [
+                {
+                    "_id": "annuncio_1",
+                    "stato": "Attivo",
+                    "descrizione": "Appartamento in centro, completamente ristrutturato",
+                    "dataPubbl": "2026-03-01T00:00:00.000Z",
+                    "appartamento": {
+                        "_id": "apt_1",
+                        "indirizzo": {
+                            "via": "Via Roma",
+                            "numero": 10,
+                            "città": "Trento",
+                            "CAP": "38100",
+                            "Stato": "IT"
+                        },
+                        "mqTot": 90,
+                        "perStudenti": false,
+                        "numStanze": 3,
+                        "numBagni": 2,
+                        "terrazzo": true,
+                        "lavatrice": false,
+                        "classeEnergetica": "B",
+                        "camere": [
+                            {
+                                "prezzo": 350,
+                                "tipo": "SINGOLA",
+                                "mq": 14,
+                                "numFinestre": 2,
+                                "disponibile": true
+                            },
+                            {
+                                "prezzo": 500,
+                                "tipo": "DOPPIA",
+                                "mq": 20,
+                                "numFinestre": 1,
+                                "disponibile": true
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+
++ Response 500 (application/json)
+
+        {
+            "success": false,
+            "message": "Errore interno del server"
+        }
+
+## Annuncio [/api/v1/annunci/{id}]
+
++ Parameters
+    + id (string, required) - MongoDB ObjectId dell'annuncio
+
+### Dettaglio annuncio [GET]
+
+Restituisce il dettaglio di un singolo annuncio con i dati dell'appartamento popolati.
+Utile per la pagina di dettaglio al click su una card o un marker della mappa.
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "data": {
+                "_id": "annuncio_1",
+                "stato": "Attivo",
+                "descrizione": "Appartamento in centro, completamente ristrutturato",
+                "dataPubbl": "2026-03-01T00:00:00.000Z",
+                "appartamento": {
+                    "_id": "apt_1",
+                    "indirizzo": {
+                        "via": "Via Roma",
+                        "numero": 10,
+                        "città": "Trento",
+                        "CAP": "38100",
+                        "Stato": "IT"
+                    },
+                    "mqTot": 90,
+                    "perStudenti": false,
+                    "numStanze": 3,
+                    "numBagni": 2,
+                    "foto": [],
+                    "terrazzo": true,
+                    "lavatrice": false,
+                    "classeEnergetica": "B",
+                    "posizione": {
+                        "latitudine": 46.0748,
+                        "longitudine": 11.1217
+                    },
+                    "amministratoreId": "665f1a2b3c4d5e6f7a8b9c01",
+                    "camere": [
+                        {
+                            "prezzo": 350,
+                            "tipo": "SINGOLA",
+                            "mq": 14,
+                            "numFinestre": 2,
+                            "disponibile": true
+                        }
+                    ]
+                }
+            }
+        }
+
++ Response 404 (application/json)
+
+        {
+            "success": false,
+            "message": "Annuncio non trovato"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "success": false,
+            "message": "Errore interno del server"
+        }
+
+---
+
+# Group Appartamenti
+
+Endpoint per la gestione degli appartamenti.
+
+Gli endpoint di **lettura pubblica** non richiedono autenticazione.
+Gli endpoint di **scrittura** (creazione, modifica, eliminazione) richiedono un token JWT valido (`Authorization: Bearer <token>`).
+La modifica e l'eliminazione richiedono inoltre che l'utente autenticato sia il proprietario (`amministratoreId`) dell'appartamento.
+
+**Errori di autenticazione comuni (`autenticaToken`):**
+
+| Codice | Causa | Messaggio |
+|--------|-------|-----------|
+| 401 | Token assente | `"Token non fornito. Usa Authorization: Bearer <token>"` |
+| 401 | Token scaduto (`TokenExpiredError`) | `"Token scaduto"` |
+| 403 | Token non valido (firma errata, ecc.) | `"Token non valido"` |
+
+**Errori di autorizzazione (`verificaProprietario`, solo PUT e DELETE):**
+
+| Codice | Causa | Messaggio |
+|--------|-------|-----------|
+| 403 | Utente non proprietario | `"Non sei autorizzato a modificare questo appartamento."` |
+| 403 | Appartamento senza `amministratoreId` | `"Appartamento senza amministratore assegnato — operazione non consentita."` |
+| 404 | Appartamento non trovato (controllo anticipato nel middleware) | `"Appartamento non trovato"` |
+
+## Appartamenti Collection [/api/v1/appartamenti{?page,limit,perStudenti,città}]
+
+### Lista appartamenti pubblica [GET]
+
+Restituisce la lista paginata di tutti gli appartamenti. Non richiede autenticazione.
+
++ Parameters
+    + page: 1 (number, optional) - Numero di pagina (default: 1)
+    + limit: 10 (number, optional) - Elementi per pagina (default: 10)
+    + perStudenti (boolean, optional) - Filtra appartamenti adatti agli studenti
+    + città (string, optional) - Filtra per città (case-insensitive, ricerca parziale)
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "message": "Appartamenti recuperati",
+            "data": [
+                {
+                    "_id": "665f1a2b3c4d5e6f7a8b9c0d",
+                    "indirizzo": {
+                        "via": "Via Roma",
+                        "numero": 10,
+                        "città": "Trento",
+                        "CAP": "38100",
+                        "Stato": "IT"
+                    },
+                    "mqTot": 90,
+                    "perStudenti": false,
+                    "numStanze": 3,
+                    "numBagni": 2,
+                    "foto": [],
+                    "terrazzo": true,
+                    "lavatrice": false,
+                    "classeEnergetica": "B",
+                    "posizione": {
+                        "latitudine": 46.0748,
+                        "longitudine": 11.1217
+                    },
+                    "amministratoreId": "665f1a2b3c4d5e6f7a8b9c01",
+                    "camere": [
+                        {
+                            "prezzo": 350,
+                            "tipo": "SINGOLA",
+                            "mq": 14,
+                            "numFinestre": 2,
+                            "disponibile": true
+                        }
+                    ]
+                }
+            ],
+            "pagination": {
+                "currentPage": 1,
+                "totalPages": 5,
+                "totalItems": 48,
+                "itemsPerPage": 10
+            }
+        }
+
++ Response 500 (application/json)
+
+        {
+            "success": false,
+            "message": "Errore nel recupero degli appartamenti",
+            "error": "dettaglio errore"
+        }
+
+### Crea appartamento [POST]
+
+Crea un nuovo appartamento. Richiede autenticazione JWT.
+
+L'`amministratoreId` viene estratto automaticamente dal token JWT (`sub`); in alternativa
+può essere passato esplicitamente nel body (utile per test).
+
+**Campi obbligatori:** `indirizzo` (con `via`, `numero`, `città`, `CAP`, `Stato`), `mqTot`, `numStanze`, `numBagni`.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
+    + Body
+
+            {
+                "indirizzo": {
+                    "via": "Via Brennero",
+                    "numero": 42,
+                    "città": "Trento",
+                    "CAP": "38121",
+                    "Stato": "IT"
+                },
+                "mqTot": 75,
+                "perStudenti": true,
+                "numStanze": 3,
+                "numBagni": 1,
+                "foto": [
+                    "https://example.com/foto1.jpg"
+                ],
+                "terrazzo": false,
+                "lavatrice": true,
+                "classeEnergetica": "C",
+                "posizione": {
+                    "latitudine": 46.0748,
+                    "longitudine": 11.1217
+                },
+                "camere": [
+                    {
+                        "prezzo": 320,
+                        "tipo": "SINGOLA",
+                        "mq": 12,
+                        "numFinestre": 1,
+                        "disponibile": true
+                    }
+                ]
+            }
+
++ Response 201 (application/json)
+
+    Appartamento creato con successo.
+
+        {
+            "success": true,
+            "message": "Appartamento registrato con successo",
+            "data": {
+                "_id": "665f1a2b3c4d5e6f7a8b9c0d",
+                "indirizzo": {
+                    "via": "Via Brennero",
+                    "numero": 42,
+                    "città": "Trento",
+                    "CAP": "38121",
+                    "Stato": "IT"
+                },
+                "mqTot": 75,
+                "perStudenti": true,
+                "numStanze": 3,
+                "numBagni": 1,
+                "foto": ["https://example.com/foto1.jpg"],
+                "terrazzo": false,
+                "lavatrice": true,
+                "classeEnergetica": "C",
+                "posizione": {
+                    "latitudine": 46.0748,
+                    "longitudine": 11.1217
+                },
+                "amministratoreId": "665f1a2b3c4d5e6f7a8b9c01",
+                "camere": [
+                    {
+                        "prezzo": 320,
+                        "tipo": "SINGOLA",
+                        "mq": 12,
+                        "numFinestre": 1,
+                        "disponibile": true
+                    }
+                ]
+            }
+        }
+
++ Response 400 (application/json)
+
+    Errore di validazione del body o `amministratoreId` mancante.
+
+        {
+            "success": false,
+            "message": "Errori di validazione nel body",
+            "errors": [
+                "indirizzo.via è richiesto e deve essere una stringa non vuota",
+                "numStanze è richiesto e deve essere un numero"
+            ]
+        }
+
++ Response 401 (application/json)
+
+    Token JWT assente.
+
+        {
+            "success": false,
+            "message": "Token non fornito. Usa Authorization: Bearer <token>"
+        }
+
++ Response 403 (application/json)
+
+    Token JWT non valido o scaduto.
+
+        {
+            "success": false,
+            "message": "Token non valido"
+        }
+
+## Appartamenti Admin [/api/v1/appartamenti/admin{?page,limit}]
+
+### Lista appartamenti dell'amministratore [GET]
+
+Restituisce la lista paginata degli appartamenti gestiti dall'utente autenticato.
+L'`amministratoreId` viene estratto dal token JWT; non è necessario passarlo come parametro.
+Richiede autenticazione JWT.
+
+**Nota implementativa:** questa route (`/admin`) è definita nel router prima di `/:id` per evitare che
+la stringa `"admin"` sia interpretata come un ObjectId.
+
++ Parameters
+    + page: 1 (number, optional) - Numero di pagina (default: 1)
+    + limit: 10 (number, optional) - Elementi per pagina (default: 10)
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "message": "Appartamenti dell'amministratore recuperati",
+            "data": [
+                {
+                    "_id": "665f1a2b3c4d5e6f7a8b9c0d",
+                    "indirizzo": {
+                        "via": "Via Roma",
+                        "numero": 10,
+                        "città": "Trento",
+                        "CAP": "38100",
+                        "Stato": "IT"
+                    },
+                    "mqTot": 90,
+                    "perStudenti": false,
+                    "numStanze": 3,
+                    "numBagni": 2,
+                    "foto": [],
+                    "terrazzo": true,
+                    "lavatrice": false,
+                    "classeEnergetica": "B",
+                    "amministratoreId": "665f1a2b3c4d5e6f7a8b9c01",
+                    "camere": []
+                }
+            ],
+            "pagination": {
+                "currentPage": 1,
+                "totalPages": 2,
+                "totalItems": 12,
+                "itemsPerPage": 10
+            }
+        }
+
++ Response 401 (application/json)
+
+    Token JWT assente o utente non identificabile nel token.
+
+        {
+            "success": false,
+            "message": "Token non fornito. Usa Authorization: Bearer <token>"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "success": false,
+            "message": "Token non valido"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "success": false,
+            "message": "Errore nel recupero degli appartamenti dell'amministratore",
+            "error": "dettaglio errore"
+        }
+
+## Appartamento [/api/v1/appartamenti/{id}]
+
++ Parameters
+    + id (string, required) - MongoDB ObjectId dell'appartamento
+
+### Dettaglio appartamento [GET]
+
+Restituisce i dati completi di un singolo appartamento. Non richiede autenticazione.
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "message": "Appartamento recuperato",
+            "data": {
+                "_id": "665f1a2b3c4d5e6f7a8b9c0d",
+                "indirizzo": {
+                    "via": "Via Roma",
+                    "numero": 10,
+                    "città": "Trento",
+                    "CAP": "38100",
+                    "Stato": "IT"
+                },
+                "mqTot": 90,
+                "perStudenti": false,
+                "numStanze": 3,
+                "numBagni": 2,
+                "foto": [],
+                "terrazzo": true,
+                "lavatrice": false,
+                "classeEnergetica": "B",
+                "posizione": {
+                    "latitudine": 46.0748,
+                    "longitudine": 11.1217
+                },
+                "amministratoreId": "665f1a2b3c4d5e6f7a8b9c01",
+                "camere": [
+                    {
+                        "prezzo": 350,
+                        "tipo": "SINGOLA",
+                        "mq": 14,
+                        "numFinestre": 2,
+                        "disponibile": true
+                    }
+                ]
+            }
+        }
+
++ Response 404 (application/json)
+
+        {
+            "success": false,
+            "message": "Appartamento non trovato"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "success": false,
+            "message": "Errore nel recupero dell'appartamento",
+            "error": "dettaglio errore"
+        }
+
+### Aggiorna appartamento [PUT]
+
+Aggiorna i campi di un appartamento esistente. Richiede autenticazione JWT e che l'utente
+autenticato sia il proprietario (`amministratoreId`) dell'appartamento.
+
+Tutti i campi del body sono opzionali, ma almeno uno deve essere presente.
+I campi non inclusi nel body non vengono modificati.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
+    + Body
+
+            {
+                "numStanze": 4,
+                "terrazzo": true,
+                "classeEnergetica": "A1",
+                "camere": [
+                    {
+                        "prezzo": 400,
+                        "tipo": "SINGOLA",
+                        "mq": 14,
+                        "numFinestre": 2,
+                        "disponibile": true
+                    }
+                ]
+            }
+
++ Response 200 (application/json)
+
+    Appartamento aggiornato con successo. Restituisce il documento aggiornato.
+
+        {
+            "success": true,
+            "message": "Appartamento aggiornato con successo",
+            "data": {
+                "_id": "665f1a2b3c4d5e6f7a8b9c0d",
+                "indirizzo": {
+                    "via": "Via Roma",
+                    "numero": 10,
+                    "città": "Trento",
+                    "CAP": "38100",
+                    "Stato": "IT"
+                },
+                "mqTot": 90,
+                "perStudenti": false,
+                "numStanze": 4,
+                "numBagni": 2,
+                "foto": [],
+                "terrazzo": true,
+                "lavatrice": false,
+                "classeEnergetica": "A1",
+                "amministratoreId": "665f1a2b3c4d5e6f7a8b9c01",
+                "camere": [
+                    {
+                        "prezzo": 400,
+                        "tipo": "SINGOLA",
+                        "mq": 14,
+                        "numFinestre": 2,
+                        "disponibile": true
+                    }
+                ]
+            }
+        }
+
++ Response 400 (application/json)
+
+    Body vuoto o errori di validazione sui campi forniti.
+
+        {
+            "success": false,
+            "message": "Errori di validazione nel body",
+            "errors": [
+                "classeEnergetica deve essere una di: A4, A3, A2, A1, B, C, D, E, F, G"
+            ]
+        }
+
++ Response 401 (application/json)
+
+        {
+            "success": false,
+            "message": "Token non fornito. Usa Authorization: Bearer <token>"
+        }
+
++ Response 403 (application/json)
+
+    Token non valido, scaduto o utente non proprietario dell'appartamento.
+
+        {
+            "success": false,
+            "message": "Token non valido"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "success": false,
+            "message": "Appartamento non trovato"
+        }
+
+### Elimina appartamento [DELETE]
+
+Elimina un appartamento. Richiede autenticazione JWT e che l'utente sia il proprietario.
+
+Se al momento dell'eliminazione esistono annunci collegati all'appartamento, la risposta include
+il campo `warnings` con il conteggio degli annunci orfani (non vengono eliminati automaticamente).
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+    Appartamento eliminato. Il campo `warnings` è presente solo se esistevano annunci associati.
+
+        {
+            "success": true,
+            "message": "Appartamento eliminato con successo",
+            "data": {
+                "_id": "665f1a2b3c4d5e6f7a8b9c0d",
+                "indirizzo": {
+                    "via": "Via Roma",
+                    "numero": 10,
+                    "città": "Trento",
+                    "CAP": "38100",
+                    "Stato": "IT"
+                },
+                "mqTot": 90,
+                "perStudenti": false,
+                "numStanze": 3,
+                "numBagni": 2,
+                "amministratoreId": "665f1a2b3c4d5e6f7a8b9c01"
+            },
+            "warnings": "Erano presenti 2 annunci associati"
+        }
+
++ Response 401 (application/json)
+
+        {
+            "success": false,
+            "message": "Token non fornito. Usa Authorization: Bearer <token>"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "success": false,
+            "message": "Token non valido"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "success": false,
+            "message": "Appartamento non trovato"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "success": false,
+            "message": "Errore nell'eliminazione dell'appartamento",
+            "error": "dettaglio errore"
+        }
+
+---
+
+# Group Utenti
+
+Endpoint per la gestione degli account utente.
+
+La password viene sempre salvata nel database come **hash bcrypt** e non viene mai restituita nelle risposte.
+Al momento della registrazione e del login viene rilasciato un **token JWT** valido per 7 giorni (configurabile via `JWT_EXPIRES_IN`).
+
+Il payload JWT contiene: `sub` (ID utente), `email`, `ruolo`.
+
+## Registrazione [/api/v1/users/register]
+
+### Registra un nuovo utente [POST]
+
+Crea un nuovo account nel sistema e restituisce il token JWT.
+
+**Campi obbligatori per tutti i ruoli:** `nome`, `cognome`, `email`, `password`.
+
+**Campi aggiuntivi per ruolo `amministratore`:**
+- `privato` (boolean, **obbligatorio**) — `true` se privato, `false` se agenzia
+- `pIVA` (string, **obbligatorio se `privato: false`**) — partita IVA, esattamente 11 cifre
+
+**Campi aggiuntivi per ruolo `dipendente comune`:**
+- `ruoloDipendente` (string, **obbligatorio**) — ruolo nel comune
+- `dipartimento` (string, **obbligatorio**) — dipartimento di appartenenza
+
+**Ruoli accettati:** `utente base`, `amministratore`, `dipendente comune`.
+
++ Request Utente base (application/json)
+
+    Il campo `ruolo` è obbligatorio. Il valore minimo è `"utente base"`.
+    **Attenzione:** omettere `ruolo` causa un 400 (`"Ruolo non valido: utente"`) — il default nel
+    controller è `'utente'` che non rientra tra i ruoli validi.
+
+    + Body
+
+            {
+                "nome": "Mario",
+                "cognome": "Rossi",
+                "email": "mario.rossi@example.com",
+                "password": "Password123",
+                "ruolo": "utente base"
+            }
+
++ Request Amministratore privato (application/json)
+
+    Proprietario privato (persona fisica).
+
+    + Body
+
+            {
+                "nome": "Luca",
+                "cognome": "Bianchi",
+                "email": "luca.bianchi@example.com",
+                "password": "SecurePass!99",
+                "ruolo": "amministratore",
+                "privato": true
+            }
+
++ Request Agenzia immobiliare (application/json)
+
+    Agenzia (persona giuridica) — richiede `pIVA`.
+
+    + Body
+
+            {
+                "nome": "Agenzia",
+                "cognome": "Casa",
+                "email": "info@agenziacasa.it",
+                "password": "AgenziaPass!1",
+                "ruolo": "amministratore",
+                "privato": false,
+                "pIVA": "12345678901"
+            }
+
++ Request Dipendente Comunale (application/json)
+
+    Operatore del comune — richiede `ruoloDipendente` e `dipartimento`.
+
+    + Body
+
+            {
+                "nome": "Anna",
+                "cognome": "Verdi",
+                "email": "anna.verdi@comune.trento.it",
+                "password": "ComunePass!5",
+                "ruolo": "dipendente comune",
+                "ruoloDipendente": "Responsabile urbanistica",
+                "dipartimento": "Urbanistica"
+            }
+
++ Response 201 (application/json)
+
+    Utente creato con successo.
+
+        {
+            "messaggio": "Utente registrato con successo",
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjVmMWEyYjNjNGQ1ZTZmN2E4YjljMGQiLCJlbWFpbCI6Im1hcmlvLnJvc3NpQGV4YW1wbGUuY29tIiwicnVvbG8iOiJ1dGVudGUgYmFzZSIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwNjA0ODAwfQ.signature",
+            "utente": {
+                "id": "665f1a2b3c4d5e6f7a8b9c0d",
+                "nome": "Mario",
+                "cognome": "Rossi",
+                "email": "mario.rossi@example.com",
+                "ruolo": "utente base"
+            }
+        }
+
++ Response 400 (application/json)
+
+    Campo obbligatorio mancante, formato email non valido, ruolo non valido o
+    validazione specifica del ruolo fallita (es. `pIVA` non a 11 cifre).
+
+        {
+            "messaggio": "Nome: campo obbligatorio mancante"
+        }
+
++ Response 409 (application/json)
+
+    Esiste già un account registrato con questa email.
+
+        {
+            "messaggio": "Email già in uso"
+        }
+
+## Login [/api/v1/users/login]
+
+### Accedi [POST]
+
+Autentica un utente esistente con email e password.
+Restituisce un token JWT valido per 7 giorni.
+
++ Request (application/json)
+
+    + Body
+
+            {
+                "email": "mario.rossi@example.com",
+                "password": "Password123"
+            }
+
++ Response 200 (application/json)
+
+    Login effettuato con successo.
+
+        {
+            "messaggio": "Login effettuato con successo",
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjVmMWEyYjNjNGQ1ZTZmN2E4YjljMGQiLCJlbWFpbCI6Im1hcmlvLnJvc3NpQGV4YW1wbGUuY29tIiwicnVvbG8iOiJ1dGVudGUgYmFzZSIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwNjA0ODAwfQ.signature",
+            "utente": {
+                "id": "665f1a2b3c4d5e6f7a8b9c0d",
+                "nome": "Mario",
+                "cognome": "Rossi",
+                "email": "mario.rossi@example.com",
+                "ruolo": "utente base"
+            }
+        }
+
++ Response 400 (application/json)
+
+    Campo obbligatorio mancante o formato email non valido.
+
+        {
+            "messaggio": "Email: campo obbligatorio mancante"
+        }
+
++ Response 401 (application/json)
+
+    Utente non trovato o password errata.
+
+        {
+            "messaggio": "Password non valida"
+        }

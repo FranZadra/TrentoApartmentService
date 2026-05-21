@@ -1,4 +1,5 @@
 <template>
+  <!-- Pagina segnaposto per la gestione delle mansioni interne. -->
   <PlaceholderPage
     eyebrow="Gestione interna"
     title="Organizza le faccende di casa"

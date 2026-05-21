@@ -48,6 +48,7 @@ const errorMessage = ref('')
 const successMessage = ref('')
 
 function logout() {
+    // Svuota la sessione locale e torna alla home dopo un breve messaggio di conferma.
     try {
         auth.logout()
         successMessage.value = 'Logout effettuato con successo'
