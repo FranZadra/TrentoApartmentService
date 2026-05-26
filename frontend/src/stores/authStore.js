@@ -38,5 +38,14 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('tas_user')
   }
 
-  return { user, token, isAuthenticated, initials, login, logout }
+  function updateUserRole(newRole) {
+    if (user.value) {
+      user.value.ruolo = newRole
+      localStorage.setItem('tas_user', JSON.stringify(user.value))
+      localStorage.setItem('tas_role', newRole)
+    }
+  }
+
+  return { user, token, isAuthenticated, initials, login, logout, updateUserRole }
 })
+

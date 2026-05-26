@@ -36,6 +36,27 @@ export async function loginUser(credentials) {
   }
 }
 
+/**
+ * Verifica l'identità dell'utente loggato.
+ * Se utente base, lo cambia a utente verificato.
+ * @returns {Promise}
+ */
+export async function verificaIdentitaUser(token) {
+  try {
+    // Crea un'istanza axios con il token nel header
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+    const response = await apiClient.put('/users/verificaIdentita', {}, config)
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message = error.response?.data?.messaggio || 'Errore durante la verifica identità'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
 export function logoutUser() {
   // Per il logout lato client, basta rimuovere il token e i dati utente dallo store
   // La funzione effettiva di logout lato server dipende dall'implementazione (es. blacklist token)
