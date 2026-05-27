@@ -174,11 +174,11 @@ async function handleRecoverySubmit() {
 	}
 
 	isRecoveryLoading.value = true
-	recoveryMessage.value = ''
+	// Mostra subito messaggio per l'utente mentre la richiesta è in corso
+	recoveryMessage.value = 'Controlla la tua casella di posta'
 	try {
 		await requestPasswordReset(recoveryEmail.value.trim())
-		// Risposta neutra per non rivelare esistenza dell'account
-		recoveryMessage.value = 'Se l’email è presente nel sistema, riceverai un messaggio con le istruzioni per il reset.'
+		// Manteniamo il messaggio visibile anche dopo il successo per chiarezza
 	} catch (err) {
 		console.error('Errore richiesta reset password:', err)
 		recoveryMessage.value = 'Errore durante l\'invio. Riprova più tardi.'
