@@ -7,6 +7,7 @@ import MansioniPage from '@/pages/MansioniPage.vue'
 import GuastiPage from '@/pages/GuastiPage.vue'
 import PaginaAccesso from '../pages/paginaAccesso.vue'
 import PaginaProfilo from '../pages/paginaProfilo.vue'
+import ResetPassword from '@/pages/ResetPassword.vue'
 
 // AnnuncioDetail caricato in lazy load (pagina pesante con mappa e galleria)
 const AnnuncioDetail = () => import('@/pages/AnnuncioDetail.vue')
@@ -67,6 +68,12 @@ const routes = [
 		alias: ['/registrazione'],
 		meta: { title: 'TAS - Accesso' },
 	},
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: ResetPassword,
+    meta: { title: 'TAS - Reset password' },
+  },
 	{
     // Profilo utente con informazioni salvate lato client.
 		path: '/profilo',

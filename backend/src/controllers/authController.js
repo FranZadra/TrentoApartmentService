@@ -1,11 +1,15 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
+const { sendPasswordResetEmail } = require('../services/mailService');
 
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BCRYPT_SALT_ROUNDS = 10;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+const PASSWORD_RESET_TOKEN_BYTES = 32;
+const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES || 60);
 
 const RUOLI_VALIDI = ['utente base', 'utente verificato', 'inquilino', 'amministratore', 'dipendente comune'];
 
@@ -188,6 +192,93 @@ const login = async (req, res) => {
   });
 };
 
+const richiediResetPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ messaggio: 'Email: campo obbligatorio mancante' });
+  }
+
+  if (!REGEX_EMAIL.test(email)) {
+    return res.status(400).json({ messaggio: 'Email: formato non valido' });
+  }
+
+  const utente = await User.findOne({ email: email.toLowerCase().trim() });
+
+  // Non riveliamo se l'email esiste o meno: la risposta resta sempre generica.
+  if (!utente) {
+    return res.status(200).json({
+      messaggio: 'Se l’email è presente nel sistema, riceverai un messaggio con le istruzioni per il reset.',
+    });
+  }
+
+  const rawToken = crypto.randomBytes(PASSWORD_RESET_TOKEN_BYTES).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MINUTES * 60 * 1000);
+
+  utente.passwordResetToken = tokenHash;
+  utente.passwordResetExpires = expiresAt;
+  await utente.save();
+
+  const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const resetLink = `${frontendBaseUrl.replace(/\/$/, '')}/reset-password?token=${rawToken}`;
+
+  // In produzione non ritorniamo mai il token: inviamo la mail (se
+  // configurata) e rispondiamo sempre con un messaggio neutro per evitare
+  // di rivelare l'esistenza di account.
+  try {
+    await sendPasswordResetEmail({
+      to: utente.email,
+      nome: utente.nome,
+      resetLink,
+      expiresAt,
+    });
+  } catch (e) {
+    // Non bloccare l'operazione per errori di invio; loggare lato server è sufficiente
+    console.warn('Invio email reset fallito:', e && e.message ? e.message : e)
+  }
+
+  return res.status(200).json({
+    messaggio: 'Se l’email è presente nel sistema, riceverai un messaggio con le istruzioni per il reset.',
+  });
+};
+
+const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ messaggio: 'Token di reset mancante' });
+  }
+
+  if (!password || password.trim() === '') {
+    return res.status(400).json({ messaggio: 'Password: campo obbligatorio mancante' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ messaggio: 'La password deve contenere almeno 6 caratteri' });
+  }
+
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  const utente = await User.findOne({
+    passwordResetToken: tokenHash,
+    passwordResetExpires: { $gt: new Date() },
+  });
+
+  if (!utente) {
+    return res.status(400).json({ messaggio: 'Token di reset non valido o scaduto' });
+  }
+
+  const nuovaPasswordHashata = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+
+  utente.password = nuovaPasswordHashata;
+  utente.passwordResetToken = null;
+  utente.passwordResetExpires = null;
+  await utente.save();
+
+  return res.status(200).json({ messaggio: 'Password aggiornata con successo' });
+};
+
 const verificaIdentita = async (req, res) => {
   try {
     // Ottieni l'ID dell'utente dal token JWT (caricato dal middleware autenticaToken)
@@ -225,4 +316,4 @@ const verificaIdentita = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verificaIdentita };
+module.exports = { register, login, verificaIdentita, richiediResetPassword, resetPassword };

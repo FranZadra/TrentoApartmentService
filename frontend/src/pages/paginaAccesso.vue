@@ -93,13 +93,12 @@
 				<div class="absolute inset-0 bg-zinc-950/70 backdrop-blur-sm" aria-hidden="true"></div>
 				<div class="relative z-10 w-full max-w-md overflow-hidden rounded-[1.75rem] border border-white/15 bg-white p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:p-8">
 					<div class="space-y-3">
-						<p class="font-display text-xs uppercase tracking-[0.25em] text-primary">Recupero password</p>
-						<h2 class="font-display text-2xl text-zinc-900">Inserisci la tua email</h2>
-						<p class="text-sm leading-6 text-zinc-600">
-							Ti invieremo un link per reimpostare la password.
-							Se non ricevi l'email entro pochi minuti, controlla la cartella dello spam o riprova.
-						</p>
-					</div>
+							<p class="font-display text-xs uppercase tracking-[0.25em] text-primary">Recupero password</p>
+							<h2 class="font-display text-2xl text-zinc-900">Inserisci la tua email</h2>
+							<p class="text-sm leading-6 text-zinc-600">
+								Ti invieremo un link per reimpostare la password. Se non ricevi l'email entro pochi minuti, controlla la cartella dello spam o riprova.
+							</p>
+						</div>
 
 					<form class="mt-6 space-y-4" @submit.prevent="handleRecoverySubmit">
 						<label class="block space-y-2">
@@ -112,13 +111,9 @@
 								placeholder="nome@example.com"
 								required
 							/>
-						</label>
+								</label>
 
-						<div v-if="recoveryMessage" class="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary-dark">
-							{{ recoveryMessage }}
-						</div>
-
-						<div class="flex flex-col gap-3 sm:flex-row">
+							<div class="flex flex-col gap-3 sm:flex-row">
 							<button
 								type="button"
 								class="inline-flex flex-1 items-center justify-center rounded-full border border-zinc-200 bg-white px-6 py-3 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary"
@@ -128,9 +123,11 @@
 							</button>
 							<button
 								type="submit"
-								class="inline-flex flex-1 items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-dark"
+								:disabled="isRecoveryLoading"
+								class="inline-flex flex-1 items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-dark disabled:opacity-60"
 							>
-								Conferma email
+								<span v-if="isRecoveryLoading">Caricamento...</span>
+								<span v-else>Conferma email</span>
 							</button>
 						</div>
 					</form>
@@ -147,6 +144,7 @@ import FormRegistrazione from '../components/formRegistrazione.vue'
 import castello from '../assets/images/TrentoCastello.jpg'
 import logoComune from '../assets/images/logoComuneW.png'
 import logoUni from '../assets/images/logoUnitnW.png'
+import { requestPasswordReset } from '../services/authService'
 
 // Se l'URL contiene ?view=register, la pagina parte già sulla scheda di registrazione.
 import { useRoute } from 'vue-router'
@@ -156,6 +154,7 @@ const view = ref(route.query.view === 'register' ? 'register' : 'login')
 const showRecoveryModal = ref(false)
 const recoveryEmail = ref('')
 const recoveryMessage = ref('')
+const isRecoveryLoading = ref(false)
 
 function openRecoveryModal(email = '') {
 	recoveryEmail.value = email?.trim() || recoveryEmail.value
@@ -168,12 +167,23 @@ function closeRecoveryModal() {
 	recoveryMessage.value = ''
 }
 
-function handleRecoverySubmit() {
+async function handleRecoverySubmit() {
 	if (!recoveryEmail.value.trim()) {
 		recoveryMessage.value = 'Inserisci un indirizzo email valido.'
 		return
 	}
 
-	recoveryMessage.value = 'Ti invieremo un link per reimpostare la password.'
+	isRecoveryLoading.value = true
+	recoveryMessage.value = ''
+	try {
+		await requestPasswordReset(recoveryEmail.value.trim())
+		// Risposta neutra per non rivelare esistenza dell'account
+		recoveryMessage.value = 'Se l’email è presente nel sistema, riceverai un messaggio con le istruzioni per il reset.'
+	} catch (err) {
+		console.error('Errore richiesta reset password:', err)
+		recoveryMessage.value = 'Errore durante l\'invio. Riprova più tardi.'
+	} finally {
+		isRecoveryLoading.value = false
+	}
 }
 </script>

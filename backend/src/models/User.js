@@ -30,6 +30,16 @@ const utenteSchema = new mongoose.Schema(
       required: [true, 'La password è obbligatoria'],
     },
 
+    // Recupero password: token hashato e scadenza temporanea
+    passwordResetToken: {
+      type: String,
+      default: null,
+    },
+    passwordResetExpires: {
+      type: Date,
+      default: null,
+    },
+
     /*foto profuilo - opzionale, URL dell'immagine
     fotoProfilo: {
       type: String,
