@@ -72,9 +72,6 @@
                 <button type="submit" class="rounded-full bg-[#9a1528] px-5 py-2.5 font-semibold text-white hover:bg-[#7f1020]">
                   {{ annuncioEsistente ? 'Aggiorna' : 'Crea annuncio' }}
                 </button>
-                <button v-if="annuncioEsistente" type="button" @click="onDelete" class="rounded-full border border-red-500 px-5 py-2.5 font-semibold text-red-600 hover:bg-red-50">
-                  Elimina
-                </button>
               </div>
             </form>
 
@@ -88,6 +85,9 @@
               </button>
               <button v-else type="button" @click="startEditing" class="rounded-full bg-[#9a1528] px-5 py-2.5 font-semibold text-white hover:bg-[#7f1020]">
                 Crea annuncio
+              </button>
+              <button v-if="annuncioEsistente" type="button" @click="onDelete" class="rounded-full bg-red-600 px-5 py-2.5 font-semibold text-white hover:bg-red-700">
+                Elimina
               </button>
             </div>
           </div>
