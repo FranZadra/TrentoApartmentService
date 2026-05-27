@@ -65,6 +65,7 @@
 							v-if="view === 'login'"
 							key="login"
 							@switch-to-register="view = 'register'"
+							@forgot-password="openRecoveryModal"
 						/>
 						<FormRegistrazione
 							v-else
@@ -75,6 +76,67 @@
 				</div>
 			</div>
 		</section>
+
+		<transition
+			enter-active-class="transition duration-200 ease-out"
+			enter-from-class="opacity-0"
+			enter-to-class="opacity-100"
+			leave-active-class="transition duration-150 ease-in"
+			leave-from-class="opacity-100"
+			leave-to-class="opacity-0"
+		>
+			<div
+				v-if="showRecoveryModal"
+				class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+				@click.self="closeRecoveryModal"
+			>
+				<div class="absolute inset-0 bg-zinc-950/70 backdrop-blur-sm" aria-hidden="true"></div>
+				<div class="relative z-10 w-full max-w-md overflow-hidden rounded-[1.75rem] border border-white/15 bg-white p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:p-8">
+					<div class="space-y-3">
+						<p class="font-display text-xs uppercase tracking-[0.25em] text-primary">Recupero password</p>
+						<h2 class="font-display text-2xl text-zinc-900">Inserisci la tua email</h2>
+						<p class="text-sm leading-6 text-zinc-600">
+							Ti invieremo un link per reimpostare la password.
+							Se non ricevi l'email entro pochi minuti, controlla la cartella dello spam o riprova.
+						</p>
+					</div>
+
+					<form class="mt-6 space-y-4" @submit.prevent="handleRecoverySubmit">
+						<label class="block space-y-2">
+							<span class="text-sm font-semibold text-zinc-700">Email</span>
+							<input
+								v-model="recoveryEmail"
+								type="email"
+								autocomplete="email"
+								class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
+								placeholder="nome@example.com"
+								required
+							/>
+						</label>
+
+						<div v-if="recoveryMessage" class="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary-dark">
+							{{ recoveryMessage }}
+						</div>
+
+						<div class="flex flex-col gap-3 sm:flex-row">
+							<button
+								type="button"
+								class="inline-flex flex-1 items-center justify-center rounded-full border border-zinc-200 bg-white px-6 py-3 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary"
+								@click="closeRecoveryModal"
+							>
+								Annulla
+							</button>
+							<button
+								type="submit"
+								class="inline-flex flex-1 items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-dark"
+							>
+								Conferma email
+							</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</transition>
 	</main>
 </template>
 
@@ -90,4 +152,28 @@ import logoUni from '../assets/images/logoUnitnW.png'
 import { useRoute } from 'vue-router'
 const route = useRoute()
 const view = ref(route.query.view === 'register' ? 'register' : 'login')
+
+const showRecoveryModal = ref(false)
+const recoveryEmail = ref('')
+const recoveryMessage = ref('')
+
+function openRecoveryModal(email = '') {
+	recoveryEmail.value = email?.trim() || recoveryEmail.value
+	recoveryMessage.value = ''
+	showRecoveryModal.value = true
+}
+
+function closeRecoveryModal() {
+	showRecoveryModal.value = false
+	recoveryMessage.value = ''
+}
+
+function handleRecoverySubmit() {
+	if (!recoveryEmail.value.trim()) {
+		recoveryMessage.value = 'Inserisci un indirizzo email valido.'
+		return
+	}
+
+	recoveryMessage.value = 'Ti invieremo un link per reimpostare la password.'
+}
 </script>

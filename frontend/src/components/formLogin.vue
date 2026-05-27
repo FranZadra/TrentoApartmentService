@@ -39,7 +39,7 @@
 					<button
 						type="button"
 						class="text-xs font-medium text-primary transition hover:text-primary-dark hover:underline"
-						@click="$emit('forgot-password')"
+						@click="$emit('forgot-password', form.email)"
 					>
 						Password dimenticata?
 					</button>
