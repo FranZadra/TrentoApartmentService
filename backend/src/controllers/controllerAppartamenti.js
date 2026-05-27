@@ -153,7 +153,7 @@ async function aggiornaAppartamento(req, res) {
     const appartamento = await Appartamento.findByIdAndUpdate(
       id,
       updates,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
 
     if (!appartamento) {
