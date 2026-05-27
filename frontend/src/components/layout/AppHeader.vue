@@ -1,4 +1,5 @@
 <template>
+	<!-- Intestazione fissa con brand e navigazione principale. -->
 	<header class="sticky top-0 z-40 border-b border-[#7f1020] bg-[#9a1528] text-white shadow-sm">
 		<div class="mx-auto flex max-w-[1200px] items-center justify-between gap-6 px-6 py-4 lg:px-8">
 			<!-- Logo + nome brand -->
@@ -46,6 +47,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { ref, computed } from 'vue'
 
 const auth = useAuthStore()
+// Il pulsante finale cambia in base alla presenza di un utente loggato.
 const isLoggedIn = computed(() => !!auth.token)
 const isAdmin = computed(() => {
 	return !!(auth.user && auth.user.ruolo && auth.user.ruolo === 'amministratore')

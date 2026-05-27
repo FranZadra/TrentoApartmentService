@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 
 // Store Pinia per la gestione dell'autenticazione utente
 export const useAuthStore = defineStore('auth', () => {
+  // I dati vengono letti subito da localStorage per mantenere la sessione dopo il refresh.
   const storedUser = localStorage.getItem('tas_user')
   const user = ref(storedUser ? JSON.parse(storedUser) : null)
   const token = ref(localStorage.getItem('tas_token') || null)
@@ -17,6 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   function login(userData, authToken) {
+    // Salva utente e token sia nello stato reattivo che nel browser.
     user.value = userData || null
     token.value = authToken || null
     if (authToken) localStorage.setItem('tas_token', authToken)
@@ -31,6 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    // Pulisce tutto in una volta e riporta l'app allo stato iniziale.
     user.value = null
     token.value = null
     localStorage.removeItem('tas_token')
