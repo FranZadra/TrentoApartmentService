@@ -71,8 +71,6 @@ const showAnnuncioForm = ref(false)
 const selectedId = ref(null)
 const formInitial = ref(null)
 const selectedApartmentForAnnuncio = ref(null)
-const annuncioInitial = ref(null)
-const annunciLocali = ref({})
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
@@ -92,12 +90,7 @@ async function loadApartments() {
       headers: getAuthHeaders(),
     })
     const body = await res.json()
-    if (res.ok && body && body.data) {
-      apartments.value = body.data.map((apt) => ({
-        ...apt,
-        annuncio: annunciLocali.value[apt._id] || apt.annuncio || null,
-      }))
-    }
+    if (res.ok && body && body.data) apartments.value = body.data
     else apartments.value = []
   } catch (err) {
     console.error(err)
@@ -142,13 +135,11 @@ function editApartment(apt) {
 
 function openAnnuncio(apt) {
   selectedApartmentForAnnuncio.value = apt
-  annuncioInitial.value = annunciLocali.value[apt._id] || apt.annuncio || null
   showAnnuncioForm.value = true
 }
 
 function closeAnnuncio() {
   selectedApartmentForAnnuncio.value = null
-  annuncioInitial.value = null
   showAnnuncioForm.value = false
 }
 
@@ -168,28 +159,8 @@ function onSaved() {
 }
 
 function onAnnuncioSaved(annuncio) {
-  if (!selectedApartmentForAnnuncio.value?._id) return
-
-  const apartmentId = selectedApartmentForAnnuncio.value._id
-  const savedAnnuncio = {
-    ...annuncio,
-    _id: annuncio._id || `local-${apartmentId}`,
-    appartamentoId: apartmentId,
-    appartamento: selectedApartmentForAnnuncio.value,
-  }
-
-  annunciLocali.value = {
-    ...annunciLocali.value,
-    [apartmentId]: savedAnnuncio,
-  }
-
-  apartments.value = apartments.value.map((apt) => (
-    apt._id === apartmentId
-      ? { ...apt, annuncio: savedAnnuncio }
-      : apt
-  ))
-
   closeAnnuncio()
+  loadApartments()
 }
 
 function reload() {

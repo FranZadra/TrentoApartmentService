@@ -10,7 +10,11 @@ const {
   getAnnunciAttivi,
   getAnnuncioById,
   searchAnnunciWithFilters,
+  getAnnuncioByAppartamento,
+  upsertAnnuncioByAppartamento,
+  updateAnnuncioById,
 } = require('../controllers/annunciController');
+const { autenticaToken } = require('../middleware/auth');
 
 // GET /api/v1/annunci
 // Lista di tutti gli annunci attivi (per la lista e la mappa)
@@ -23,8 +27,20 @@ router.get('/', getAnnunciAttivi);
 // Nota: questa rotta DEVE venire PRIMA di /:id per evitare che "search" sia interpretato come ID
 router.get('/search/filter', searchAnnunciWithFilters);
 
+// GET /api/v1/annunci/admin/appartamento/:appartamentoId
+// Recupera l'annuncio associato a un appartamento dell'amministratore autenticato.
+router.get('/admin/appartamento/:appartamentoId', autenticaToken, getAnnuncioByAppartamento);
+
+// POST /api/v1/annunci/admin/appartamento/:appartamentoId
+// Crea o aggiorna l'annuncio collegato all'appartamento dell'amministratore autenticato.
+router.post('/admin/appartamento/:appartamentoId', autenticaToken, upsertAnnuncioByAppartamento);
+
 // GET /api/v1/annunci/:id
 // Dettaglio di un singolo annuncio
 router.get('/:id', getAnnuncioById);
+
+// PUT /api/v1/annunci/:id
+// Aggiorna un annuncio esistente dell'amministratore autenticato.
+router.put('/:id', autenticaToken, updateAnnuncioById);
 
 module.exports = router;

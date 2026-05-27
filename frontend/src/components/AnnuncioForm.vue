@@ -25,7 +25,11 @@
         </p>
       </div>
 
-      <div v-if="!initialAnnuncio" class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+      <div v-if="loadingAnnuncio" class="mb-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
+        Caricamento annuncio...
+      </div>
+
+      <div v-else-if="!annuncioEsistente" class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
         Non esiste ancora un annuncio legato a questo immobile
       </div>
 
@@ -72,6 +76,7 @@
 
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
+import { annunciService } from '@/services/annunciService'
 
 const props = defineProps({
   apartment: {
@@ -87,6 +92,8 @@ const props = defineProps({
 const emits = defineEmits(['saved', 'close'])
 
 const errorMessage = ref('')
+const loadingAnnuncio = ref(false)
+const annuncioEsistente = ref(props.initialAnnuncio)
 
 const defaultForm = () => ({
   attivo: true,
@@ -95,7 +102,7 @@ const defaultForm = () => ({
 
 const form = reactive(defaultForm())
 
-const isEdit = computed(() => !!props.initialAnnuncio)
+const isEdit = computed(() => !!annuncioEsistente.value)
 
 const apartmentLabel = computed(() => {
   const indirizzo = props.apartment?.indirizzo
@@ -108,19 +115,54 @@ const apartmentCity = computed(() => props.apartment?.indirizzo?.città || '-')
 watch(
   () => props.initialAnnuncio,
   (value) => {
-    errorMessage.value = ''
-    Object.assign(form, defaultForm())
-    if (value) {
-      Object.assign(form, {
-        attivo: value.attivo !== undefined ? !!value.attivo : value.stato === 'Attivo',
-        descrizione: value.descrizione || '',
-      })
-    }
+    annuncioEsistente.value = value || null
+    popolaForm(value)
   },
   { immediate: true },
 )
 
-function onSubmit() {
+watch(
+  () => props.apartment?._id,
+  async (appartamentoId) => {
+    if (!appartamentoId) return
+    await caricaAnnuncio()
+  },
+  { immediate: true },
+)
+
+function popolaForm(value) {
+  errorMessage.value = ''
+  Object.assign(form, defaultForm())
+  if (value) {
+    Object.assign(form, {
+      attivo: value.attivo !== undefined ? !!value.attivo : value.stato === 'Attivo',
+      descrizione: value.descrizione || '',
+    })
+  }
+}
+
+async function caricaAnnuncio() {
+  const apartmentId = props.apartment?._id
+  if (!apartmentId) return
+
+  loadingAnnuncio.value = true
+  try {
+    const response = await annunciService.getByApartmentId(apartmentId)
+    annuncioEsistente.value = response.data?.data || null
+    popolaForm(annuncioEsistente.value)
+  } catch (error) {
+    if (error.response?.status === 404) {
+      annuncioEsistente.value = null
+      popolaForm(null)
+    } else {
+      errorMessage.value = error.response?.data?.message || "Errore nel caricamento dell'annuncio."
+    }
+  } finally {
+    loadingAnnuncio.value = false
+  }
+}
+
+async function onSubmit() {
   errorMessage.value = ''
 
   if (!form.descrizione.trim()) {
@@ -128,14 +170,25 @@ function onSubmit() {
     return
   }
 
-  emits('saved', {
-    ...(props.initialAnnuncio || {}),
-    appartamentoId: props.apartment?._id,
-    appartamento: props.apartment,
-    descrizione: form.descrizione.trim(),
-    attivo: form.attivo,
-    stato: form.attivo ? 'Attivo' : 'Archiviato',
-    dataPubbl: props.initialAnnuncio?.dataPubbl || (form.attivo ? new Date().toISOString() : null),
-  })
+  try {
+    const apartmentId = props.apartment?._id
+    if (!apartmentId) {
+      errorMessage.value = 'Immobile non disponibile.'
+      return
+    }
+
+    const payload = {
+      descrizione: form.descrizione.trim(),
+      attivo: form.attivo,
+      stato: form.attivo ? 'Attivo' : 'Archiviato',
+      dataPubbl: annuncioEsistente.value?.dataPubbl,
+    }
+
+    const response = await annunciService.upsertByApartmentId(apartmentId, payload)
+    annuncioEsistente.value = response.data?.data || null
+    emits('saved', annuncioEsistente.value)
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || "Errore durante il salvataggio dell'annuncio."
+  }
 }
 </script>

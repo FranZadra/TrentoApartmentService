@@ -4,7 +4,7 @@
 // Si interfaccia con il model Mongoose e genera risposte REST.
 
 const Appartamento = require('../models/Appartamento');
-const Annuncio = require('../models/Annuncio');
+const Annuncio = require('../models/annuncio');
 
 /**
  * Crea un nuovo appartamento.

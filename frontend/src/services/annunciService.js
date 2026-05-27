@@ -30,4 +30,19 @@ export const annunciService = {
   searchWithFilters(params = {}) {
     return api.get('/annunci/search/filter', { params })
   },
+
+  // GET /api/v1/annunci/admin/appartamento/:appartamentoId — annuncio dell'appartamento dell'admin
+  getByApartmentId(appartamentoId) {
+    return api.get(`/annunci/admin/appartamento/${appartamentoId}`)
+  },
+
+  // POST /api/v1/annunci/admin/appartamento/:appartamentoId — crea o aggiorna l'annuncio dell'appartamento
+  upsertByApartmentId(appartamentoId, payload) {
+    return api.post(`/annunci/admin/appartamento/${appartamentoId}`, payload)
+  },
+
+  // PUT /api/v1/annunci/:id — aggiornamento puntuale per ID annuncio
+  updateById(id, payload) {
+    return api.put(`/annunci/${id}`, payload)
+  },
 }
