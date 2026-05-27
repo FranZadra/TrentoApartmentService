@@ -5,6 +5,7 @@ import HomePage from '@/pages/HomePage.vue'
 import AnnunciPage from '@/pages/AnnunciPage.vue'
 import MansioniPage from '@/pages/MansioniPage.vue'
 import GuastiPage from '@/pages/GuastiPage.vue'
+import PaginaGestioneInterna from '@/pages/paginaGestioneInterna.vue'
 import PaginaAccesso from '../pages/paginaAccesso.vue'
 import PaginaProfilo from '../pages/paginaProfilo.vue'
 
@@ -53,6 +54,13 @@ const routes = [
     path: '/mansioni',
     name: 'mansioni',
     component: MansioniPage,
+  },
+  {
+    path: '/gestione-interna',
+    name: 'gestione-interna',
+    component: PaginaGestioneInterna,
+    beforeEnter: richiedeAutenticazione,
+    meta: { title: 'TAS - Gestione interna' },
   },
   {
     path: '/guasti',
