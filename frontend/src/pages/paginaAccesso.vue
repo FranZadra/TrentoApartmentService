@@ -98,6 +98,8 @@
 							<p class="text-sm leading-6 text-zinc-600">
 								Ti invieremo un link per reimpostare la password. Se non ricevi l'email entro pochi minuti, controlla la cartella dello spam o riprova.
 							</p>
+							<!-- Messaggio di feedback per invio/reset -->
+							<div v-if="recoveryMessage" :class="recoveryClass">{{ recoveryMessage }}</div>
 						</div>
 
 					<form class="mt-6 space-y-4" @submit.prevent="handleRecoverySubmit">
@@ -138,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import FormLogin from '../components/formLogin.vue'
 import FormRegistrazione from '../components/formRegistrazione.vue'
 import castello from '../assets/images/TrentoCastello.jpg'
@@ -155,6 +157,14 @@ const showRecoveryModal = ref(false)
 const recoveryEmail = ref('')
 const recoveryMessage = ref('')
 const isRecoveryLoading = ref(false)
+let recoveryTimeout = null
+
+const recoveryClass = computed(() => {
+	if (!recoveryMessage.value) return ''
+	const txt = recoveryMessage.value.toLowerCase()
+	const isError = txt.includes('errore') || txt.includes('errore durante')
+	return isError ? 'mt-4 rounded-lg p-3 text-sm bg-red-50 text-red-700 border border-red-100' : 'mt-4 rounded-lg p-3 text-sm bg-green-50 text-green-700 border border-green-100'
+})
 
 function openRecoveryModal(email = '') {
 	recoveryEmail.value = email?.trim() || recoveryEmail.value
@@ -164,6 +174,11 @@ function openRecoveryModal(email = '') {
 
 function closeRecoveryModal() {
 	showRecoveryModal.value = false
+	// Cancella eventuale timeout programmato per il ritorno automatico
+	if (recoveryTimeout) {
+		clearTimeout(recoveryTimeout)
+		recoveryTimeout = null
+	}
 	recoveryMessage.value = ''
 }
 
@@ -179,6 +194,13 @@ async function handleRecoverySubmit() {
 	try {
 		await requestPasswordReset(recoveryEmail.value.trim())
 		// Manteniamo il messaggio visibile anche dopo il successo per chiarezza
+		// Dopo 5 secondi chiudiamo il modal e torniamo alla vista di login
+		if (recoveryTimeout) clearTimeout(recoveryTimeout)
+		recoveryTimeout = setTimeout(() => {
+			recoveryTimeout = null
+			closeRecoveryModal()
+			view.value = 'login'
+		}, 5000)
 	} catch (err) {
 		console.error('Errore richiesta reset password:', err)
 		recoveryMessage.value = 'Errore durante l\'invio. Riprova più tardi.'
