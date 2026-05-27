@@ -20,7 +20,7 @@
 			<nav class="flex items-center gap-6 text-sm font-semibold text-white sm:gap-8">
 				<router-link to="/" class="text-white/90 hover:text-white">Home</router-link>
 				<router-link to="/annunci" class="text-white/90 hover:text-white">
-					Ricerca appartamento
+					Annunci
 				</router-link>
 				<!-- Link visibile solo agli amministratori -->
 				<router-link

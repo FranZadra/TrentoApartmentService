@@ -7,11 +7,8 @@ const BCRYPT_SALT_ROUNDS = 10;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
-const RUOLI_VALIDI = ['utente base', 'amministratore', 'dipendente comune'];
+const RUOLI_VALIDI = ['utente base', 'utente verificato', 'inquilino', 'amministratore', 'dipendente comune'];
 
-/**
- * POST /api/v1/users/register
- */
 const register = async (req, res) => {
   const {
     nome,
@@ -191,4 +188,41 @@ const login = async (req, res) => {
   });
 };
 
-module.exports = { register, login };
+const verificaIdentita = async (req, res) => {
+  try {
+    // Ottieni l'ID dell'utente dal token JWT (caricato dal middleware autenticaToken)
+    const userId = req.user.sub;
+
+    // Trova l'utente nel database
+    const utente = await User.findById(userId);
+    if (!utente) {
+      return res.status(404).json({ messaggio: 'Utente non trovato' });
+    }
+
+    // Se l'utente è "utente base", lo aggiorna a "utente verificato"
+    // Per altri ruoli (inquilino, amministratore, dipendente comune), non fa nulla
+    if (utente.ruolo === 'utente base') {
+      utente.ruolo = 'utente verificato';
+      await utente.save();
+    }
+
+    // Ritorna l'utente aggiornato
+    return res.status(200).json({
+      messaggio: 'Verifica identità effettuata con successo',
+      utente: {
+        id: utente._id,
+        nome: utente.nome,
+        cognome: utente.cognome,
+        email: utente.email,
+        ruolo: utente.ruolo,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ 
+      messaggio: 'Errore durante la verifica identità',
+      error: error.message 
+    });
+  }
+};
+
+module.exports = { register, login, verificaIdentita };
