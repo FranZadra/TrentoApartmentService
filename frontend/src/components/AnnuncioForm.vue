@@ -66,7 +66,7 @@
             Annulla
           </button>
           <button type="submit" class="rounded-full bg-[#9a1528] px-5 py-2.5 font-semibold text-white hover:bg-[#7f1020]">
-            {{ isEdit ? 'Modifica' : 'Crea annuncio' }}
+            {{ isEdit ? 'Aggiorna' : 'Crea annuncio' }}
           </button>
         </div>
       </form>
