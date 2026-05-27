@@ -324,6 +324,36 @@ const updateAnnuncioById = async (req, res, next) => {
   }
 };
 
+// DELETE /api/v1/annunci/:id
+// Elimina un annuncio esistente, verificando che appartenga all'admin autenticato.
+const deleteAnnuncioById = async (req, res, next) => {
+  try {
+    const annuncioEsistente = await Annuncio.findById(req.params.id)
+      .populate('appartamento')
+      .populate('appartamentoId');
+
+    if (!annuncioEsistente) {
+      return res.status(404).json({
+        success: false,
+        message: 'Annuncio non trovato',
+      });
+    }
+
+    const appartamentoId = annuncioEsistente.appartamento?._id || annuncioEsistente.appartamentoId?._id || annuncioEsistente.appartamento || annuncioEsistente.appartamentoId;
+    const appartamento = await ensureAnnuncioOwnership(appartamentoId, req, res);
+    if (!appartamento) return;
+
+    await Annuncio.findByIdAndDelete(annuncioEsistente._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Annuncio eliminato con successo',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAnnunciAttivi,
   getAnnuncioById,
@@ -331,4 +361,5 @@ module.exports = {
   getAnnuncioByAppartamento,
   upsertAnnuncioByAppartamento,
   updateAnnuncioById,
+  deleteAnnuncioById,
 };

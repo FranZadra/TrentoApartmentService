@@ -45,4 +45,8 @@ export const annunciService = {
   updateById(id, payload) {
     return api.put(`/annunci/${id}`, payload)
   },
+  // DELETE /api/v1/annunci/:id — elimina un annuncio
+  deleteById(id) {
+    return api.delete(`/annunci/${id}`)
+  },
 }

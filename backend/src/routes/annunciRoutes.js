@@ -43,4 +43,9 @@ router.get('/:id', getAnnuncioById);
 // Aggiorna un annuncio esistente dell'amministratore autenticato.
 router.put('/:id', autenticaToken, updateAnnuncioById);
 
+// DELETE /api/v1/annunci/:id
+// Elimina un annuncio esistente dell'amministratore autenticato.
+const { deleteAnnuncioById } = require('../controllers/annunciController');
+router.delete('/:id', autenticaToken, deleteAnnuncioById);
+
 module.exports = router;
