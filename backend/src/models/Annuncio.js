@@ -17,7 +17,7 @@ AnnuncioSchema.path('appartamento').validate(function () {
 }, 'appartamento o appartamentoId è obbligatorio')
 
 // Se uno dei due campi manca, viene copiato dall'altro prima del salvataggio.
-AnnuncioSchema.pre('validate', function (next) {
+AnnuncioSchema.pre('validate', function () {
   if (!this.appartamento && this.appartamentoId) {
     this.appartamento = this.appartamentoId
   }
@@ -25,8 +25,6 @@ AnnuncioSchema.pre('validate', function (next) {
   if (!this.appartamentoId && this.appartamento) {
     this.appartamentoId = this.appartamento
   }
-
-  next()
 })
 
 module.exports = mongoose.model('Annuncio', AnnuncioSchema)

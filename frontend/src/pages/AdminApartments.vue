@@ -31,8 +31,10 @@
           v-for="apt in apartments"
           :key="apt._id"
           :apt="apt"
+          :show-annuncio-action="true"
           @view="viewDetails(apt._id)"
           @edit="editApartment(apt)"
+          @annuncio="openAnnuncio(apt)"
         />
       </div>
     </div>
@@ -41,6 +43,15 @@
 
   <!-- Form creazione/modifica -->
   <ApartmentForm v-if="showForm" :initial="formInitial" @saved="onSaved" @close="closeForm" />
+
+  <!-- Form annuncio -->
+  <AnnuncioForm
+    v-if="showAnnuncioForm && selectedApartmentForAnnuncio"
+    :apartment="selectedApartmentForAnnuncio"
+    :initial-annuncio="annuncioInitial"
+    @saved="onAnnuncioSaved"
+    @close="closeAnnuncio"
+  />
   </AppLayout>
 </template>
 
@@ -50,18 +61,21 @@ import AppLayout from '../components/layout/AppLayout.vue'
 import ApartmentDetails from '../components/ApartmentDetails.vue'
 import ApartmentForm from '../components/ApartmentForm.vue'
 import ApartmentCard from '../components/ApartmentCard.vue'
+import AnnuncioForm from '../components/AnnuncioForm.vue'
 
 const apartments = ref([])
 const loading = ref(false)
 const showDetails = ref(false)
 const showForm = ref(false)
+const showAnnuncioForm = ref(false)
 const selectedId = ref(null)
 const formInitial = ref(null)
+const selectedApartmentForAnnuncio = ref(null)
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
-watch([showDetails, showForm], ([detailsOpen, formOpen]) => {
-  document.body.style.overflow = detailsOpen || formOpen ? 'hidden' : ''
+watch([showDetails, showForm, showAnnuncioForm], ([detailsOpen, formOpen, annuncioOpen]) => {
+  document.body.style.overflow = detailsOpen || formOpen || annuncioOpen ? 'hidden' : ''
 })
 
 function getAuthHeaders() {
@@ -119,6 +133,16 @@ function editApartment(apt) {
   showForm.value = true
 }
 
+function openAnnuncio(apt) {
+  selectedApartmentForAnnuncio.value = apt
+  showAnnuncioForm.value = true
+}
+
+function closeAnnuncio() {
+  selectedApartmentForAnnuncio.value = null
+  showAnnuncioForm.value = false
+}
+
 function openCreate() {
   formInitial.value = null
   showForm.value = true
@@ -131,6 +155,11 @@ function closeForm() {
 
 function onSaved() {
   closeForm()
+  loadApartments()
+}
+
+function onAnnuncioSaved(annuncio) {
+  closeAnnuncio()
   loadApartments()
 }
 
