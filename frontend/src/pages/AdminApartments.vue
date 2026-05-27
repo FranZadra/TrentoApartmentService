@@ -31,8 +31,10 @@
           v-for="apt in apartments"
           :key="apt._id"
           :apt="apt"
+          :show-annuncio-action="true"
           @view="viewDetails(apt._id)"
           @edit="editApartment(apt)"
+          @annuncio="openAnnuncio(apt)"
         />
       </div>
     </div>
@@ -41,6 +43,15 @@
 
   <!-- Form creazione/modifica -->
   <ApartmentForm v-if="showForm" :initial="formInitial" @saved="onSaved" @close="closeForm" />
+
+  <!-- Form annuncio -->
+  <AnnuncioForm
+    v-if="showAnnuncioForm && selectedApartmentForAnnuncio"
+    :apartment="selectedApartmentForAnnuncio"
+    :initial-annuncio="annuncioInitial"
+    @saved="onAnnuncioSaved"
+    @close="closeAnnuncio"
+  />
   </AppLayout>
 </template>
 
@@ -50,18 +61,23 @@ import AppLayout from '../components/layout/AppLayout.vue'
 import ApartmentDetails from '../components/ApartmentDetails.vue'
 import ApartmentForm from '../components/ApartmentForm.vue'
 import ApartmentCard from '../components/ApartmentCard.vue'
+import AnnuncioForm from '../components/AnnuncioForm.vue'
 
 const apartments = ref([])
 const loading = ref(false)
 const showDetails = ref(false)
 const showForm = ref(false)
+const showAnnuncioForm = ref(false)
 const selectedId = ref(null)
 const formInitial = ref(null)
+const selectedApartmentForAnnuncio = ref(null)
+const annuncioInitial = ref(null)
+const annunciLocali = ref({})
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
-watch([showDetails, showForm], ([detailsOpen, formOpen]) => {
-  document.body.style.overflow = detailsOpen || formOpen ? 'hidden' : ''
+watch([showDetails, showForm, showAnnuncioForm], ([detailsOpen, formOpen, annuncioOpen]) => {
+  document.body.style.overflow = detailsOpen || formOpen || annuncioOpen ? 'hidden' : ''
 })
 
 function getAuthHeaders() {
@@ -76,7 +92,12 @@ async function loadApartments() {
       headers: getAuthHeaders(),
     })
     const body = await res.json()
-    if (res.ok && body && body.data) apartments.value = body.data
+    if (res.ok && body && body.data) {
+      apartments.value = body.data.map((apt) => ({
+        ...apt,
+        annuncio: annunciLocali.value[apt._id] || apt.annuncio || null,
+      }))
+    }
     else apartments.value = []
   } catch (err) {
     console.error(err)
@@ -119,6 +140,18 @@ function editApartment(apt) {
   showForm.value = true
 }
 
+function openAnnuncio(apt) {
+  selectedApartmentForAnnuncio.value = apt
+  annuncioInitial.value = annunciLocali.value[apt._id] || apt.annuncio || null
+  showAnnuncioForm.value = true
+}
+
+function closeAnnuncio() {
+  selectedApartmentForAnnuncio.value = null
+  annuncioInitial.value = null
+  showAnnuncioForm.value = false
+}
+
 function openCreate() {
   formInitial.value = null
   showForm.value = true
@@ -132,6 +165,31 @@ function closeForm() {
 function onSaved() {
   closeForm()
   loadApartments()
+}
+
+function onAnnuncioSaved(annuncio) {
+  if (!selectedApartmentForAnnuncio.value?._id) return
+
+  const apartmentId = selectedApartmentForAnnuncio.value._id
+  const savedAnnuncio = {
+    ...annuncio,
+    _id: annuncio._id || `local-${apartmentId}`,
+    appartamentoId: apartmentId,
+    appartamento: selectedApartmentForAnnuncio.value,
+  }
+
+  annunciLocali.value = {
+    ...annunciLocali.value,
+    [apartmentId]: savedAnnuncio,
+  }
+
+  apartments.value = apartments.value.map((apt) => (
+    apt._id === apartmentId
+      ? { ...apt, annuncio: savedAnnuncio }
+      : apt
+  ))
+
+  closeAnnuncio()
 }
 
 function reload() {
