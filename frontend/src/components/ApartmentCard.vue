@@ -72,13 +72,6 @@
         >
           Dettagli
         </button>
-        <button
-          @click="$emit('edit')"
-          class="rounded-full px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#7f1020]"
-          style="background-color: #9a1528"
-        >
-          Modifica
-        </button>
       </div>
     </div>
   </div>
