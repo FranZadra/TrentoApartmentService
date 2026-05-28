@@ -29,4 +29,20 @@ export async function getContrattiUtenteLoggato() {
   }
 }
 
+export async function segnalaGuasto(payload) {
+  try {
+    const response = await api.post('/gestione-interna/guasti', payload)
+    return { success: true, data: response.data }
+  } catch (error) {
+    const responseErrors = error.response?.data?.errors
+    const message = error.response?.data?.error || error.response?.data?.messaggio || 'Errore durante la segnalazione del guasto'
+    return {
+      success: false,
+      error: message,
+      errors: Array.isArray(responseErrors) ? responseErrors : null,
+      status: error.response?.status,
+    }
+  }
+}
+
 export default api

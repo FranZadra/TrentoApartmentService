@@ -37,7 +37,9 @@
             <div class="mt-5 flex flex-wrap gap-3">
               <button
                 type="button"
-                class="rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
+                :disabled="!appartamentoAttivo"
+                class="rounded-full px-5 py-3 text-sm font-semibold text-white transition"
+                :class="appartamentoAttivo ? 'bg-primary hover:bg-primary-dark' : 'cursor-not-allowed bg-zinc-300 text-zinc-600'"
                 @click="vaiAGuasti"
               >
                 Segnala un guasto
@@ -83,23 +85,35 @@
       </div>
     </section>
   </main>
+
+  <GuastoForm
+    v-if="showGuastoForm"
+    :apartment="appartamentoAttivo"
+    @saved="onGuastoSaved"
+    @close="closeGuastoForm"
+  />
 </AppLayout>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { getContrattiUtenteLoggato } from '../services/gestioneInternaService'
+import GuastoForm from '@/components/GuastoForm.vue'
 
-const router = useRouter()
 const contratti = ref([])
 const isLoading = ref(true)
 const errorMessage = ref('')
 const mostraPassati = ref(false)
+const showGuastoForm = ref(false)
 
 const contrattoAttivo = computed(() => contratti.value.find((contratto) => contratto.stato === 'attivo') || null)
 const contrattiPassati = computed(() => contratti.value.filter((contratto) => contratto.stato !== 'attivo'))
+const appartamentoAttivo = computed(() => contrattoAttivo.value?.idAppartamento || null)
+
+watch(showGuastoForm, (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+})
 
 function indirizzoCompleto(appartamento) {
   if (!appartamento?.indirizzo) return 'Indirizzo non disponibile'
@@ -114,8 +128,25 @@ function formattaPeriodo(inizio, fine) {
 }
 
 function vaiAGuasti() {
-  router.push('/guasti')
+  if (!appartamentoAttivo.value) return
+  showGuastoForm.value = true
 }
+
+function closeGuastoForm() {
+  showGuastoForm.value = false
+}
+
+function onGuastoSaved() {
+  closeGuastoForm()
+}
+
+onUnmounted(() => {
+  document.body.style.overflow = ''
+})
+
+watch(contrattoAttivo, (value) => {
+  if (!value) showGuastoForm.value = false
+})
 
 async function caricaContratti() {
   isLoading.value = true
