@@ -4,7 +4,7 @@
     <section class="mx-auto flex w-full max-w-6xl flex-col items-center gap-8">
       <header class="text-center">
         <p class="text-sm font-semibold uppercase tracking-[0.25em] text-primary">Gestione interna</p>
-        <h1 class="mt-2 text-3xl font-display text-zinc-900 sm:text-4xl">I tuoi contratti</h1>
+        <h1 class="mt-2 text-3xl font-display text-zinc-900 sm:text-4xl">I tuoi appartamenti</h1>
       </header>
 
       <div v-if="isLoading" class="rounded-3xl border border-zinc-200 bg-white px-6 py-10 text-sm text-zinc-600 shadow-sm">
@@ -20,21 +20,47 @@
           Non hai alcun contratto registrato a tuo nome.
         </div>
 
-        <div v-else-if="contrattoAttivo" class="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-lg sm:p-8">
-          <div class="w-full overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
-            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Appartamento attuale</p>
-            <h2 class="mt-2 text-2xl font-display text-zinc-900">
-              {{ indirizzoCompleto(contrattoAttivo?.idAppartamento) }}
-            </h2>
+        <div v-else-if="contrattoAttivo" class="w-full rounded-2xl border border-zinc-200 bg-white shadow-lg">
+          <div class="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-start">
+            <!-- Sezione sinistra: dati appartamento e guasti -->
+            <div class="flex-1">
+              <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
+                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Contratto attuale</p>
+                <h2 class="mt-2 text-2xl font-display text-zinc-900">
+                  {{ indirizzoCompleto(contrattoAttivo?.idAppartamento) }}
+                </h2>
 
-            <div class="mt-4 grid gap-3 text-sm text-zinc-700 sm:grid-cols-2">
-              <div class="rounded-2xl bg-white px-4 py-3">Stanze: <strong>{{ contrattoAttivo?.idAppartamento?.numStanze ?? '—' }}</strong></div>
-              <div class="rounded-2xl bg-white px-4 py-3">Bagni: <strong>{{ contrattoAttivo?.idAppartamento?.numBagni ?? '—' }}</strong></div>
-              <div class="rounded-2xl bg-white px-4 py-3">Canone mensile: <strong>€ {{ contrattoAttivo?.canoneMensile ?? '—' }}</strong></div>
-              <div class="rounded-2xl bg-white px-4 py-3">Stato: <strong>{{ contrattoAttivo?.stato }}</strong></div>
+                <div class="mt-4 grid gap-3 text-sm text-zinc-700 sm:grid-cols-2">
+                  <div class="rounded-2xl bg-white px-4 py-3">Stanze: <strong>{{ contrattoAttivo?.idAppartamento?.numStanze ?? '—' }}</strong></div>
+                  <div class="rounded-2xl bg-white px-4 py-3">Bagni: <strong>{{ contrattoAttivo?.idAppartamento?.numBagni ?? '—' }}</strong></div>
+                  <div class="rounded-2xl bg-white px-4 py-3">Canone mensile: <strong>€ {{ contrattoAttivo?.canoneMensile ?? '—' }}</strong></div>
+                  <div class="rounded-2xl bg-white px-4 py-3">Stato: <strong>{{ capitalizeFirst(contrattoAttivo?.stato) }}</strong></div>
+                </div>
+              </div>
+
+              <div v-if="successMessage" class="mt-4 rounded-md border border-green-100 bg-green-50 px-4 py-3 text-sm text-green-800">
+                {{ successMessage }}
+              </div>
             </div>
 
-            <div class="mt-5 flex flex-wrap gap-3">
+            <!-- Sezione destra: azioni rapide -->
+            <div class="flex flex-col items-stretch justify-start gap-3 lg:w-56">
+              <button
+                type="button"
+                class="rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary"
+                @click="azionePlaceholder('calendario')"
+              >
+                Faccende
+              </button>
+
+              <button
+                type="button"
+                class="rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary"
+                @click="azionePlaceholder('consumi')"
+              >
+                Consumi
+              </button>
+
               <button
                 type="button"
                 :disabled="!appartamentoAttivo"
@@ -45,17 +71,34 @@
                 Segnala un guasto
               </button>
             </div>
-            <div v-if="successMessage" class="mt-4 rounded-md bg-green-50 border border-green-100 px-4 py-3 text-sm text-green-800">
-              {{ successMessage }}
-            </div>
+          </div>
 
-            <div v-if="guastiAttivi.length" class="mt-6 rounded-2xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700">
-              <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Segnalazioni attive</p>
-              <ul class="space-y-3">
+          <!-- Sezione segnalazioni estesa: occupa tutta la larghezza della card -->
+          <div class="px-6 sm:px-8 mb-4">
+            <div v-if="guastiAttivi.length" class="mt-2 rounded-2xl border border-zinc-200 bg-white p-3 text-sm text-zinc-700">
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <p class="flex h-7 items-center text-xs font-semibold uppercase leading-none tracking-[0.2em] text-zinc-500">
+                Segnalazioni attive
+              </p>
+              <button
+                type="button"
+                class="flex h-7 items-center text-xs font-semibold leading-none text-primary transition hover:text-primary-dark hover:underline"
+                @click="mostraGuasti = !mostraGuasti"
+              >
+                {{ mostraGuasti ? 'Nascondi' : 'Mostra' }}
+              </button>
+            </div>
+            <transition name="fade">
+              <ul v-if="mostraGuasti" class="space-y-2">
                 <li v-for="g in guastiAttivi" :key="g._id" class="flex items-start gap-3">
                   <div class="flex-1">
                     <div class="flex items-baseline justify-between gap-3">
-                      <strong class="text-zinc-900">{{ g.categoria || 'Altro' }} — {{ g.priorita || g.priorità || 'media' }}</strong>
+                      <span>
+                        <strong :class="getPriorityColor(g.priorita || g.priorità || 'media')">
+                          {{ (g.priorita || g.priorità || 'media').toUpperCase() }}
+                        </strong>
+                        <span class="text-zinc-700">: {{ g.categoria || 'Altro' }}</span>
+                      </span>
                       <span class="text-xs text-zinc-500">{{ new Date(g.createdAt || g.dataSegnalazione).toLocaleDateString('it-IT') }}</span>
                     </div>
                     <p class="mt-1 text-sm text-zinc-700">{{ g.descrizione }}</p>
@@ -63,6 +106,7 @@
                   </div>
                 </li>
               </ul>
+            </transition>
             </div>
           </div>
         </div>
@@ -71,32 +115,44 @@
           Non hai un contratto attivo al momento. Puoi consultare solo i contratti passati.
         </div>
 
-        <div v-if="contrattiPassati.length" class="mx-auto w-full max-w-4xl">
-          <button
-            type="button"
-            class="mb-4 text-sm font-semibold text-primary transition hover:text-primary-dark hover:underline"
-            @click="mostraPassati = !mostraPassati"
-          >
-            {{ mostraPassati ? 'Nascondi contratti passati' : 'Mostra contratti passati' }}
-          </button>
+        <div v-if="contrattiPassati.length" class="w-full">
+          <div class="mb-4 text-center">
+            <button
+              type="button"
+              class="text-sm font-semibold text-primary transition hover:text-primary-dark hover:underline"
+              @click="mostraPassati = !mostraPassati"
+            >
+              {{ mostraPassati ? 'Nascondi contratti passati' : 'Mostra contratti passati' }}
+            </button>
+          </div>
 
           <transition name="fade">
             <div v-if="mostraPassati" class="grid gap-4">
               <article
                 v-for="contratto in contrattiPassati"
                 :key="contratto._id"
-                class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm"
+                class="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm lg:flex-row lg:items-center"
               >
-                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Contratto passato</p>
-                <h3 class="mt-2 text-lg font-semibold text-zinc-900">
-                  {{ indirizzoCompleto(contratto.idAppartamento) }}
-                </h3>
-                <p class="mt-1 text-sm text-zinc-600">
-                  {{ formattaPeriodo(contratto.dataInizio, contratto.dataFine) }}
-                </p>
-                <p class="mt-2 text-sm text-zinc-700">
-                  Canone mensile: <strong>€ {{ contratto.canoneMensile }}</strong>
-                </p>
+                <div class="flex-1">
+                  <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Contratto passato</p>
+                  <h3 class="mt-2 text-lg font-semibold text-zinc-900">
+                    {{ indirizzoCompleto(contratto.idAppartamento) }}
+                  </h3>
+                  <p class="mt-1 text-sm text-zinc-600">
+                    {{ formattaPeriodo(contratto.dataInizio, contratto.dataFine) }}
+                  </p>
+                  <p class="mt-2 text-sm text-zinc-700">
+                    Canone mensile: <strong>€ {{ contratto.canoneMensile }}</strong>
+                  </p>
+                </div>
+                <div class="flex flex-shrink-0 items-center lg:w-40">
+                  <button
+                    type="button"
+                    class="flex w-full items-center justify-center rounded-full bg-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-300"
+                  >
+                    Lascia una recensione
+                  </button>
+                </div>
               </article>
             </div>
           </transition>
@@ -124,6 +180,7 @@ const contratti = ref([])
 const isLoading = ref(true)
 const errorMessage = ref('')
 const mostraPassati = ref(false)
+const mostraGuasti = ref(false)
 const showGuastoForm = ref(false)
 const guastiAttivi = ref([])
 const successMessage = ref('')
@@ -148,9 +205,32 @@ function formattaPeriodo(inizio, fine) {
   return `${start} — ${end}`
 }
 
+function capitalizeFirst(str) {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
+
+function getPriorityColor(priorita) {
+  const p = (priorita || 'media').toLowerCase()
+  switch (p) {
+    case 'scarsa':
+      return 'text-yellow-700 font-semibold'
+    case 'media':
+      return 'text-orange-600 font-semibold'
+    case 'urgente':
+      return 'text-red-700 font-semibold'
+    default:
+      return 'text-zinc-900 font-semibold'
+  }
+}
+
 function vaiAGuasti() {
   if (!appartamentoAttivo.value) return
   showGuastoForm.value = true
+}
+
+function azionePlaceholder() {
+  // azione temporanea: da collegare in seguito
 }
 
 function closeGuastoForm() {
@@ -160,7 +240,7 @@ function closeGuastoForm() {
 function onGuastoSaved(payload) {
   // payload may contain created guasto
   closeGuastoForm()
-  successMessage.value = 'Segnalazione registrata con successo.'
+  successMessage.value = 'Segnalazione ricevuta — grazie, provvederemo a gestirla.'
   setTimeout(() => (successMessage.value = ''), 4000)
   // ricarica i guasti visibili
   loadGuasti()
