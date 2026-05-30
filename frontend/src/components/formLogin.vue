@@ -144,7 +144,9 @@ async function handleSubmit() {
 					router.push('/dashboardComune')
 				} else if (ruolo === 'amministratore') {
 							router.push({ name: 'admin-appartamenti' })
-				} else {
+				} else if (ruolo === 'utente verificato' || ruolo === 'inquilino') {
+					router.push('/gestione-interna')
+				}else {
 					router.push('/')
 				}
 			}, 1000)

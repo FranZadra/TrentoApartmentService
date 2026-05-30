@@ -22,6 +22,10 @@
 				<router-link to="/annunci" class="text-white/90 hover:text-white">
 					Annunci
 				</router-link>
+				<router-link v-if="isInquilino" to="/gestione-interna" class="text-white/90 hover:text-white">
+					Gestione interna
+				</router-link>
+
 				<!-- Link visibile solo agli amministratori -->
 				<router-link
 					v-if="isAdmin"
@@ -51,5 +55,8 @@ const auth = useAuthStore()
 const isLoggedIn = computed(() => !!auth.token)
 const isAdmin = computed(() => {
 	return !!(auth.user && auth.user.ruolo && auth.user.ruolo === 'amministratore')
+})
+const isInquilino = computed(() => {
+	return !!(auth.user && auth.user.ruolo && (auth.user.ruolo === 'inquilino' || auth.user.ruolo === 'utente verificato'))
 })
 </script>
