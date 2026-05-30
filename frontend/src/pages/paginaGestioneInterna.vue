@@ -76,7 +76,7 @@
           <!-- Sezione segnalazioni estesa: occupa tutta la larghezza della card -->
           <div class="px-6 sm:px-8 mb-4">
             <div v-if="guastiAttivi.length" class="mt-2 rounded-2xl border border-zinc-200 bg-white p-3 text-sm text-zinc-700">
-            <div class="mb-2 flex items-center justify-between gap-3">
+            <div class="mb-2 flex items-center justify-between gap-3 px-4">
               <p class="flex h-7 items-center text-xs font-semibold uppercase leading-none tracking-[0.2em] text-zinc-500">
                 Segnalazioni attive
               </p>
@@ -89,20 +89,45 @@
               </button>
             </div>
             <transition name="fade">
-              <ul v-if="mostraGuasti" class="space-y-2">
-                <li v-for="g in guastiAttivi" :key="g._id" class="flex items-start gap-3">
+              <ul v-if="mostraGuasti" class="space-y-3">
+                <li v-for="g in guastiAttivi" :key="g._id" class="flex items-start gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                  <!-- Sinistra: dati identificativi -->
                   <div class="flex-1">
-                    <div class="flex items-baseline justify-between gap-3">
-                      <span>
-                        <strong :class="getPriorityColor(g.priorita || g.priorità || 'media')">
-                          {{ (g.priorita || g.priorità || 'media').toUpperCase() }}
-                        </strong>
-                        <span class="text-zinc-700">: {{ g.categoria || 'Altro' }}</span>
-                      </span>
-                      <span class="text-xs text-zinc-500">{{ new Date(g.createdAt || g.dataSegnalazione).toLocaleDateString('it-IT') }}</span>
+                    <div>
+                      <strong :class="getPriorityColor(g.priorita || g.priorità || 'media')">
+                        {{ (g.priorita || g.priorità || 'media').toUpperCase() }}
+                      </strong>
+                      <span class="text-zinc-700">: {{ g.categoria || 'Altro' }}</span>
                     </div>
-                    <p class="mt-1 text-sm text-zinc-700">{{ g.descrizione }}</p>
-                    <div v-if="g.stato" class="mt-1 text-xs text-zinc-500">Stato: {{ g.stato }}</div>
+                    <p class="mt-2 text-sm text-zinc-700">{{ g.descrizione }}</p>
+                    <div v-if="g.stato" class="mt-2 text-xs text-zinc-500">Stato: <strong>{{ capitalizeFirst(g.stato) }}</strong></div>
+                  </div>
+
+                  <!-- Destra: date impilate e pulsante sotto -->
+                  <div class="flex flex-col items-end gap-3 lg:min-w-[180px]">
+                    <div class="text-xs text-zinc-500 text-right">
+                      <div v-if="g.createdAt || g.dataSegnalazione">
+                        <span class="font-semibold">Segnalato: {{ new Date(g.createdAt || g.dataSegnalazione).toLocaleDateString('it-IT') }}</span>
+                        
+                      </div>
+                      <div v-if="g.dataPresoInCarico" class="mt-2">
+                        <span class="font-semibold">Preso in carico: {{ new Date(g.dataPresoInCarico).toLocaleDateString('it-IT') }}</span>
+
+                      </div>
+                      <div v-if="g.dataSistemazione" class="mt-2">
+                        <span class="font-semibold">Risolto: {{ new Date(g.dataSistemazione).toLocaleDateString('it-IT') }}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <button
+                        v-if="g.stato === 'preso in carico'"
+                        @click="confermaRisoluzione(g)"
+                        class="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+                      >
+                        Guasto risolto
+                      </button>
+                    </div>
                   </div>
                 </li>
               </ul>
@@ -173,7 +198,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { getContrattiUtenteLoggato, getGuastiAppartamento } from '../services/gestioneInternaService'
+import { getContrattiUtenteLoggato, getGuastiAppartamento, risolviGuasto } from '../services/gestioneInternaService'
 import GuastoForm from '@/components/GuastoForm.vue'
 
 const contratti = ref([])
@@ -255,6 +280,23 @@ async function loadGuasti() {
   const res = await getGuastiAppartamento(appId)
   if (res.success) {
     guastiAttivi.value = res.data?.data || []
+  }
+}
+
+async function confermaRisoluzione(guasto) {
+  if (!guasto || !guasto._id) return
+
+  try {
+    const res = await risolviGuasto(guasto._id)
+    if (res.success) {
+      successMessage.value = 'Segnalazione marcata come risolta.'
+      setTimeout(() => (successMessage.value = ''), 4000)
+      await loadGuasti()
+    } else {
+      console.error('Errore risoluzione:', res.error)
+    }
+  } catch (err) {
+    console.error(err)
   }
 }
 

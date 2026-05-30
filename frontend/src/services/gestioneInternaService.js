@@ -75,4 +75,14 @@ export async function prendiInCaricoGuastoAdmin(guastoId) {
   }
 }
 
+export async function risolviGuasto(guastoId) {
+  try {
+    const response = await api.put(`/gestione-interna/guasti/${guastoId}/risolvi`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message = error.response?.data?.error || 'Errore durante l\'operazione'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
 export default api

@@ -175,4 +175,36 @@ const prendiInCaricoGuastoAdmin = async (req, res) => {
     }
 }
 
-module.exports = { getContratti, segnalaGuasto, getGuastiAppartamento, getGuastiAppartamentoAdmin, prendiInCaricoGuastoAdmin };
+const risolviGuasto = async (req, res) => {
+    try {
+        const userId = req.user?.sub || req.user?.id || req.user?._id;
+        if (!userId) return res.status(401).json({ error: 'Utente non autenticato' });
+
+        const { guastoId } = req.params;
+        if (!guastoId) return res.status(400).json({ error: 'ID guasto mancante' });
+
+        const guasto = await Guasto.findById(guastoId);
+        if (!guasto) return res.status(404).json({ error: 'Segnalazione non trovata' });
+
+        // Verifica che l'utente abbia un contratto attivo per quell'appartamento
+        const contratto = await Contratto.findOne({ idInquilino: userId, idAppartamento: guasto.idAppartamento, stato: 'attivo' });
+        if (!contratto) return res.status(403).json({ error: 'Non autorizzato a modificare questa segnalazione' });
+
+        // Verifica che lo stato sia "preso in carico"
+        if (guasto.stato !== 'preso in carico') {
+            return res.status(400).json({ error: 'La segnalazione non può essere risolta in questo stato' });
+        }
+
+        // Aggiorna stato e dataSistemazione
+        guasto.stato = 'sistemato';
+        guasto.dataSistemazione = new Date();
+        await guasto.save();
+
+        return res.status(200).json({ data: guasto });
+    } catch (error) {
+        console.error('Errore risoluzione guasto:', error);
+        return res.status(500).json({ error: error.message, stack: error.stack });
+    }
+}
+
+module.exports = { getContratti, segnalaGuasto, getGuastiAppartamento, getGuastiAppartamentoAdmin, prendiInCaricoGuastoAdmin, risolviGuasto };
