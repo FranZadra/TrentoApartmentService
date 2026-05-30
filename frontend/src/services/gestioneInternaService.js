@@ -45,4 +45,14 @@ export async function segnalaGuasto(payload) {
   }
 }
 
+export async function getGuastiAppartamento(appId) {
+  try {
+    const response = await api.get(`/gestione-interna/guasti/${appId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message = error.response?.data?.error || 'Errore nel recupero dei guasti'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
 export default api

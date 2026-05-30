@@ -92,4 +92,26 @@ const segnalaGuasto = async (req, res) => {
     }
 }
 
-module.exports = { getContratti, segnalaGuasto };
+const getGuastiAppartamento = async (req, res) => {
+    try {
+        const userId = req.user?.sub || req.user?.id || req.user?._id;
+        if (!userId) return res.status(401).json({ error: 'Utente non autenticato' });
+
+        const { appId } = req.params;
+        if (!appId) return res.status(400).json({ error: 'ID appartamento mancante' });
+
+        // Verifica che l'utente abbia un contratto attivo per quell'appartamento
+        const contratto = await Contratto.findOne({ idInquilino: userId, idAppartamento: appId, stato: 'attivo' });
+        if (!contratto) return res.status(403).json({ error: 'Non autorizzato a visualizzare i guasti di questo appartamento' });
+
+        // Mostra solo guasti non archiviati
+        const guasti = await Guasto.find({ idAppartamento: appId, stato: { $ne: 'archiviato' } }).sort({ createdAt: -1 });
+
+        return res.status(200).json({ data: guasti });
+    } catch (error) {
+        console.error('Errore getGuastiAppartamento:', error);
+        return res.status(500).json({ error: error.message, stack: error.stack });
+    }
+}
+
+module.exports = { getContratti, segnalaGuasto, getGuastiAppartamento };

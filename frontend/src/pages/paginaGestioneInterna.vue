@@ -45,6 +45,25 @@
                 Segnala un guasto
               </button>
             </div>
+            <div v-if="successMessage" class="mt-4 rounded-md bg-green-50 border border-green-100 px-4 py-3 text-sm text-green-800">
+              {{ successMessage }}
+            </div>
+
+            <div v-if="guastiAttivi.length" class="mt-6 rounded-2xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700">
+              <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Segnalazioni attive</p>
+              <ul class="space-y-3">
+                <li v-for="g in guastiAttivi" :key="g._id" class="flex items-start gap-3">
+                  <div class="flex-1">
+                    <div class="flex items-baseline justify-between gap-3">
+                      <strong class="text-zinc-900">{{ g.categoria || 'Altro' }} — {{ g.priorita || g.priorità || 'media' }}</strong>
+                      <span class="text-xs text-zinc-500">{{ new Date(g.createdAt || g.dataSegnalazione).toLocaleDateString('it-IT') }}</span>
+                    </div>
+                    <p class="mt-1 text-sm text-zinc-700">{{ g.descrizione }}</p>
+                    <div v-if="g.stato" class="mt-1 text-xs text-zinc-500">Stato: {{ g.stato }}</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -98,7 +117,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { getContrattiUtenteLoggato } from '../services/gestioneInternaService'
+import { getContrattiUtenteLoggato, getGuastiAppartamento } from '../services/gestioneInternaService'
 import GuastoForm from '@/components/GuastoForm.vue'
 
 const contratti = ref([])
@@ -106,6 +125,8 @@ const isLoading = ref(true)
 const errorMessage = ref('')
 const mostraPassati = ref(false)
 const showGuastoForm = ref(false)
+const guastiAttivi = ref([])
+const successMessage = ref('')
 
 const contrattoAttivo = computed(() => contratti.value.find((contratto) => contratto.stato === 'attivo') || null)
 const contrattiPassati = computed(() => contratti.value.filter((contratto) => contratto.stato !== 'attivo'))
@@ -136,8 +157,25 @@ function closeGuastoForm() {
   showGuastoForm.value = false
 }
 
-function onGuastoSaved() {
+function onGuastoSaved(payload) {
+  // payload may contain created guasto
   closeGuastoForm()
+  successMessage.value = 'Segnalazione registrata con successo.'
+  setTimeout(() => (successMessage.value = ''), 4000)
+  // ricarica i guasti visibili
+  loadGuasti()
+}
+
+async function loadGuasti() {
+  guastiAttivi.value = []
+  const app = appartamentoAttivo.value
+  if (!app) return
+  const appId = typeof app === 'string' ? app : (app._id || app.id || '')
+  if (!appId) return
+  const res = await getGuastiAppartamento(appId)
+  if (res.success) {
+    guastiAttivi.value = res.data?.data || []
+  }
 }
 
 onUnmounted(() => {
@@ -146,6 +184,8 @@ onUnmounted(() => {
 
 watch(contrattoAttivo, (value) => {
   if (!value) showGuastoForm.value = false
+  // quando cambia il contratto attivo, carica i guasti relativi
+  if (value) loadGuasti()
 })
 
 async function caricaContratti() {
@@ -155,6 +195,11 @@ async function caricaContratti() {
   const response = await getContrattiUtenteLoggato()
   if (response.success) {
     contratti.value = response.data?.contratti ?? []
+    // se c'è un contratto attivo, carica i guasti
+    if (contratti.value && contratti.value.length) {
+      const ca = contratti.value.find((c) => c.stato === 'attivo')
+      if (ca) await loadGuasti()
+    }
   } else {
     errorMessage.value = response.error
   }
