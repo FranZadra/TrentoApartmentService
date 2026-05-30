@@ -1,5 +1,6 @@
 const Contratto = require('../models/Contratto');
 const Guasto = require('../models/Guasto');
+const Appartamento = require('../models/Appartamento');
 const User = require('../models/User');
 
 const getContratti = async (req, res) => {
@@ -114,4 +115,64 @@ const getGuastiAppartamento = async (req, res) => {
     }
 }
 
-module.exports = { getContratti, segnalaGuasto, getGuastiAppartamento };
+const getGuastiAppartamentoAdmin = async (req, res) => {
+    try {
+        const userId = req.user?.sub || req.user?.id || req.user?._id;
+        if (!userId) return res.status(401).json({ error: 'Utente non autenticato' });
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+
+        if (user.ruolo !== 'amministratore') {
+            return res.status(403).json({ error: 'Non autorizzato a visualizzare le segnalazioni di questo appartamento' });
+        }
+
+        const { appId } = req.params;
+        if (!appId) return res.status(400).json({ error: 'ID appartamento mancante' });
+
+        const appartamento = await Appartamento.findOne({ _id: appId, amministratoreId: userId });
+        if (!appartamento) {
+            return res.status(403).json({ error: 'Non autorizzato a visualizzare le segnalazioni di questo appartamento' });
+        }
+
+        const guasti = await Guasto.find({ idAppartamento: appId, stato: { $ne: 'archiviato' } }).sort({ createdAt: -1 });
+
+        return res.status(200).json({ data: guasti });
+    } catch (error) {
+        console.error('Errore getGuastiAppartamentoAdmin:', error);
+        return res.status(500).json({ error: error.message, stack: error.stack });
+    }
+}
+
+const prendiInCaricoGuastoAdmin = async (req, res) => {
+    try {
+        const userId = req.user?.sub || req.user?.id || req.user?._id;
+        if (!userId) return res.status(401).json({ error: 'Utente non autenticato' });
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+        if (user.ruolo !== 'amministratore') return res.status(403).json({ error: 'Non autorizzato' });
+
+        const { guastoId } = req.params;
+        if (!guastoId) return res.status(400).json({ error: 'ID guasto mancante' });
+
+        const guasto = await Guasto.findById(guastoId);
+        if (!guasto) return res.status(404).json({ error: 'Segnalazione non trovata' });
+
+        // Verifica che l'amministratore gestisca l'appartamento del guasto
+        const appartamento = await Appartamento.findOne({ _id: guasto.idAppartamento, amministratoreId: userId });
+        if (!appartamento) return res.status(403).json({ error: 'Non autorizzato a modificare questa segnalazione' });
+
+        // Aggiorna stato e dataPresoInCarico
+        guasto.stato = 'preso in carico';
+        guasto.dataPresoInCarico = Date.now();
+        await guasto.save();
+
+        return res.status(200).json({ data: guasto });
+    } catch (error) {
+        console.error('Errore prendiInCaricoGuastoAdmin:', error);
+        return res.status(500).json({ error: error.message, stack: error.stack });
+    }
+}
+
+module.exports = { getContratti, segnalaGuasto, getGuastiAppartamento, getGuastiAppartamentoAdmin, prendiInCaricoGuastoAdmin };

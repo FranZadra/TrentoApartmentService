@@ -60,6 +60,12 @@
       <!-- Azioni a destra -->
       <div class="flex flex-row gap-2 border-t border-zinc-200 bg-zinc-50 px-5 py-5 md:flex-col md:border-l md:border-t-0 md:min-w-[170px] md:justify-center">
         <button
+          @click="$emit('view')"
+          class="rounded-full border border-[#9a1528] px-4 py-2 text-sm font-semibold text-[#9a1528] transition hover:bg-zinc-100"
+        >
+          Dettagli
+        </button>
+        <button
           v-if="showAnnuncioAction"
           @click="$emit('annuncio')"
           class="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
@@ -67,11 +73,13 @@
           Annuncio
         </button>
         <button
-          @click="$emit('view')"
+          v-if="showGuastiAction"
+          @click="$emit('guasti')"
           class="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
         >
-          Dettagli
+          {{ guastiActionLabel }}
         </button>
+        
       </div>
     </div>
   </div>
@@ -91,9 +99,17 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  showGuastiAction: {
+    type: Boolean,
+    default: false,
+  },
+  guastiActionLabel: {
+    type: String,
+    default: 'Segnalazioni',
+  },
 })
 
-defineEmits(['view', 'edit', 'annuncio'])
+defineEmits(['view', 'edit', 'annuncio', 'guasti'])
 </script>
 
 <style scoped>
