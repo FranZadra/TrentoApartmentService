@@ -34,6 +34,15 @@
 				>
 					I tuoi appartamenti
 				</router-link>
+
+				<!-- Link visibile solo ai dipendenti comunali -->
+				<router-link
+					v-if="isDipendenteComunale"
+					to="/dashboard-statistica"
+					class="text-white/90 hover:text-white"
+				>
+					TAS Data
+				</router-link>
 				<router-link
 					:to="isLoggedIn ? '/profilo' : '/accesso'"
 					class="rounded-full border border-white px-4 py-2 text-white transition-colors hover:bg-white hover:text-[#9a1528]"
@@ -58,5 +67,8 @@ const isAdmin = computed(() => {
 })
 const isInquilino = computed(() => {
 	return !!(auth.user && auth.user.ruolo && (auth.user.ruolo === 'inquilino' || auth.user.ruolo === 'utente verificato'))
+})
+const isDipendenteComunale = computed(() => {
+	return !!(auth.user && auth.user.ruolo && auth.user.ruolo === 'dipendente comune')
 })
 </script>

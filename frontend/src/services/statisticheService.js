@@ -1,0 +1,40 @@
+// src/services/statisticheService.js — Chiamate API per le statistiche aggregate
+
+import axios from 'axios'
+
+const api = axios.create({
+  baseURL: '/api/v1',
+  headers: { 'Content-Type': 'application/json' },
+})
+
+// Inietta automaticamente il token JWT in ogni richiesta
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('tas_token')
+  if (token) {
+    return {
+      ...config,
+      headers: {
+        ...config.headers,
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  }
+  return config
+})
+
+/**
+ * Recupera le statistiche aggregate sul mercato degli affitti.
+ * @param {Object} params - Filtri opzionali: { cap, tipoCamera, perStudenti }
+ */
+export async function getStatistiche(params = {}) {
+  try {
+    const response = await api.get('/statistiche', { params })
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message =
+      error.response?.data?.message || 'Errore nel recupero delle statistiche'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
+export default api

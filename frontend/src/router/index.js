@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 // Importazione lazy delle pagine: il bundle viene caricato solo quando serve
 import HomePage from '@/pages/HomePage.vue'
+import DashboardStatistiche from '@/pages/DashboardStatistiche.vue'
 import AnnunciPage from '@/pages/AnnunciPage.vue'
 import MansioniPage from '@/pages/MansioniPage.vue'
 import GuastiPage from '@/pages/GuastiPage.vue'
@@ -19,6 +20,17 @@ const AdminApartments = () => import('../pages/AdminApartments.vue')
 function richiedeAutenticazione(_to, _from, next) {
   const token = localStorage.getItem('tas_token') || localStorage.getItem('token')
   if (!token) {
+    next({ name: 'accesso' })
+  } else {
+    next()
+  }
+}
+
+// Guardia per la dashboard statistica: richiede token + ruolo dipendente comunale.
+function richiedeDipendenteComunale(_to, _from, next) {
+  const token = localStorage.getItem('tas_token') || localStorage.getItem('token')
+  const ruolo = localStorage.getItem('tas_role')
+  if (!token || ruolo !== 'dipendente comune') {
     next({ name: 'accesso' })
   } else {
     next()
@@ -88,7 +100,15 @@ const routes = [
 		name: 'profilo',
 		component: PaginaProfilo,
 		meta: { title: 'TAS - Profilo' },
-	}
+	},
+  {
+    // Dashboard statistica per dipendenti comunali (US16).
+    path: '/dashboard-statistica',
+    name: 'dashboard-statistica',
+    component: DashboardStatistiche,
+    beforeEnter: richiedeDipendenteComunale,
+    meta: { title: 'TAS Data' },
+  },
 ]
 
 const router = createRouter({
