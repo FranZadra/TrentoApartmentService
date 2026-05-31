@@ -7,6 +7,7 @@ const annunciRoutes = require('./routes/annunciRoutes');
 const userRoutes = require('./routes/userRoutes');
 const routesAppartamenti = require('./routes/routesAppartamenti');
 const routesGestioneInterna = require('./routes/routesGestioneInterna');
+const routesStatistiche = require('./routes/routesStatistiche');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/api/v1/annunci', annunciRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/appartamenti', routesAppartamenti);
 app.use('/api/v1/gestione-interna', routesGestioneInterna);
+app.use('/api/v1/statistiche', routesStatistiche);
 
 // Route di "health": check utile per verificare che il server sia ok
 app.get('/health', (req, res) => {

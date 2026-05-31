@@ -25,6 +25,14 @@
 					>
 						Scopri le funzioni
 					</a>
+					<!-- Pulsante visibile solo ai dipendenti comunali (US16) -->
+					<router-link
+						v-if="isDipendenteComunale"
+						to="/dashboard-statistica"
+						class="inline-flex items-center justify-center rounded-full border border-[#9a1528] px-6 py-3 text-sm font-semibold text-[#9a1528] hover:bg-[#9a1528] hover:text-white"
+					>
+						TAS Data
+					</router-link>
 				</div>
 
 				<div class="grid gap-4 pt-4 sm:grid-cols-3">
@@ -66,5 +74,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import trentoDuomo from '../../assets/images/TrentoDuomo.jpg'
+import { useAuthStore } from '@/stores/authStore'
+
+const auth = useAuthStore()
+const isDipendenteComunale = computed(() => auth.user?.ruolo === 'dipendente comune')
 </script>

@@ -141,7 +141,7 @@ async function handleSubmit() {
 			const ruolo = response.data.utente.ruolo
 			setTimeout(() => {
 				if (ruolo === 'dipendente comune') {
-					router.push('/dashboardComune')
+					router.push('/dashboard-statistica')
 				} else if (ruolo === 'amministratore') {
 							router.push({ name: 'admin-appartamenti' })
 				} else if (ruolo === 'utente verificato' || ruolo === 'inquilino') {
