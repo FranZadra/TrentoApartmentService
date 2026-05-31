@@ -1099,7 +1099,7 @@ paths:
                 properties:
                   messaggio:
                     type: string
-                    example: Nome: campo obbligatorio mancante
+                    example: Nome campo obbligatorio mancante
         "409":
           description: Email già in uso
           content:
@@ -1158,7 +1158,7 @@ paths:
                 properties:
                   messaggio:
                     type: string
-                    example: Email: campo obbligatorio mancante
+                    example: Email campo obbligatorio mancante
         "401":
           description: Utente non trovato o password errata
           content:
