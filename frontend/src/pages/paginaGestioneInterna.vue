@@ -52,7 +52,15 @@
               >
                 Faccende
               </button>
-
+                
+              <button
+                type="button"
+                class="rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary"
+                @click="azionePlaceholder('spesa')"
+                >
+                Lista spesa
+              </button>
+              
               <button
                 type="button"
                 class="rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary"
