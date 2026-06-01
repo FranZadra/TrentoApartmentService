@@ -173,8 +173,22 @@
                   </div>
 
                   <div class="flex items-center gap-2 text-xs font-semibold text-zinc-500">
-                    <span class="rounded-full bg-white px-3 py-2 shadow-sm">Turni faccende</span>
-                    <span class="rounded-full bg-white px-3 py-2 shadow-sm">Rifiuti urbani</span>
+                    <button
+                      type="button"
+                      class="rounded-full px-3 py-2 shadow-sm transition"
+                      :class="filtroFaccendeAttivo ? 'bg-amber-100 text-amber-900 ring-1 ring-amber-200' : 'bg-white text-zinc-500 hover:text-zinc-700'"
+                      @click="toggleFiltro('faccende')"
+                    >
+                      Turni faccende
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-full px-3 py-2 shadow-sm transition"
+                      :class="filtroRifiutiAttivo ? 'bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200' : 'bg-white text-zinc-500 hover:text-zinc-700'"
+                      @click="toggleFiltro('rifiuti')"
+                    >
+                      Rifiuti urbani
+                    </button>
                   </div>
                 </div>
 
@@ -338,6 +352,8 @@ const guastiAttivi = ref([])
 const successMessage = ref('')
 const vistaAttiva = ref('info')
 const eventoEspansoKey = ref('')
+const filtroFaccendeAttivo = ref(true)
+const filtroRifiutiAttivo = ref(true)
 
 const giorniSettimana = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const dataCalendario = new Date()
@@ -377,7 +393,9 @@ const celleCalendario = computed(() => {
       giorno: inMese ? giornoDelMese : '',
       inMese,
       oggi: inMese && data.toISOString().slice(0, 10) === dataOggiISO,
-      eventi: template ? [{ ...template, data: data.toISOString() }] : [],
+      eventi: template && eventoVisibile(template.tipo)
+        ? [{ key: `${annoCorrente}-${meseCorrente}-${giornoDelMese}-${template.label}-${template.tipo}`, ...template, data: data.toISOString() }]
+        : [],
     }
   })
 })
@@ -390,7 +408,7 @@ const eventiProssimi = computed(() => {
     const data = new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() + i)
     const template = templateTurni[data.getDay()]
 
-    if (template) {
+    if (template && eventoVisibile(template.tipo)) {
       eventi.push({
         key: `${data.toISOString()}-${template.label}`,
         data: data.toISOString(),
@@ -475,6 +493,18 @@ function apriCalendarioCondiviso() {
 
 function toggleEvento(key) {
   eventoEspansoKey.value = eventoEspansoKey.value === key ? '' : key
+}
+
+function toggleFiltro(tipo) {
+  if (tipo === 'faccende') {
+    filtroFaccendeAttivo.value = !filtroFaccendeAttivo.value
+  } else if (tipo === 'rifiuti') {
+    filtroRifiutiAttivo.value = !filtroRifiutiAttivo.value
+  }
+}
+
+function eventoVisibile(tipo) {
+  return (tipo === 'faccende' && filtroFaccendeAttivo.value) || (tipo === 'rifiuti' && filtroRifiutiAttivo.value)
 }
 
 function closeGuastoForm() {
