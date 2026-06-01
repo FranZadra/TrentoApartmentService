@@ -32,56 +32,12 @@
             :apt="apt"
             :show-annuncio-action="true"
             :show-guasti-action="true"
-            :guasti-action-label="guastiOpenByApartment[getAppId(apt)] ? 'Nascondi segnalazioni' : 'Mostra segnalazioni'"
+            guasti-action-label="Mostra segnalazioni"
             @view="viewDetails(apt._id)"
             @edit="editApartment(apt)"
             @annuncio="openAnnuncio(apt)"
-            @guasti="toggleGuasti(apt)"
+            @guasti="openGuastiModal(apt)"
           />
-
-          <transition name="fade">
-            <div v-if="guastiOpenByApartment[getAppId(apt)]" class="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-              <div class="mb-3 flex items-center justify-between gap-3">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                  Segnalazioni appartamento
-                </p>
-              </div>
-
-              <div v-if="guastiLoadingByApartment[getAppId(apt)]" class="text-sm text-zinc-600">
-                Caricamento segnalazioni in corso...
-              </div>
-
-              <div v-else-if="(guastiByApartment[getAppId(apt)] || []).length === 0" class="text-sm text-zinc-600">
-                Nessuna segnalazione presente per questo appartamento.
-              </div>
-
-              <ul v-else class="space-y-3">
-                <li v-for="g in guastiByApartment[getAppId(apt)]" :key="g._id" class="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700">
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="flex-1">
-                      <strong :class="getPriorityColor(g.priorita || g.priorità || 'media')">
-                        {{ (g.priorita || g.priorità || 'media').toUpperCase() }}
-                      </strong>
-                      <span class="text-zinc-700">: {{ g.categoria || 'Altro' }}</span>
-                      <p class="mt-2 text-sm text-zinc-700">{{ g.descrizione }}</p>
-                      <div v-if="g.stato" class="mt-2 text-xs text-zinc-500">Stato: {{ g.stato }}</div>
-                    </div>
-
-                    <div class="flex flex-col items-end gap-2">
-                      <span class="text-xs text-zinc-500">{{ formatoData(g.createdAt || g.dataSegnalazione) }}</span>
-                      <button
-                        v-if="g.stato === 'segnalato'"
-                        @click="openResolveModal(apt, g)"
-                        class="rounded-full bg-primary px-3 py-2 text-xs font-semibold text-white hover:opacity-95"
-                      >
-                        Risolvi
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </transition>
         </div>
       </div>
     </div>
@@ -100,14 +56,140 @@
     @close="closeAnnuncio"
   />
   <!-- Modal risolvi guasto -->
-  <div v-if="showResolveModal" class="fixed inset-0 z-50 flex items-center justify-center">
-    <div class="absolute inset-0 bg-black/40" @click="closeResolveModal"></div>
-    <div class="relative z-10 max-w-md rounded-2xl bg-white p-6 shadow-lg">
-      <h3 class="text-lg font-semibold text-zinc-900">Conferma presa in carico</h3>
-      <p class="mt-3 text-sm text-zinc-700">Confermi di prendere in carico questa segnalazione e contattare un tecnico per la manutenzione?</p>
-      <div class="mt-5 flex justify-end gap-3">
-        <button @click="closeResolveModal" class="rounded-full border border-zinc-200 px-4 py-2 text-sm text-zinc-700">Annulla</button>
-        <button @click="confirmResolve" class="rounded-full bg-[#9a1528] px-4 py-2 text-sm font-semibold text-white">Conferma</button>
+  <div v-if="showResolveModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" @click.self="closeResolveModal">
+    <div class="relative flex w-full max-w-lg flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl ring-1 ring-black/5">
+      <div class="flex items-start justify-between gap-4 px-6 pt-6">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.35em] text-[#9a1528]">Segnalazioni appartamento</p>
+          <h3 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">Conferma presa in carico</h3>
+        </div>
+        <button type="button" @click="closeResolveModal" class="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900" aria-label="Chiudi">
+          ✕
+        </button>
+      </div>
+
+      <div class="px-6 py-5">
+        <div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+          <p class="text-sm font-semibold text-zinc-900">Sei sicuro di voler prendere in carico questa segnalazione?</p>
+          <p class="mt-2 text-sm leading-6 text-zinc-600">La segnalazione passerà nello stato <span class="font-semibold text-zinc-900">preso in carico</span> e verrà aggiornata la data di presa in carico.</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3 border-t border-zinc-200 px-6 py-5 sm:flex-row sm:justify-end">
+        <button @click="closeResolveModal" class="rounded-full border border-zinc-300 px-5 py-2.5 font-semibold text-zinc-700 transition hover:bg-zinc-100">Chiudi</button>
+        <button @click="confirmResolve" class="rounded-full px-5 py-2.5 font-semibold text-white transition hover:bg-[#7f1020]" style="background-color: #9a1528">Conferma</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale segnalazioni appartamento -->
+  <div v-if="showGuastiModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" @click.self="closeGuastiModal">
+    <div class="relative flex w-full max-w-4xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl ring-1 ring-black/5">
+      <div class="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.35em] text-[#9a1528]">Segnalazioni appartamento</p>
+          <h3 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">Storico e segnalazioni attive</h3>
+          <p class="mt-2 text-sm text-zinc-600">
+            {{ selectedApartmentForGuasti ? (selectedApartmentForGuasti.indirizzo?.via || selectedApartmentForGuasti.titolo || selectedApartmentForGuasti._id) : '' }}
+          </p>
+        </div>
+        <button type="button" @click="closeGuastiModal" class="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900" aria-label="Chiudi">
+          ✕
+        </button>
+      </div>
+
+      <div class="max-h-[65vh] overflow-auto px-6 py-5 sm:px-8">
+        <div v-if="guastiModalLoading" class="text-sm text-zinc-600">Caricamento segnalazioni in corso...</div>
+
+        <template v-else>
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Segnalazioni attive</p>
+            <p class="text-xs text-zinc-500">{{ guastiAttiviModal.length }} trovate</p>
+          </div>
+
+          <div v-if="guastiAttiviModal.length === 0" class="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-sm text-zinc-600">
+            Nessuna segnalazione attiva per questo appartamento.
+          </div>
+
+          <ul v-else class="space-y-3">
+            <li v-for="g in guastiAttiviModal" :key="g._id" class="rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1">
+                  <div>
+                    <strong :class="getPriorityColor(g.priorita || g.priorità || 'media')">
+                      {{ (g.priorita || g.priorità || 'media').toUpperCase() }}
+                    </strong>
+                    <span class="text-zinc-700">: {{ g.categoria || 'Altro' }}</span>
+                  </div>
+                  <p class="mt-2 text-sm text-zinc-700">{{ g.descrizione }}</p>
+                  <div v-if="g.stato" class="mt-2 text-xs text-zinc-500">Stato: {{ g.stato }}</div>
+                </div>
+
+                <div class="flex flex-col items-end gap-2">
+                  <span class="text-xs text-zinc-500">{{ formatoData(g.createdAt || g.dataSegnalazione) }}</span>
+                  <button
+                    v-if="g.stato === 'segnalato'"
+                    @click="openResolveModal(selectedApartmentForGuasti, g)"
+                    class="rounded-full bg-primary px-3 py-2 text-xs font-semibold text-white hover:opacity-95"
+                  >
+                    Risolvi
+                  </button>
+                </div>
+              </div>
+            </li>
+          </ul>
+
+          <div class="mt-6 flex justify-center">
+            <button
+              type="button"
+              class="text-sm font-semibold text-primary transition hover:text-primary-dark hover:underline"
+              @click="mostraStorico = !mostraStorico"
+            >
+              {{ mostraStorico ? 'Nascondi storico' : 'Visualizza storico' }}
+            </button>
+          </div>
+
+          <transition name="fade">
+            <div v-if="mostraStorico" class="mt-6 border-t border-zinc-200 pt-5">
+              <div class="mb-4 flex items-center justify-between gap-3">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Storico manutenzioni</p>
+                <p class="text-xs text-zinc-500">Sistemate e archiviate</p>
+              </div>
+
+              <div v-if="guastiStoricoModal.length === 0" class="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-sm text-zinc-600">
+                Nessuna segnalazione storica disponibile.
+              </div>
+
+              <ul v-else class="space-y-3">
+                <li v-for="g in guastiStoricoModal" :key="g._id" class="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex-1">
+                      <div>
+                        <strong :class="getPriorityColor(g.priorita || g.priorità || 'media')">
+                          {{ (g.priorita || g.priorità || 'media').toUpperCase() }}
+                        </strong>
+                        <span class="text-zinc-700">: {{ g.categoria || 'Altro' }}</span>
+                      </div>
+                      <p class="mt-2 text-sm text-zinc-700">{{ g.descrizione }}</p>
+                      <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                        <span>Stato: {{ g.stato || '—' }}</span>
+                        <span v-if="g.dataSistemazione">Sistemato: {{ formatoData(g.dataSistemazione) }}</span>
+                        <span v-if="g.dataPresoInCarico">Preso in carico: {{ formatoData(g.dataPresoInCarico) }}</span>
+                      </div>
+                    </div>
+                    <span class="text-xs text-zinc-500">{{ formatoData(g.createdAt || g.dataSegnalazione) }}</span>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </transition>
+        </template>
+      </div>
+
+      <div class="border-t border-zinc-200 px-6 py-5 sm:px-8">
+        <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button @click="closeGuastiModal" class="rounded-full border border-zinc-300 px-5 py-2.5 font-semibold text-zinc-700 transition hover:bg-zinc-100">Chiudi</button>
+        </div>
       </div>
     </div>
   </div>
@@ -115,7 +197,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import AppLayout from '../components/layout/AppLayout.vue'
 import ApartmentDetails from '../components/ApartmentDetails.vue'
 import ApartmentForm from '../components/ApartmentForm.vue'
@@ -131,18 +213,21 @@ const showAnnuncioForm = ref(false)
 const selectedId = ref(null)
 const formInitial = ref(null)
 const selectedApartmentForAnnuncio = ref(null)
-const guastiOpenByApartment = reactive({})
-const guastiLoadingByApartment = reactive({})
-const guastiByApartment = reactive({})
 
 const showResolveModal = ref(false)
 const resolveTargetGuasto = ref(null)
 const resolveTargetApartment = ref(null)
 
+const showGuastiModal = ref(false)
+const selectedApartmentForGuasti = ref(null)
+const guastiModalLoading = ref(false)
+const guastiModalGuasti = ref([])
+const mostraStorico = ref(false)
+
 const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
-watch([showDetails, showForm, showAnnuncioForm], ([detailsOpen, formOpen, annuncioOpen]) => {
-  document.body.style.overflow = detailsOpen || formOpen || annuncioOpen ? 'hidden' : ''
+watch([showDetails, showForm, showAnnuncioForm, showGuastiModal], ([detailsOpen, formOpen, annuncioOpen, guastiOpen]) => {
+  document.body.style.overflow = detailsOpen || formOpen || annuncioOpen || guastiOpen ? 'hidden' : ''
 })
 
 function getAuthHeaders() {
@@ -172,6 +257,32 @@ function getPriorityColor(priorita) {
       return 'text-zinc-900 font-semibold'
   }
 }
+
+function isRecentResolved(guasto) {
+  if (guasto?.stato !== 'sistemato' || !guasto?.dataSistemazione) return false
+  const resolvedAt = new Date(guasto.dataSistemazione)
+  if (Number.isNaN(resolvedAt.getTime())) return false
+  const diffDays = (Date.now() - resolvedAt.getTime()) / (1000 * 60 * 60 * 24)
+  return diffDays <= 3
+}
+
+function isActiveGuasto(guasto) {
+  return guasto?.stato === 'segnalato' || guasto?.stato === 'preso in carico'
+}
+
+function isStoricoGuasto(guasto) {
+  if (!guasto) return false
+  if (guasto.stato === 'archiviato') return true
+  if (guasto.stato === 'sistemato') return true
+  return false
+}
+
+function isVisibleGuastoForAdmin(guasto) {
+  return isActiveGuasto(guasto) || isStoricoGuasto(guasto)
+}
+
+const guastiAttiviModal = computed(() => guastiModalGuasti.value.filter(isActiveGuasto))
+const guastiStoricoModal = computed(() => guastiModalGuasti.value.filter(isStoricoGuasto))
 
 async function loadApartments() {
   loading.value = true
@@ -206,35 +317,39 @@ async function loadAllApartments() {
   }
 }
 
-async function loadGuastiAppartamento(apt) {
+async function loadGuastiModal(apt) {
   const appId = getAppId(apt)
-  if (!appId || guastiLoadingByApartment[appId]) return
+  if (!appId || guastiModalLoading.value) return
 
-  guastiLoadingByApartment[appId] = true
+  guastiModalLoading.value = true
   try {
     const res = await getGuastiAppartamento(appId)
     if (res.success) {
-      guastiByApartment[appId] = res.data?.data || []
+      guastiModalGuasti.value = res.data?.data || []
     } else {
-      guastiByApartment[appId] = []
       console.error(res.error)
+      guastiModalGuasti.value = []
     }
   } catch (err) {
     console.error(err)
-    guastiByApartment[appId] = []
+    guastiModalGuasti.value = []
   } finally {
-    guastiLoadingByApartment[appId] = false
+    guastiModalLoading.value = false
   }
 }
 
-async function toggleGuasti(apt) {
-  const appId = getAppId(apt)
-  if (!appId) return
+async function openGuastiModal(apt) {
+  selectedApartmentForGuasti.value = apt
+  mostraStorico.value = false
+  showGuastiModal.value = true
+  await loadGuastiModal(apt)
+}
 
-  guastiOpenByApartment[appId] = !guastiOpenByApartment[appId]
-  if (guastiOpenByApartment[appId] && !guastiByApartment[appId]) {
-    await loadGuastiAppartamento(apt)
-  }
+function closeGuastiModal() {
+  showGuastiModal.value = false
+  selectedApartmentForGuasti.value = null
+  guastiModalGuasti.value = []
+  mostraStorico.value = false
 }
 
 function openResolveModal(apt, guasto) {
@@ -257,7 +372,7 @@ async function confirmResolve() {
   try {
     const res = await prendiInCaricoGuastoAdmin(guasto._id)
     if (res.success) {
-      await loadGuastiAppartamento(apt)
+      await loadGuastiModal(apt)
     } else {
       console.error('Errore resolve:', res.error)
     }
