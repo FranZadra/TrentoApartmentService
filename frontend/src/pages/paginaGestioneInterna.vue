@@ -20,7 +20,7 @@
           Non hai alcun contratto registrato a tuo nome.
         </div>
 
-        <div v-else-if="contrattoAttivo" class="w-full rounded-2xl border border-zinc-200 bg-white shadow-lg">
+        <div v-else-if="contrattoAttivo && vistaAttiva === 'info'" class="w-full rounded-2xl border border-zinc-200 bg-white shadow-lg">
           <div class="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-start">
             <!-- Sezione sinistra: dati appartamento e guasti -->
             <div class="flex-1">
@@ -48,7 +48,7 @@
               <button
                 type="button"
                 class="rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary"
-                @click="azionePlaceholder('calendario')"
+                @click="apriCalendarioCondiviso"
               >
                 Faccende
               </button>
@@ -144,6 +144,112 @@
           </div>
         </div>
 
+        <div v-else-if="contrattoAttivo && vistaAttiva === 'calendario'" class="w-full rounded-2xl border border-zinc-200 bg-white shadow-lg">
+          <div class="flex flex-col gap-6 p-6 sm:p-8">
+            <div class="flex flex-col gap-4 border-b border-zinc-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Gestione interna</p>
+                <h2 class="mt-2 text-2xl font-display text-zinc-900">Calendario condiviso</h2>
+                <p class="mt-2 max-w-2xl text-sm text-zinc-600">
+                  Turni delle faccende domestiche e giornate del servizio urbano dei rifiuti, visibili in un unico calendario.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                class="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary"
+                @click="vistaAttiva = 'info'"
+              >
+                Torna ai dettagli contratto
+              </button>
+            </div>
+
+            <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+              <div class="rounded-3xl border border-zinc-200 bg-zinc-50 p-4 sm:p-5">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Mese corrente</p>
+                    <h3 class="mt-1 text-xl font-display text-zinc-900">{{ titoloCalendario }}</h3>
+                  </div>
+
+                  <div class="flex items-center gap-2 text-xs font-semibold text-zinc-500">
+                    <span class="rounded-full bg-white px-3 py-2 shadow-sm">Turni faccende</span>
+                    <span class="rounded-full bg-white px-3 py-2 shadow-sm">Rifiuti urbani</span>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                  <div v-for="giorno in giorniSettimana" :key="giorno" class="py-2">{{ giorno }}</div>
+                </div>
+
+                <div class="mt-2 grid grid-cols-7 gap-2">
+                  <div
+                    v-for="celle in celleCalendario"
+                    :key="celle.key"
+                    class="min-h-[128px] rounded-2xl border p-3 transition"
+                    :class="celle.inMese
+                      ? 'border-zinc-200 bg-white hover:border-primary/40'
+                      : 'border-dashed border-zinc-200 bg-zinc-100 text-zinc-400'"
+                  >
+                    <div class="flex items-start justify-between gap-2">
+                      <span class="text-sm font-semibold" :class="celle.oggi ? 'text-primary' : 'text-zinc-900'">
+                        {{ celle.giorno }}
+                      </span>
+                      <span v-if="celle.oggi" class="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Oggi</span>
+                    </div>
+
+                    <div class="mt-3 space-y-2">
+                      <div
+                        v-for="evento in celle.eventi"
+                        :key="evento.label + celle.key"
+                        class="rounded-xl px-3 py-2 text-xs font-medium leading-5"
+                        :class="evento.tipo === 'faccende'
+                          ? 'bg-amber-50 text-amber-900'
+                          : 'bg-emerald-50 text-emerald-900'"
+                      >
+                        <div class="font-semibold">{{ evento.label }}</div>
+                        <div class="opacity-80">{{ evento.dettaglio }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <aside class="space-y-4">
+                <div class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                  <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Prossimi turni</p>
+                  <div class="mt-4 space-y-3">
+                    <article v-for="evento in eventiProssimi" :key="evento.key" class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-sm font-semibold text-zinc-900">{{ evento.label }}</p>
+                        <span class="rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" :class="evento.tipo === 'faccende' ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'">
+                          {{ evento.tipo === 'faccende' ? 'Faccende' : 'Rifiuti' }}
+                        </span>
+                      </div>
+                      <p class="mt-2 text-sm text-zinc-600">{{ evento.dettaglio }}</p>
+                      <p class="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ formattaDataBreve(evento.data) }}</p>
+                    </article>
+                  </div>
+                </div>
+
+                <div class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                  <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Legenda</p>
+                  <div class="mt-4 space-y-3 text-sm text-zinc-700">
+                    <div class="flex items-center gap-3">
+                      <span class="h-3 w-3 rounded-full bg-amber-400"></span>
+                      <span>Turni delle faccende domestiche</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
+                      <span>Passaggio del servizio urbano dei rifiuti</span>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+
         <div v-else class="mx-auto max-w-3xl rounded-3xl border border-zinc-200 bg-white px-6 py-10 text-center text-zinc-600 shadow-sm">
           Non hai un contratto attivo al momento. Puoi consultare solo i contratti passati.
         </div>
@@ -217,10 +323,78 @@ const mostraGuasti = ref(false)
 const showGuastoForm = ref(false)
 const guastiAttivi = ref([])
 const successMessage = ref('')
+const vistaAttiva = ref('info')
+
+const giorniSettimana = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+const dataCalendario = new Date()
+const meseCorrente = dataCalendario.getMonth()
+const annoCorrente = dataCalendario.getFullYear()
+const dataOggiISO = oggiISO()
+
+const templateTurni = {
+  1: { tipo: 'faccende', label: 'Turno casa', dettaglio: 'Bagni e cucina' },
+  2: { tipo: 'rifiuti', label: 'Rifiuti urbani', dettaglio: 'Organico' },
+  3: { tipo: 'faccende', label: 'Turno casa', dettaglio: 'Soggiorno e superfici' },
+  4: { tipo: 'rifiuti', label: 'Rifiuti urbani', dettaglio: 'Carta e cartone' },
+  5: { tipo: 'faccende', label: 'Turno casa', dettaglio: 'Cucina e pavimenti' },
+  6: { tipo: 'rifiuti', label: 'Rifiuti urbani', dettaglio: 'Plastica e vetro' },
+}
+
+const titoloCalendario = computed(() =>
+  new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(new Date(annoCorrente, meseCorrente, 1)),
+)
+
+const celleCalendario = computed(() => {
+  const primoGiorno = new Date(annoCorrente, meseCorrente, 1)
+  const ultimoGiorno = new Date(annoCorrente, meseCorrente + 1, 0)
+  const offset = (primoGiorno.getDay() + 6) % 7
+  const giorniNelMese = ultimoGiorno.getDate()
+  const totaleCelle = Math.ceil((offset + giorniNelMese) / 7) * 7
+
+  return Array.from({ length: totaleCelle }, (_, index) => {
+    const giornoDelMese = index - offset + 1
+    const inMese = giornoDelMese >= 1 && giornoDelMese <= giorniNelMese
+    const data = inMese ? new Date(annoCorrente, meseCorrente, giornoDelMese) : null
+    const giornoSettimana = data ? data.getDay() : null
+    const template = giornoSettimana !== null ? templateTurni[giornoSettimana] : null
+
+    return {
+      key: `${annoCorrente}-${meseCorrente}-${index}`,
+      giorno: inMese ? giornoDelMese : '',
+      inMese,
+      oggi: inMese && data.toISOString().slice(0, 10) === dataOggiISO,
+      eventi: template ? [{ ...template, data: data.toISOString() }] : [],
+    }
+  })
+})
+
+const eventiProssimi = computed(() => {
+  const eventi = []
+  const oggi = new Date()
+
+  for (let i = 0; i < 14; i += 1) {
+    const data = new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() + i)
+    const template = templateTurni[data.getDay()]
+
+    if (template) {
+      eventi.push({
+        key: `${data.toISOString()}-${template.label}`,
+        data: data.toISOString(),
+        ...template,
+      })
+    }
+  }
+
+  return eventi.slice(0, 5)
+})
 
 const contrattoAttivo = computed(() => contratti.value.find((contratto) => contratto.stato === 'attivo') || null)
 const contrattiPassati = computed(() => contratti.value.filter((contratto) => contratto.stato !== 'attivo'))
 const appartamentoAttivo = computed(() => contrattoAttivo.value?.idAppartamento || null)
+
+function oggiISO() {
+  return new Date().toISOString().slice(0, 10)
+}
 
 watch(showGuastoForm, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
@@ -281,8 +455,8 @@ function vaiAGuasti() {
   showGuastoForm.value = true
 }
 
-function azionePlaceholder() {
-  // azione temporanea: da collegare in seguito
+function apriCalendarioCondiviso() {
+  vistaAttiva.value = 'calendario'
 }
 
 function closeGuastoForm() {
@@ -327,6 +501,14 @@ async function confermaRisoluzione(guasto) {
   }
 }
 
+function formattaDataBreve(data) {
+  return new Intl.DateTimeFormat('it-IT', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  }).format(new Date(data))
+}
+
 onUnmounted(() => {
   document.body.style.overflow = ''
 })
@@ -335,6 +517,12 @@ watch(contrattoAttivo, (value) => {
   if (!value) showGuastoForm.value = false
   // quando cambia il contratto attivo, carica i guasti relativi
   if (value) loadGuasti()
+})
+
+watch(vistaAttiva, (value) => {
+  if (value === 'calendario') {
+    mostraGuasti.value = false
+  }
 })
 
 async function caricaContratti() {
