@@ -202,13 +202,24 @@
                       <div
                         v-for="evento in celle.eventi"
                         :key="evento.label + celle.key"
-                        class="rounded-xl px-3 py-2 text-xs font-medium leading-5"
+                        class="overflow-hidden rounded-xl border text-xs transition"
                         :class="evento.tipo === 'faccende'
-                          ? 'bg-amber-50 text-amber-900'
-                          : 'bg-emerald-50 text-emerald-900'"
+                          ? 'border-amber-200 bg-amber-50 text-amber-950'
+                          : 'border-emerald-200 bg-emerald-50 text-emerald-950'"
                       >
-                        <div class="font-semibold">{{ evento.label }}</div>
-                        <div class="opacity-80">{{ evento.dettaglio }}</div>
+                        <button
+                          type="button"
+                          class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left font-semibold"
+                          @click="toggleEvento(evento.key)"
+                        >
+                          <span>{{ evento.label }}</span>
+                          <span class="shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] opacity-70">
+                            {{ eventoEspansoKey === evento.key ? 'Nascondi' : 'Dettagli' }}
+                          </span>
+                        </button>
+                        <div v-if="eventoEspansoKey === evento.key" class="border-t px-3 py-2 text-[11px] font-medium leading-5 opacity-90">
+                          {{ evento.dettaglio }}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -220,14 +231,22 @@
                   <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Prossimi turni</p>
                   <div class="mt-4 space-y-3">
                     <article v-for="evento in eventiProssimi" :key="evento.key" class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
-                      <div class="flex items-center justify-between gap-3">
-                        <p class="text-sm font-semibold text-zinc-900">{{ evento.label }}</p>
+                      <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-3 text-left"
+                        @click="toggleEvento(evento.key)"
+                      >
+                        <div>
+                          <p class="text-sm font-semibold text-zinc-900">{{ evento.label }}</p>
+                          <p class="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ formattaDataBreve(evento.data) }}</p>
+                        </div>
                         <span class="rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" :class="evento.tipo === 'faccende' ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'">
-                          {{ evento.tipo === 'faccende' ? 'Faccende' : 'Rifiuti' }}
+                          {{ eventoEspansoKey === evento.key ? 'Nascondi' : 'Apri' }}
                         </span>
+                      </button>
+                      <div v-if="eventoEspansoKey === evento.key" class="mt-3 rounded-2xl bg-white px-3 py-2 text-sm text-zinc-600">
+                        {{ evento.dettaglio }}
                       </div>
-                      <p class="mt-2 text-sm text-zinc-600">{{ evento.dettaglio }}</p>
-                      <p class="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ formattaDataBreve(evento.data) }}</p>
                     </article>
                   </div>
                 </div>
@@ -324,6 +343,7 @@ const showGuastoForm = ref(false)
 const guastiAttivi = ref([])
 const successMessage = ref('')
 const vistaAttiva = ref('info')
+const eventoEspansoKey = ref('')
 
 const giorniSettimana = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const dataCalendario = new Date()
@@ -457,6 +477,10 @@ function vaiAGuasti() {
 
 function apriCalendarioCondiviso() {
   vistaAttiva.value = 'calendario'
+}
+
+function toggleEvento(key) {
+  eventoEspansoKey.value = eventoEspansoKey.value === key ? '' : key
 }
 
 function closeGuastoForm() {
