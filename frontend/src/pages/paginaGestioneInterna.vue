@@ -281,7 +281,7 @@
           Non hai un contratto attivo al momento. Puoi consultare solo i contratti passati.
         </div>
 
-        <div v-if="contrattiPassati.length" class="w-full">
+        <div v-if="contrattiPassati.length && vistaAttiva !== 'calendario'" class="w-full">
           <div class="mb-4 text-center">
             <button
               type="button"
