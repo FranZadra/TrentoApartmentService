@@ -121,7 +121,7 @@ import ApartmentDetails from '../components/ApartmentDetails.vue'
 import ApartmentForm from '../components/ApartmentForm.vue'
 import ApartmentCard from '../components/ApartmentCard.vue'
 import AnnuncioForm from '../components/AnnuncioForm.vue'
-import { getGuastiAppartamentoAdmin, prendiInCaricoGuastoAdmin } from '../services/gestioneInternaService'
+import { getGuastiAppartamento, prendiInCaricoGuastoAdmin } from '../services/gestioneInternaService'
 
 const apartments = ref([])
 const loading = ref(false)
@@ -212,7 +212,7 @@ async function loadGuastiAppartamento(apt) {
 
   guastiLoadingByApartment[appId] = true
   try {
-    const res = await getGuastiAppartamentoAdmin(appId)
+    const res = await getGuastiAppartamento(appId)
     if (res.success) {
       guastiByApartment[appId] = res.data?.data || []
     } else {

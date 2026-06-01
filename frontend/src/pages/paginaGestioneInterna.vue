@@ -257,6 +257,25 @@ function getPriorityColor(priorita) {
   }
 }
 
+function isRecentResolved(guasto) {
+  if (guasto?.stato !== 'sistemato' || !guasto?.dataSistemazione) return false
+  const resolvedAt = new Date(guasto.dataSistemazione)
+  if (Number.isNaN(resolvedAt.getTime())) return false
+  const now = new Date()
+  const diffDays = (now.getTime() - resolvedAt.getTime()) / (1000 * 60 * 60 * 24)
+  return diffDays <= 3
+}
+
+function shouldShowGuasto(guasto) {
+  if (!guasto) return false
+  if (guasto.stato === 'segnalato' || guasto.stato === 'preso in carico') return true
+  return isRecentResolved(guasto)
+}
+
+function filtraGuastiVisibili(lista) {
+  return (Array.isArray(lista) ? lista : []).filter(shouldShowGuasto)
+}
+
 function vaiAGuasti() {
   if (!appartamentoAttivo.value) return
   showGuastoForm.value = true
@@ -287,7 +306,7 @@ async function loadGuasti() {
   if (!appId) return
   const res = await getGuastiAppartamento(appId)
   if (res.success) {
-    guastiAttivi.value = res.data?.data || []
+    guastiAttivi.value = filtraGuastiVisibili(res.data?.data || [])
   }
 }
 

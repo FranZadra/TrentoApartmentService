@@ -98,15 +98,30 @@ const getGuastiAppartamento = async (req, res) => {
         const userId = req.user?.sub || req.user?.id || req.user?._id;
         if (!userId) return res.status(401).json({ error: 'Utente non autenticato' });
 
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+
         const { appId } = req.params;
         if (!appId) return res.status(400).json({ error: 'ID appartamento mancante' });
 
-        // Verifica che l'utente abbia un contratto attivo per quell'appartamento
-        const contratto = await Contratto.findOne({ idInquilino: userId, idAppartamento: appId, stato: 'attivo' });
-        if (!contratto) return res.status(403).json({ error: 'Non autorizzato a visualizzare i guasti di questo appartamento' });
+        const isAdmin = user.ruolo === 'amministratore';
+        const isTenant = user.ruolo === 'utente verificato' || user.ruolo === 'inquilino';
 
-        // Mostra solo guasti non archiviati
-        const guasti = await Guasto.find({ idAppartamento: appId, stato: { $ne: 'archiviato' } }).sort({ createdAt: -1 });
+        if (!isAdmin && !isTenant) {
+            return res.status(403).json({ error: 'Utente non autorizzato' });
+        }
+
+        if (isAdmin) {
+            const appartamento = await Appartamento.findOne({ _id: appId, amministratoreId: userId });
+            if (!appartamento) {
+                return res.status(403).json({ error: 'Non autorizzato a visualizzare le segnalazioni di questo appartamento' });
+            }
+        } else {
+            const contratto = await Contratto.findOne({ idInquilino: userId, idAppartamento: appId, stato: 'attivo' });
+            if (!contratto) return res.status(403).json({ error: 'Non autorizzato a visualizzare i guasti di questo appartamento' });
+        }
+
+        const guasti = await Guasto.find({ idAppartamento: appId }).sort({ createdAt: -1 });
 
         return res.status(200).json({ data: guasti });
     } catch (error) {
@@ -114,35 +129,8 @@ const getGuastiAppartamento = async (req, res) => {
         return res.status(500).json({ error: error.message, stack: error.stack });
     }
 }
-
-const getGuastiAppartamentoAdmin = async (req, res) => {
-    try {
-        const userId = req.user?.sub || req.user?.id || req.user?._id;
-        if (!userId) return res.status(401).json({ error: 'Utente non autenticato' });
-
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ error: 'Utente non trovato' });
-
-        if (user.ruolo !== 'amministratore') {
-            return res.status(403).json({ error: 'Non autorizzato a visualizzare le segnalazioni di questo appartamento' });
-        }
-
-        const { appId } = req.params;
-        if (!appId) return res.status(400).json({ error: 'ID appartamento mancante' });
-
-        const appartamento = await Appartamento.findOne({ _id: appId, amministratoreId: userId });
-        if (!appartamento) {
-            return res.status(403).json({ error: 'Non autorizzato a visualizzare le segnalazioni di questo appartamento' });
-        }
-
-        const guasti = await Guasto.find({ idAppartamento: appId, stato: { $ne: 'archiviato' } }).sort({ createdAt: -1 });
-
-        return res.status(200).json({ data: guasti });
-    } catch (error) {
-        console.error('Errore getGuastiAppartamentoAdmin:', error);
-        return res.status(500).json({ error: error.message, stack: error.stack });
-    }
-}
+ 
+const getGuastiAppartamentoAdmin = getGuastiAppartamento;
 
 const prendiInCaricoGuastoAdmin = async (req, res) => {
     try {
