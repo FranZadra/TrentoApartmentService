@@ -209,13 +209,10 @@
                       >
                         <button
                           type="button"
-                          class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left font-semibold"
+                          class="flex w-full items-center px-3 py-2 text-left font-semibold"
                           @click="toggleEvento(evento.key)"
                         >
                           <span>{{ evento.label }}</span>
-                          <span class="shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] opacity-70">
-                            {{ eventoEspansoKey === evento.key ? 'Nascondi' : 'Dettagli' }}
-                          </span>
                         </button>
                         <div v-if="eventoEspansoKey === evento.key" class="border-t px-3 py-2 text-[11px] font-medium leading-5 opacity-90">
                           {{ evento.dettaglio }}
@@ -233,18 +230,15 @@
                     <article v-for="evento in eventiProssimi" :key="evento.key" class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
                       <button
                         type="button"
-                        class="flex w-full items-center justify-between gap-3 text-left"
+                        class="flex w-full items-center text-left"
                         @click="toggleEvento(evento.key)"
                       >
                         <div>
                           <p class="text-sm font-semibold text-zinc-900">{{ evento.label }}</p>
-                          <p class="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ formattaDataBreve(evento.data) }}</p>
                         </div>
-                        <span class="rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" :class="evento.tipo === 'faccende' ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'">
-                          {{ eventoEspansoKey === evento.key ? 'Nascondi' : 'Apri' }}
-                        </span>
                       </button>
                       <div v-if="eventoEspansoKey === evento.key" class="mt-3 rounded-2xl bg-white px-3 py-2 text-sm text-zinc-600">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ formattaDataBreve(evento.data) }}</p>
                         {{ evento.dettaglio }}
                       </div>
                     </article>
