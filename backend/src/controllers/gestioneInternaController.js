@@ -130,8 +130,6 @@ const getGuastiAppartamento = async (req, res) => {
     }
 }
  
-const getGuastiAppartamentoAdmin = getGuastiAppartamento;
-
 const prendiInCaricoGuastoAdmin = async (req, res) => {
     try {
         const userId = req.user?.sub || req.user?.id || req.user?._id;
@@ -195,4 +193,4 @@ const risolviGuasto = async (req, res) => {
     }
 }
 
-module.exports = { getContratti, segnalaGuasto, getGuastiAppartamento, getGuastiAppartamentoAdmin, prendiInCaricoGuastoAdmin, risolviGuasto };
+module.exports = { getContratti, segnalaGuasto, getGuastiAppartamento, prendiInCaricoGuastoAdmin, risolviGuasto };

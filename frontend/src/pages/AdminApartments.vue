@@ -33,6 +33,7 @@
             :show-annuncio-action="true"
             :show-guasti-action="true"
             guasti-action-label="Mostra segnalazioni"
+            :guasti-count="getGuastiAttiviCount(apt)"
             @view="viewDetails(apt._id)"
             @edit="editApartment(apt)"
             @annuncio="openAnnuncio(apt)"
@@ -88,7 +89,7 @@
       <div class="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.35em] text-[#9a1528]">Segnalazioni appartamento</p>
-          <h3 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">Storico e segnalazioni attive</h3>
+          <h3 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">Guasti e manutenzioni</h3>
           <p class="mt-2 text-sm text-zinc-600">
             {{ selectedApartmentForGuasti ? (selectedApartmentForGuasti.indirizzo?.via || selectedApartmentForGuasti.titolo || selectedApartmentForGuasti._id) : '' }}
           </p>
@@ -104,7 +105,6 @@
         <template v-else>
           <div class="mb-4 flex items-center justify-between gap-3">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Segnalazioni attive</p>
-            <p class="text-xs text-zinc-500">{{ guastiAttiviModal.length }} trovate</p>
           </div>
 
           <div v-if="guastiAttiviModal.length === 0" class="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-sm text-zinc-600">
@@ -112,29 +112,39 @@
           </div>
 
           <ul v-else class="space-y-3">
-            <li v-for="g in guastiAttiviModal" :key="g._id" class="rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex-1">
-                  <div>
-                    <strong :class="getPriorityColor(g.priorita || g.priorità || 'media')">
-                      {{ (g.priorita || g.priorità || 'media').toUpperCase() }}
-                    </strong>
-                    <span class="text-zinc-700">: {{ g.categoria || 'Altro' }}</span>
-                  </div>
-                  <p class="mt-2 text-sm text-zinc-700">{{ g.descrizione }}</p>
-                  <div v-if="g.stato" class="mt-2 text-xs text-zinc-500">Stato: {{ g.stato }}</div>
+            <li v-for="g in guastiAttiviModal" :key="g._id" class="flex items-start gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+              <!-- Sinistra: dati identificativi -->
+              <div class="flex-1">
+                <div>
+                  <strong :class="getPriorityColor(g.priorita || g.priorità || 'media')">
+                    {{ (g.priorita || g.priorità || 'media').toUpperCase() }}
+                  </strong>
+                  <span class="text-zinc-700">: {{ g.categoria || 'Altro' }}</span>
                 </div>
+                <p class="mt-2 text-sm text-zinc-700">{{ g.descrizione }}</p>
+                <div v-if="g.stato" class="mt-2 text-xs text-zinc-500">Stato: {{ g.stato }}</div>
+              </div>
 
-                <div class="flex flex-col items-end gap-2">
-                  <span class="text-xs text-zinc-500">{{ formatoData(g.createdAt || g.dataSegnalazione) }}</span>
-                  <button
-                    v-if="g.stato === 'segnalato'"
-                    @click="openResolveModal(selectedApartmentForGuasti, g)"
-                    class="rounded-full bg-primary px-3 py-2 text-xs font-semibold text-white hover:opacity-95"
-                  >
-                    Risolvi
-                  </button>
+              <!-- Destra: date impilate e pulsante sotto -->
+              <div class="flex flex-col items-end gap-3 lg:min-w-[180px]">
+                <div class="text-xs text-zinc-500 text-right">
+                  <div v-if="g.createdAt || g.dataSegnalazione">
+                    <span class="font-semibold">Segnalato: {{ formatoData(g.dataSegnalazione || g.createdAt) }}</span>
+                  </div>
+                  <div v-if="g.dataPresoInCarico" class="mt-2">
+                    <span class="font-semibold">Preso in carico: {{ formatoData(g.dataPresoInCarico) }}</span>
+                  </div>
+                  <div v-if="g.dataSistemazione" class="mt-2">
+                    <span class="font-semibold">Risolto: {{ formatoData(g.dataSistemazione) }}</span>
+                  </div>
                 </div>
+                <button
+                  v-if="g.stato === 'segnalato'"
+                  @click="openResolveModal(selectedApartmentForGuasti, g)"
+                  class="rounded-full bg-primary px-3 py-2 text-xs font-semibold text-white hover:opacity-95"
+                >
+                  Risolvi
+                </button>
               </div>
             </li>
           </ul>
@@ -161,23 +171,30 @@
               </div>
 
               <ul v-else class="space-y-3">
-                <li v-for="g in guastiStoricoModal" :key="g._id" class="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700">
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="flex-1">
-                      <div>
-                        <strong :class="getPriorityColor(g.priorita || g.priorità || 'media')">
-                          {{ (g.priorita || g.priorità || 'media').toUpperCase() }}
-                        </strong>
-                        <span class="text-zinc-700">: {{ g.categoria || 'Altro' }}</span>
-                      </div>
-                      <p class="mt-2 text-sm text-zinc-700">{{ g.descrizione }}</p>
-                      <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
-                        <span>Stato: {{ g.stato || '—' }}</span>
-                        <span v-if="g.dataSistemazione">Sistemato: {{ formatoData(g.dataSistemazione) }}</span>
-                        <span v-if="g.dataPresoInCarico">Preso in carico: {{ formatoData(g.dataPresoInCarico) }}</span>
-                      </div>
+                <li v-for="g in guastiStoricoModal" :key="g._id" class="flex items-start gap-4 rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700">
+                  <!-- Sinistra: dati identificativi -->
+                  <div class="flex-1">
+                    <div>
+                      <strong :class="getPriorityColor(g.priorita || g.priorità || 'media')">
+                        {{ (g.priorita || g.priorità || 'media').toUpperCase() }}
+                      </strong>
+                      <span class="text-zinc-700">: {{ g.categoria || 'Altro' }}</span>
                     </div>
-                    <span class="text-xs text-zinc-500">{{ formatoData(g.createdAt || g.dataSegnalazione) }}</span>
+                    <p class="mt-2 text-sm text-zinc-700">{{ g.descrizione }}</p>
+                    <div v-if="g.stato" class="mt-2 text-xs text-zinc-500">Stato: {{ g.stato }}</div>
+                  </div>
+
+                  <!-- Destra: date impilate -->
+                  <div class="flex flex-col items-end text-xs text-zinc-500 text-right lg:min-w-[180px]">
+                    <div v-if="g.createdAt || g.dataSegnalazione">
+                      <span class="font-semibold">Segnalato: {{ formatoData(g.dataSegnalazione || g.createdAt) }}</span>
+                    </div>
+                    <div v-if="g.dataPresoInCarico" class="mt-2">
+                      <span class="font-semibold">Preso in carico: {{ formatoData(g.dataPresoInCarico) }}</span>
+                    </div>
+                    <div v-if="g.dataSistemazione" class="mt-2">
+                      <span class="font-semibold">Sistemato: {{ formatoData(g.dataSistemazione) }}</span>
+                    </div>
                   </div>
                 </li>
               </ul>
@@ -223,6 +240,7 @@ const selectedApartmentForGuasti = ref(null)
 const guastiModalLoading = ref(false)
 const guastiModalGuasti = ref([])
 const mostraStorico = ref(false)
+const guastiByApartment = ref({})
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
@@ -284,6 +302,14 @@ function isVisibleGuastoForAdmin(guasto) {
 const guastiAttiviModal = computed(() => guastiModalGuasti.value.filter(isActiveGuasto))
 const guastiStoricoModal = computed(() => guastiModalGuasti.value.filter(isStoricoGuasto))
 
+function getGuastiAttiviCount(apt) {
+  const appId = getAppId(apt)
+  if (!appId) return 0
+
+  const cached = guastiByApartment.value[appId] || []
+  return cached.filter(isActiveGuasto).length
+}
+
 async function loadApartments() {
   loading.value = true
   try {
@@ -291,11 +317,17 @@ async function loadApartments() {
       headers: getAuthHeaders(),
     })
     const body = await res.json()
-    if (res.ok && body && body.data) apartments.value = body.data
-    else apartments.value = []
+    if (res.ok && body && body.data) {
+      apartments.value = body.data
+      await loadGuastiCounts(body.data)
+    } else {
+      apartments.value = []
+      guastiByApartment.value = {}
+    }
   } catch (err) {
     console.error(err)
     apartments.value = []
+    guastiByApartment.value = {}
   } finally {
     loading.value = false
   }
@@ -317,6 +349,31 @@ async function loadAllApartments() {
   }
 }
 
+async function loadGuastiCounts(apartmentsList) {
+  if (!Array.isArray(apartmentsList) || apartmentsList.length === 0) {
+    guastiByApartment.value = {}
+    return
+  }
+
+  const entries = await Promise.all(
+    apartmentsList.map(async (apt) => {
+      const appId = getAppId(apt)
+      if (!appId) return null
+
+      try {
+        const res = await getGuastiAppartamento(appId)
+        const guasti = res.success ? (res.data?.data || []) : []
+        return [appId, guasti]
+      } catch (err) {
+        console.error(err)
+        return [appId, []]
+      }
+    }),
+  )
+
+  guastiByApartment.value = Object.fromEntries(entries.filter(Boolean))
+}
+
 async function loadGuastiModal(apt) {
   const appId = getAppId(apt)
   if (!appId || guastiModalLoading.value) return
@@ -325,7 +382,12 @@ async function loadGuastiModal(apt) {
   try {
     const res = await getGuastiAppartamento(appId)
     if (res.success) {
-      guastiModalGuasti.value = res.data?.data || []
+      const guasti = res.data?.data || []
+      guastiModalGuasti.value = guasti
+      guastiByApartment.value = {
+        ...guastiByApartment.value,
+        [appId]: guasti,
+      }
     } else {
       console.error(res.error)
       guastiModalGuasti.value = []

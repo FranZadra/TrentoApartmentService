@@ -75,9 +75,15 @@
         <button
           v-if="showGuastiAction"
           @click="$emit('guasti')"
-          class="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+          class="relative rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
         >
           {{ guastiActionLabel }}
+            <span
+            v-if="guastiCount > 0"
+            class="absolute -right-2 -top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#9a1528] text-[10px] font-bold leading-none text-white shadow-sm"
+            >
+            {{ guastiCount > 9 ? '9+' : guastiCount }}
+          </span>
         </button>
         
       </div>
@@ -106,6 +112,10 @@ defineProps({
   guastiActionLabel: {
     type: String,
     default: 'Segnalazioni',
+  },
+  guastiCount: {
+    type: Number,
+    default: 0,
   },
 })
 
