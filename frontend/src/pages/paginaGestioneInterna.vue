@@ -234,7 +234,10 @@
                       <span v-if="celle.oggi" class="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Oggi</span>
                     </div>
 
-                    <div v-if="filtroTurniAttivo && isCurrentWeekCell(celle.giorno)" class="mt-2 rounded-lg bg-amber-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-900">
+                    <div
+                      v-if="filtroTurniAttivo && isCurrentWeekCell(celle.giorno) && !settimanaInCorsoCompletata"
+                      class="mt-2 rounded-lg bg-amber-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-900"
+                    >
                       Turno
                     </div>
 
@@ -254,26 +257,25 @@
 
               <aside class="space-y-4">
                 <div class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-                  <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Prossimi turni</p>
+                  <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Turni settimana corrente</p>
                   <div class="mt-4 space-y-3">
-                    <article v-for="settimana in settimaneProssime" :key="settimana.key" class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
+                    <article v-if="settimanaInCorso" class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
                       <div class="flex items-start justify-between gap-3">
                         <div>
                           <p class="text-sm font-semibold text-zinc-900">Turno della settimana</p>
-                          <p class="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ settimana.periodo }}</p>
+                          <p class="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ settimanaInCorso.periodo }}</p>
                         </div>
-                        <span class="rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" :class="settimana.isCurrent ? 'bg-amber-100 text-amber-900' : 'bg-zinc-200 text-zinc-700'">
-                          {{ settimana.isCurrent ? 'Corrente' : 'Prossima' }}
+                        <span class="rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" :class="settimanaInCorsoCompletata ? 'bg-green-100 text-green-900' : 'bg-amber-100 text-amber-900'">
+                          {{ settimanaInCorsoCompletata ? 'Completata' : 'In corso' }}
                         </span>
                       </div>
 
                       <div class="mt-3 space-y-2">
                         <div
-                          v-for="turno in settimana.turni"
+                          v-for="turno in settimanaInCorso.turni"
                           :key="turno.id"
                           class="flex cursor-pointer items-start gap-3 rounded-2xl border px-3 py-2 transition"
                           :class="turno.completato ? 'border-green-200 bg-green-50' : 'border-zinc-200 bg-white hover:border-primary/30'"
-                          @click="toggleTurnoEspanso(turno.id)"
                         >
                           <input
                             type="checkbox"
@@ -291,11 +293,62 @@
                                 {{ turno.visibilita === 'condivisa' ? 'Condivisa' : 'Privata' }}
                               </span>
                             </div>
-                            <p v-if="turnoEspansoKey === turno.id" class="mt-1 text-xs text-zinc-600">{{ turno.descrizione }}</p>
                           </div>
                         </div>
                       </div>
                     </article>
+
+                    <button
+                      type="button"
+                      class="w-full rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                      @click="toggleMostraSettimanaProssima"
+                    >
+                      {{ mostraSettimanaProssima ? 'Nascondi turni settimana prossima' : 'Mostra turni settimana prossima' }}
+                    </button>
+
+                    <transition name="fade">
+                      <article v-if="mostraSettimanaProssima && settimanaSuccessiva" class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4" :class="isSettimanaProssimaAttiva() ? '' : 'opacity-60'">
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <p class="text-sm font-semibold text-zinc-900">Settimana prossima</p>
+                            <p class="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ settimanaSuccessiva.periodo }}</p>
+                          </div>
+                          <span class="rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" :class="isSettimanaProssimaAttiva() ? 'bg-emerald-100 text-emerald-900' : 'bg-zinc-200 text-zinc-700'">
+                            {{ isSettimanaProssimaAttiva() ? 'Aperta' : 'Bloccata' }}
+                          </span>
+                        </div>
+
+                        <div class="mt-3 space-y-2" :class="isSettimanaProssimaAttiva() ? '' : 'pointer-events-none'">
+                          <div
+                            v-for="turno in settimanaSuccessiva.turni"
+                            :key="turno.id"
+                            class="flex items-start gap-3 rounded-2xl border px-3 py-2 transition"
+                            :class="isSettimanaProssimaAttiva()
+                              ? (turno.completato ? 'border-green-200 bg-green-50' : 'border-zinc-200 bg-white hover:border-primary/30')
+                              : 'border-zinc-200 bg-zinc-100 text-zinc-500'"
+                          >
+                            <input
+                              type="checkbox"
+                              class="mt-1 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
+                              :checked="turno.completato"
+                              :disabled="!isSettimanaProssimaAttiva()"
+                              @click.stop
+                              @change="isSettimanaProssimaAttiva() && toggleTurnoCompletato(turno.id)"
+                            />
+                            <div class="min-w-0 flex-1">
+                              <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-zinc-900" :class="turno.completato ? 'line-through text-zinc-500' : ''">
+                                  {{ turno.titolo }}
+                                </p>
+                                <span class="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]" :class="turno.visibilita === 'condivisa' ? 'bg-sky-100 text-sky-900' : 'bg-violet-100 text-violet-900'">
+                                  {{ turno.visibilita === 'condivisa' ? 'Condivisa' : 'Privata' }}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    </transition>
                   </div>
                 </div>
 
@@ -335,11 +388,11 @@
                   <div class="mt-4 space-y-3 text-sm text-zinc-700">
                     <div class="flex items-center gap-3">
                       <span class="h-3 w-3 rounded-full bg-amber-400"></span>
-                      <span>Turno della settimana con attività base e custom</span>
+                      <span>Turni della settimana</span>
                     </div>
                     <div class="flex items-center gap-3">
                       <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
-                      <span>Passaggio del servizio urbano dei rifiuti, uguale per tutti</span>
+                      <span>Passaggio del servizio urbano dei rifiuti</span>
                     </div>
                   </div>
                 </div>
@@ -422,14 +475,12 @@ const showGuastoForm = ref(false)
 const guastiAttivi = ref([])
 const successMessage = ref('')
 const vistaAttiva = ref('info')
-const turnoEspansoKey = ref('turno-corrente')
+const mostraSettimanaProssima = ref(false)
 const nuovaFaccendaTitolo = ref('')
 const nuovaFaccendaVisibilita = ref('privata')
 const filtroTurniAttivo = ref(true)
 const filtroRifiutiAttivo = ref(true)
-const statoTurni = ref({
-  'base-0': true,
-})
+const statoTurni = ref({})
 
 const giorniSettimana = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const dataCalendario = new Date()
@@ -494,23 +545,24 @@ function creaSettimana(offsetSettimane, isCurrent = false) {
   inizio.setDate(dataBase.getDate() - ((dataBase.getDay() + 6) % 7))
   const fine = new Date(inizio)
   fine.setDate(inizio.getDate() + 6)
+  const settimanaKey = inizio.toISOString().slice(0, 10)
 
   const turni = turniBase.map((turno, index) => ({
-    id: `base-${index}`,
+    id: `${settimanaKey}-base-${index}`,
     titolo: turno.titolo,
     descrizione: turno.descrizione,
     visibilita: turno.visibilita,
-    completato: Boolean(statoTurni.value[`base-${index}`]),
+    completato: Boolean(statoTurni.value[`${settimanaKey}-base-${index}`]),
     isBase: true,
   }))
 
   turni.push(
     ...turniCustom.value.map((turno) => ({
-      id: turno.id,
+      id: `${settimanaKey}-${turno.id}`,
       titolo: turno.titolo,
       descrizione: turno.descrizione,
       visibilita: turno.visibilita,
-      completato: Boolean(statoTurni.value[turno.id]),
+      completato: Boolean(statoTurni.value[`${settimanaKey}-${turno.id}`]),
       isBase: false,
     })),
   )
@@ -530,6 +582,8 @@ function rigeneraSettimane() {
 }
 
 const settimanaInCorso = computed(() => settimaneProssime.value[0] || null)
+const settimanaSuccessiva = computed(() => settimaneProssime.value[1] || null)
+const settimanaInCorsoCompletata = computed(() => Boolean(settimanaInCorso.value?.turni.length) && settimanaInCorso.value.turni.every((turno) => turno.completato))
 
 const elencoFaccendeCondivise = computed(() =>
   turniCustom.value
@@ -611,7 +665,7 @@ function vaiAGuasti() {
 
 function apriCalendarioCondiviso() {
   vistaAttiva.value = 'calendario'
-  turnoEspansoKey.value = 'turno-corrente'
+  mostraSettimanaProssima.value = false
   rigeneraSettimane()
 }
 
@@ -623,8 +677,8 @@ function toggleFiltro(tipo) {
   }
 }
 
-function toggleTurnoEspanso(turnoId) {
-  turnoEspansoKey.value = turnoEspansoKey.value === turnoId ? '' : turnoId
+function toggleMostraSettimanaProssima() {
+  mostraSettimanaProssima.value = !mostraSettimanaProssima.value
 }
 
 function toggleTurnoCompletato(turnoId) {
@@ -649,6 +703,14 @@ function isCurrentWeekCell(giornoDelMese) {
   end.setHours(23, 59, 59, 999)
 
   return data >= start && data <= end
+}
+
+function isSettimanaProssimaAttiva() {
+  const today = new Date()
+  const start = new Date(today)
+  start.setDate(today.getDate() - ((today.getDay() + 6) % 7) + 7)
+  start.setHours(0, 0, 0, 0)
+  return today >= start
 }
 
 function aggiungiFaccenda() {
