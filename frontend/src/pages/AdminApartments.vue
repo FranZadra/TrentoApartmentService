@@ -32,12 +32,14 @@
             :apt="apt"
             :show-annuncio-action="true"
             :show-guasti-action="true"
+            :show-bollette-action="true"
             guasti-action-label="Mostra segnalazioni"
             :guasti-count="getGuastiAttiviCount(apt)"
             @view="viewDetails(apt._id)"
             @edit="editApartment(apt)"
             @annuncio="openAnnuncio(apt)"
             @guasti="openGuastiModal(apt)"
+            @bollette="openBolletteModal(apt)"
           />
         </div>
       </div>
@@ -210,6 +212,144 @@
       </div>
     </div>
   </div>
+  <!-- Modale bollette appartamento -->
+  <div v-if="showBolletteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" @click.self="closeBolletteModal">
+    <div class="relative flex w-full max-w-4xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl ring-1 ring-black/5">
+
+      <!-- Intestazione modale -->
+      <div class="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.35em] text-[#9a1528]">Gestione bollette</p>
+          <h3 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">Bollette appartamento</h3>
+          <p class="mt-2 text-sm text-zinc-600">
+            {{ selectedApartmentForBollette ? (selectedApartmentForBollette.indirizzo?.via || selectedApartmentForBollette._id) : '' }}
+          </p>
+        </div>
+        <button type="button" @click="closeBolletteModal" class="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900" aria-label="Chiudi">
+          ✕
+        </button>
+      </div>
+
+      <div class="max-h-[70vh] overflow-auto px-6 py-5 sm:px-8">
+
+        <!-- Form nuova bolletta -->
+        <div class="mb-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+          <p class="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Carica nuova bolletta</p>
+          <form @submit.prevent="submitNuovaBolletta" class="grid gap-4 sm:grid-cols-2">
+            <!-- Utenza -->
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">Utenza</label>
+              <select v-model="nuovaBolletta.utenza" required class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#9a1528]">
+                <option value="" disabled>Seleziona...</option>
+                <option value="luce">Luce</option>
+                <option value="gas">Gas</option>
+                <option value="acqua">Acqua</option>
+              </select>
+            </div>
+            <!-- Importo -->
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">Importo (€)</label>
+              <input v-model.number="nuovaBolletta.importo" type="number" min="0" step="0.01" required placeholder="es. 85.50" class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#9a1528]" />
+            </div>
+            <!-- Periodo inizio -->
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">Periodo — inizio</label>
+              <input v-model="nuovaBolletta.periodoInizio" type="date" required class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#9a1528]" />
+            </div>
+            <!-- Periodo fine -->
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">Periodo — fine</label>
+              <input v-model="nuovaBolletta.periodoFine" type="date" required class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#9a1528]" />
+            </div>
+            <!-- PDF -->
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <label class="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">PDF bolletta (opzionale, max 10 MB)</label>
+              <input type="file" accept="application/pdf" @change="onPdfSelezionato" class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 file:mr-3 file:rounded-full file:border-0 file:bg-[#9a1528] file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white" />
+            </div>
+
+            <div v-if="bolletteErrore" class="sm:col-span-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ bolletteErrore }}
+            </div>
+            <div v-if="bolletteSuccesso" class="sm:col-span-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              {{ bolletteSuccesso }}
+            </div>
+
+            <div class="sm:col-span-2 flex justify-end">
+              <button type="submit" :disabled="bollettaInvioInCorso" class="rounded-full bg-[#9a1528] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#7f1020] disabled:opacity-50">
+                {{ bollettaInvioInCorso ? 'Caricamento...' : 'Carica bolletta' }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Lista bollette esistenti -->
+        <div>
+          <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Bollette caricate</p>
+
+          <div v-if="bolletteModalLoading" class="text-sm text-zinc-600">Caricamento...</div>
+
+          <div v-else-if="bolletteModalList.length === 0" class="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-sm text-zinc-600">
+            Nessuna bolletta caricata per questo appartamento.
+          </div>
+
+          <ul v-else class="space-y-3">
+            <li
+              v-for="b in bolletteModalList"
+              :key="b._id"
+              class="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700"
+            >
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="rounded-full px-2 py-0.5 text-xs font-semibold text-white" :class="coloreUtenza(b.utenza)">
+                    {{ capitalizeFirst(b.utenza) }}
+                  </span>
+                  <span class="font-semibold text-zinc-900">€ {{ Number(b.importo).toFixed(2) }}</span>
+                  <span v-if="b.pagata" class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Pagata</span>
+                  <span v-else class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">Da pagare</span>
+                </div>
+                <p class="mt-1 text-xs text-zinc-500">
+                  {{ formatoData(b.periodoInizio) }} — {{ formatoData(b.periodoFine) }}
+                </p>
+              </div>
+              <div class="flex items-center gap-2">
+                <a v-if="b.pdfNomeFile" :href="`/api/v1/bollette/${b._id}/pdf`" target="_blank" class="rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100">
+                  PDF
+                </a>
+                <button v-if="!b.pagata" @click="segnaComePagata(b)" class="rounded-full border border-green-300 px-3 py-1.5 text-xs font-semibold text-green-700 transition hover:bg-green-50">
+                  Segna pagata
+                </button>
+                <button @click="confermaElimina(b)" class="rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50">
+                  Elimina
+                </button>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="border-t border-zinc-200 px-6 py-5 sm:px-8">
+        <div class="flex justify-end">
+          <button @click="closeBolletteModal" class="rounded-full border border-zinc-300 px-5 py-2.5 font-semibold text-zinc-700 transition hover:bg-zinc-100">Chiudi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale conferma eliminazione bolletta -->
+  <div v-if="showEliminaModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" @click.self="showEliminaModal = false">
+    <div class="relative flex w-full max-w-sm flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl ring-1 ring-black/5">
+      <div class="px-6 pt-6">
+        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-[#9a1528]">Conferma eliminazione</p>
+        <h3 class="mt-2 text-xl font-semibold text-zinc-900">Eliminare questa bolletta?</h3>
+        <p class="mt-2 text-sm text-zinc-600">L'operazione è irreversibile.</p>
+      </div>
+      <div class="flex gap-3 border-t border-zinc-200 px-6 py-5 sm:justify-end">
+        <button @click="showEliminaModal = false" class="rounded-full border border-zinc-300 px-5 py-2.5 font-semibold text-zinc-700 hover:bg-zinc-100">Annulla</button>
+        <button @click="eseguiElimina" class="rounded-full bg-red-600 px-5 py-2.5 font-semibold text-white hover:bg-red-700">Elimina</button>
+      </div>
+    </div>
+  </div>
+
   </AppLayout>
 </template>
 
@@ -221,6 +361,7 @@ import ApartmentForm from '../components/ApartmentForm.vue'
 import ApartmentCard from '../components/ApartmentCard.vue'
 import AnnuncioForm from '../components/AnnuncioForm.vue'
 import { getGuastiAppartamento, prendiInCaricoGuastoAdmin } from '../services/gestioneInternaService'
+import { getBolletteAdmin, caricaBolletta, segnaBollettaPagata, eliminaBolletta } from '../services/bolletteService'
 
 const apartments = ref([])
 const loading = ref(false)
@@ -242,10 +383,23 @@ const guastiModalGuasti = ref([])
 const mostraStorico = ref(false)
 const guastiByApartment = ref({})
 
+// ── Stato modale bollette ──────────────────────────────────────────────────────
+const showBolletteModal = ref(false)
+const selectedApartmentForBollette = ref(null)
+const bolletteModalLoading = ref(false)
+const bolletteModalList = ref([])
+const bolletteErrore = ref('')
+const bolletteSuccesso = ref('')
+const bollettaInvioInCorso = ref(false)
+const nuovaBolletta = ref({ utenza: '', importo: '', periodoInizio: '', periodoFine: '' })
+const pdfSelezionato = ref(null)
+const showEliminaModal = ref(false)
+const bollettaDaEliminare = ref(null)
+
 const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
-watch([showDetails, showForm, showAnnuncioForm, showGuastiModal], ([detailsOpen, formOpen, annuncioOpen, guastiOpen]) => {
-  document.body.style.overflow = detailsOpen || formOpen || annuncioOpen || guastiOpen ? 'hidden' : ''
+watch([showDetails, showForm, showAnnuncioForm, showGuastiModal, showBolletteModal], ([detailsOpen, formOpen, annuncioOpen, guastiOpen, bolletteOpen]) => {
+  document.body.style.overflow = detailsOpen || formOpen || annuncioOpen || guastiOpen || bolletteOpen ? 'hidden' : ''
 })
 
 function getAuthHeaders() {
@@ -495,6 +649,105 @@ function onAnnuncioSaved(annuncio) {
 function reload() {
   closeDetails()
   loadApartments()
+}
+
+// ── Funzioni modale bollette ──────────────────────────────────────────────────
+
+function capitalizeFirst(str) {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+function coloreUtenza(utenza) {
+  const mappa = { luce: 'bg-amber-500', gas: 'bg-blue-500', acqua: 'bg-cyan-500' }
+  return mappa[utenza] || 'bg-zinc-500'
+}
+
+function onPdfSelezionato(event) {
+  pdfSelezionato.value = event.target.files[0] || null
+}
+
+async function openBolletteModal(apt) {
+  selectedApartmentForBollette.value = apt
+  showBolletteModal.value = true
+  bolletteErrore.value = ''
+  bolletteSuccesso.value = ''
+  nuovaBolletta.value = { utenza: '', importo: '', periodoInizio: '', periodoFine: '' }
+  pdfSelezionato.value = null
+  await caricaListaBollette(apt)
+}
+
+function closeBolletteModal() {
+  showBolletteModal.value = false
+  selectedApartmentForBollette.value = null
+  bolletteModalList.value = []
+  bolletteErrore.value = ''
+  bolletteSuccesso.value = ''
+}
+
+async function caricaListaBollette(apt) {
+  const appId = getAppId(apt)
+  if (!appId) return
+  bolletteModalLoading.value = true
+  const res = await getBolletteAdmin(appId)
+  bolletteModalList.value = res.success ? (res.data?.data || []) : []
+  bolletteModalLoading.value = false
+}
+
+async function submitNuovaBolletta() {
+  bolletteErrore.value = ''
+  bolletteSuccesso.value = ''
+  bollettaInvioInCorso.value = true
+
+  const appId = getAppId(selectedApartmentForBollette.value)
+  const formData = new FormData()
+  formData.append('utenza', nuovaBolletta.value.utenza)
+  formData.append('importo', nuovaBolletta.value.importo)
+  formData.append('periodoInizio', nuovaBolletta.value.periodoInizio)
+  formData.append('periodoFine', nuovaBolletta.value.periodoFine)
+  if (pdfSelezionato.value) formData.append('pdf', pdfSelezionato.value)
+
+  const res = await caricaBolletta(appId, formData)
+  if (res.success) {
+    bolletteSuccesso.value = 'Bolletta caricata con successo.'
+    nuovaBolletta.value = { utenza: '', importo: '', periodoInizio: '', periodoFine: '' }
+    pdfSelezionato.value = null
+    await caricaListaBollette(selectedApartmentForBollette.value)
+  } else {
+    bolletteErrore.value = res.error || 'Errore durante il caricamento.'
+  }
+  bollettaInvioInCorso.value = false
+}
+
+async function segnaComePagata(bolletta) {
+  bolletteErrore.value = ''
+  bolletteSuccesso.value = ''
+  const res = await segnaBollettaPagata(bolletta._id)
+  if (res.success) {
+    bolletteSuccesso.value = 'Bolletta segnata come pagata.'
+    await caricaListaBollette(selectedApartmentForBollette.value)
+  } else {
+    bolletteErrore.value = res.error
+  }
+}
+
+function confermaElimina(bolletta) {
+  bollettaDaEliminare.value = bolletta
+  showEliminaModal.value = true
+}
+
+async function eseguiElimina() {
+  showEliminaModal.value = false
+  bolletteErrore.value = ''
+  bolletteSuccesso.value = ''
+  const res = await eliminaBolletta(bollettaDaEliminare.value._id)
+  if (res.success) {
+    bolletteSuccesso.value = 'Bolletta eliminata.'
+    await caricaListaBollette(selectedApartmentForBollette.value)
+  } else {
+    bolletteErrore.value = res.error
+  }
+  bollettaDaEliminare.value = null
 }
 
 // Ascolta evento globale emesso dal componente dettagli per aprire il form
