@@ -353,6 +353,51 @@ const risolviGuasto = async (req, res) => {
     }
 }
 
+const aggiornaListaSpesa = async (req, res) => {
+    try{
+        const userId = req.user?.sub || req.user?.id || req.user?._id;
+        if(!userId) return res.status(401).json({error: 'Utente non autenticato'});
+
+        const {contrattoId} = req.params;
+        if(!contrattoId) return res.status(400).json({error: 'ID contratto mancante'});
+
+        const contratto = await Contratto.findById(contrattoId);
+        if(!contratto) return res.status(404).json({error: 'Contratto non trovato nel db'});
+
+        // Verifica che l'utente abbia un contratto attivo per quell'appartamento
+        const isInquilino = contratto.idInquilini.some(id => id.toString() === userId.toString());
+        if(!isInquilino) return res.status(403).json({error: 'Non autorizzato a modificare questa lista della spesa'});
+
+        const { listaSpesa } = req.body;
+        if(!Array.isArray(listaSpesa)) return res.status(400).json({error: 'La lista della spesa deve essere un array'});
+
+        // Validazione base degli oggetti nella lista della spesa
+        for(const item of listaSpesa){
+            if(typeof item.nome !== 'string' || item.nome.trim() === ''){
+                return res.status(400).json({error: 'Ogni elemento deve avere un nome valido'});
+            }
+            if(typeof item.quantita !== 'number' || item.quantita <= 0){
+                return res.status(400).json({error: 'Ogni elemento deve avere una quantità valida'});
+            }
+        }
+
+        contratto.listaSpesa = listaSpesa.map(item => ({
+            nome: item.nome.trim(),
+            quantita: item.quantita,
+            preso: item.preso || false
+        }));
+
+        await contratto.save();
+
+        return res.status(200).json({data: contratto.listaSpesa});
+    }   
+    catch(error){
+        console.error('Errore aggiornaListaSpesa:', error);
+        return res.status(500).json({error: error.message, stack: error.stack});
+    }
+}
+
+module.exports = { getContratti, segnalaGuasto, getGuastiAppartamento, prendiInCaricoGuastoAdmin, risolviGuasto, aggiornaListaSpesa };
 // ---- US23: Faccende del calendario condiviso ----
 
 // Helper: verifica autenticazione + ruolo inquilino (stretto) + contratto attivo

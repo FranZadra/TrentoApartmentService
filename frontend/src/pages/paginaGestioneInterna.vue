@@ -558,6 +558,106 @@
     @close="closeGuastoForm"
   />
 
+  <!-- Modal: Lista spesa del contratto attivo -->
+  <transition name="fade">
+    <div v-if="showListaSpesa" class="fixed inset-0 z-50 flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/40" @click="showListaSpesa = false"></div>
+      <div class="relative mx-4 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl sm:p-7">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.28em] text-[#9a1528]">Spesa coinquilini</p>
+          <h2 class="mt-1 text-2xl font-bold text-zinc-900">Gestisci la spesa condivisa</h2>
+          </div>
+        
+            <button
+                type="button"
+                @click="showListaSpesa = false"
+                class="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+                aria-label="Chiudi"
+            >  
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>     
+        </div>
+
+        <div class="mt-4 rounded-2xl border border-primary bg-zinc-50 p-4">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                v-model.trim="nuovoElementoSpesa"
+                type="text"
+                class="w-full flex-1 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-primary"
+                placeholder="Aggiungi un prodotto e premi invio"
+                @keydown.enter.prevent="aggiungiElementoListaSpesa"
+              />
+              <input
+                v-model.number="nuovoElementoQuantita"
+                type="number"
+                min="1"
+                class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-primary sm:w-28"
+                @keydown.enter.prevent="aggiungiElementoListaSpesa"
+                />
+            </div>        
+          </div>
+
+        <div class="mt-5 max-h-[58vh] overflow-auto pr-1">
+          <div v-if="listaSpesaBozza.length" class="space-y-3 pb-4">
+            <article
+                v-for="(item, idx) in listaSpesaBozza"
+                :key="item.key"
+                class="rounded-2xl border p-4 shadow-sm transition"
+                :class="item.preso
+                    ? 'border-green-200 bg-green-50'
+                    : 'border-zinc-200 bg-zinc-50 hover:border-zinc-300'"
+                >
+                <div class="flex items-center gap-4">
+                    <div class="min-w-0 flex-1">
+                    <p
+                        class="truncate text-base font-semibold transition"
+                        :class="item.preso ? 'line-through text-zinc-400' : 'text-zinc-900'"
+                    >{{ capitalizeFirst(item.nome) }}</p>
+                    </div>
+
+                <div class="flex items-center gap-3">
+                    <span :class="item.preso ? 'line-through text-zinc-400' : 'whitespace-nowrap'">Qta:</span>
+                    <input
+                      type="number"
+                      min="1"
+                      :class=" item.preso ? 'line-through w-8 border-0 bg-transparent p-0 text-sm font-semibold text-zinc-400 outline-none focus:ring-0' : 'w-8 border-0 bg-transparent p-0 text-sm font-semibold text-zinc-800 outline-none focus:ring-0'"
+                      :value="item.quantita"
+                      @input="aggiornaQuantitaListaSpesa(idx, $event)"
+                    />
+
+                    <input
+                      type="checkbox"
+                      class="h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
+                      :checked="item.preso"
+                      @change="toggleListaSpesaPreso(idx, $event)"
+                    />
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div v-else class="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-10 text-center text-sm text-zinc-600">
+            Nessun elemento nella lista spesa per questo contratto.
+          </div>
+
+          
+        </div>
+
+        <div class="flex justify-end gap-3 border-t border-zinc-200 pt-4">
+          <button
+            type="button"
+            @click="showListaSpesa = false"
+            class="rounded-full border border-zinc-300 px-5 py-2.5 font-semibold text-zinc-700 hover:bg-zinc-100"
+          >
+            Annulla
+          </button>
+          <button type="button" 
+            @click="salvaListaSpesa"
+            class="rounded-full bg-[#9a1528] px-5 py-2.5 font-semibold text-white hover:bg-[#7f1020]">
+            Salva
   <div
     v-if="showCalendarioRifiutiModal"
     class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/55 px-4 py-8 backdrop-blur-sm"
@@ -655,6 +755,7 @@
         </div>
       </div>
     </div>
+  </transition>
   </div>
 </AppLayout>
 </template>
@@ -662,7 +763,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { getContrattiUtenteLoggato, getCalendarioRifiutiAppartamento, aggiornaCalendarioRifiutiAppartamento, getGuastiAppartamento, risolviGuasto, getFaccendeAppartamento, aggiungiFaccendaAppartamento, aggiornaFaccendaAppartamento, eliminaFaccendaAppartamento } from '../services/gestioneInternaService'
+import { getContrattiUtenteLoggato, getCalendarioRifiutiAppartamento, aggiornaCalendarioRifiutiAppartamento, getGuastiAppartamento, risolviGuasto, getFaccendeAppartamento, aggiungiFaccendaAppartamento, aggiornaFaccendaAppartamento, eliminaFaccendaAppartamento, aggiornaListaSpesa } from '../services/gestioneInternaService'
 import { getBolletteInquilino } from '../services/bolletteService'
 import GuastoForm from '@/components/GuastoForm.vue'
 import { Bar } from 'vue-chartjs'
@@ -820,6 +921,59 @@ const contrattiPassati = computed(() => contratti.value.filter((contratto) => co
 const appartamentoAttivo = computed(() => contrattoAttivo.value?.idAppartamento || null)
 const calendarioRifiutiDaMostrare = computed(() => (isEditingCalendarioRifiuti.value ? bozzaCalendarioRifiuti.value : calendarioRifiuti.value))
 
+// Modal lista spesa
+const showListaSpesa = ref(false)
+
+const listaSpesaBozza = ref([])
+
+const nuovoElementoSpesa = ref('')
+const nuovoElementoQuantita = ref(1)
+const listaSpesaSaving = ref(false)
+const listaSpesaError = ref('')
+
+function normalizeListaSpesaItem(item, index = 0) {
+  if (typeof item === 'string') {
+    return {
+      key: `spesa-${index}-${item}`,
+      nome: item,
+      quantita: 1,
+      preso: false,
+    }
+  }
+
+  return {
+    key: item?.key || `spesa-${index}-${item?.nome || 'elemento'}`,
+    nome: item?.nome || 'Elemento senza nome',
+    quantita: Number(item?.quantita) > 0 ? Number(item.quantita) : 1,
+    preso: Boolean(item?.preso),
+  }
+}
+
+function getListaSpesaSource() {
+  return Array.isArray(contrattoAttivo.value?.listaSpesa) ? contrattoAttivo.value.listaSpesa : []
+}
+
+function sincronizzaListaSpesaBozza() {
+  listaSpesaBozza.value = getListaSpesaSource().map((item, index) => normalizeListaSpesaItem(item, index))
+}
+
+function preparaListaSpesaPerApi() {
+  return listaSpesaBozza.value
+    .filter((item) => !item.preso)
+    .map((item) => ({
+      nome: item.nome,
+      quantita: Number(item.quantita) > 0 ? Number(item.quantita) : 1,
+      preso: false,
+    }))
+}
+
+function chiudiListaSpesa() {
+  showListaSpesa.value = false
+  listaSpesaError.value = ''
+  nuovoElementoSpesa.value = ''
+  nuovoElementoQuantita.value = 1
+}
+
 function oggiISO() {
   return new Date().toISOString().slice(0, 10)
 }
@@ -896,6 +1050,13 @@ watch([showGuastoForm, showCalendarioRifiutiModal], ([openGuasto, openCalendario
   document.body.style.overflow = openGuasto || openCalendario ? 'hidden' : ''
 })
 
+watch(
+  () => [showGuastoForm.value, showListaSpesa.value],
+  ([guastoOpen, spesaOpen]) => {
+    document.body.style.overflow = guastoOpen || spesaOpen ? 'hidden' : ''
+  },
+  { immediate: true },
+)
 function creaCalendarioRifiutiDefault() {
   return [
     { tipo: 'Organico', giorni: [1, 4] },
@@ -1113,6 +1274,80 @@ async function apriCalendarioCondiviso() {
   mostraSettimanaProssima.value = false
   await loadFaccende()
   rigeneraSettimane()
+}
+
+function azionePlaceholder(tipo) {
+  if (tipo === 'spesa') {
+    listaSpesaError.value = ''
+    sincronizzaListaSpesaBozza()
+    showListaSpesa.value = true
+    return
+  }
+
+  // per gli altri tipi lasciare comportamento placeholder
+  console.log('Azione non implementata:', tipo)
+}
+
+function aggiungiElementoListaSpesa() {
+  const nome = nuovoElementoSpesa.value.trim()
+  if (!nome) return
+
+  listaSpesaBozza.value.push({
+    key: `spesa-${Date.now()}`,
+    nome,
+    quantita: Number(nuovoElementoQuantita.value) > 0 ? Number(nuovoElementoQuantita.value) : 1,
+    preso: false,
+  })
+
+  nuovoElementoSpesa.value = ''
+  nuovoElementoQuantita.value = 1
+}
+
+function toggleListaSpesaPreso(index, event) {
+  const item = listaSpesaBozza.value[index]
+  if (!item) return
+
+  item.preso = Boolean(event?.target?.checked)
+}
+
+function aggiornaQuantitaListaSpesa(index, event) {
+  const value = Number(event?.target?.value)
+  const quantita = Number.isFinite(value) && value > 0 ? value : 1
+  const item = listaSpesaBozza.value[index]
+  if (!item) return
+
+  item.quantita = quantita
+}
+
+async function salvaListaSpesa() {
+  const contratto = contrattoAttivo.value
+  if (!contratto?._id) {
+    listaSpesaError.value = 'Nessun contratto attivo disponibile.'
+    return
+  }
+
+  listaSpesaSaving.value = true
+  listaSpesaError.value = ''
+
+  const payload = preparaListaSpesaPerApi()
+  const response = await aggiornaListaSpesa(contratto._id, payload)
+
+  if (response.success) {
+    const listaSalvata = Array.isArray(response.data?.data) ? response.data.data : payload
+    contratto.listaSpesa = listaSalvata
+      .map((item, index) => normalizeListaSpesaItem(item, index))
+      .map((item) => ({ nome: capitalizeFirst(item.nome), quantita: item.quantita, preso: item.preso }))
+
+    sincronizzaListaSpesaBozza()
+    listaSpesaSaving.value = false
+    chiudiListaSpesa()
+    successMessage.value = 'Lista spesa aggiornata con successo.'
+    setTimeout(() => (successMessage.value = ''), 3500)
+    return
+  }
+
+  listaSpesaSaving.value = false
+  listaSpesaError.value = response.error || 'Errore durante il salvataggio della lista spesa.'
 }
 
 function toggleFiltro(tipo) {
