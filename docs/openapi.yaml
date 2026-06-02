@@ -1486,7 +1486,21 @@ paths:
                   error:
                     type: string
                     example: Non autorizzato a visualizzare i guasti di questo appartamento
+          "404":
+            description: Appartamento non trovato
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    error:
+                      type: string
+                      example: Appartamento non trovato        
 
+  # /api/v1/gestione-interna/spesa/{contrattoId}:
+  #  put:
+
+  
   # ── Statistiche (US16) ────────────────────────────────────────────────────
 
   /api/v1/statistiche:

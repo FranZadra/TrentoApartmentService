@@ -75,4 +75,14 @@ export async function risolviGuasto(guastoId) {
   }
 }
 
+export async function aggiornaListaSpesa(contrattoId, listaSpesa) {
+    try {
+        const response = await api.put(`/gestione-interna/spesa/${contrattoId}`, { listaSpesa })
+        return { success: true, data: response.data }
+    } catch (error) {
+        const message = error.response?.data?.error || 'Errore durante l\'aggiornamento della lista spesa'
+        return { success: false, error: message, status: error.response?.status }
+    }
+}
+
 export default api
