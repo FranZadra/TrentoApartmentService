@@ -29,6 +29,68 @@ export async function getContrattiUtenteLoggato() {
   }
 }
 
+export async function getCalendarioRifiutiAppartamento(appId) {
+  try {
+    const response = await api.get(`/gestione-interna/rifiuti/${appId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message = error.response?.data?.error || 'Errore nel recupero del calendario rifiuti'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
+export async function aggiornaCalendarioRifiutiAppartamento(appId, calendarioRifiuti) {
+  try {
+    const response = await api.put(`/gestione-interna/rifiuti/${appId}`, { calendarioRifiuti })
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message = error.response?.data?.error || 'Errore durante l\'aggiornamento del calendario rifiuti'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
+// ---- US23: Faccende del calendario condiviso ----
+
+export async function getFaccendeAppartamento(appId) {
+  try {
+    const response = await api.get(`/gestione-interna/faccende/${appId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message = error.response?.data?.error || 'Errore nel recupero delle faccende'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
+export async function aggiungiFaccendaAppartamento(appId, payload) {
+  try {
+    const response = await api.post(`/gestione-interna/faccende/${appId}`, payload)
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message = error.response?.data?.error || 'Errore durante l\'aggiunta della faccenda'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
+export async function aggiornaFaccendaAppartamento(appId, faccendaId, payload) {
+  try {
+    const response = await api.put(`/gestione-interna/faccende/${appId}/${faccendaId}`, payload)
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message = error.response?.data?.error || 'Errore durante l\'aggiornamento della faccenda'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
+export async function eliminaFaccendaAppartamento(appId, faccendaId) {
+  try {
+    const response = await api.delete(`/gestione-interna/faccende/${appId}/${faccendaId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message = error.response?.data?.error || 'Errore durante l\'eliminazione della faccenda'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
 export async function segnalaGuasto(payload) {
   try {
     const response = await api.post('/gestione-interna/guasti', payload)
