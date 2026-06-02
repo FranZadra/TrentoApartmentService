@@ -3,6 +3,28 @@ const Guasto = require('../models/Guasto');
 const Appartamento = require('../models/Appartamento');
 const User = require('../models/User');
 
+const buildContrattoInquilinoFilter = (userId, extraFilter = {}) => ({
+    ...extraFilter,
+    $or: [
+        { idInquilini: userId },
+        { idInquilino: userId },
+    ],
+});
+
+const normalizzaContratto = (contratto) => {
+    const plain = typeof contratto?.toObject === 'function' ? contratto.toObject() : { ...contratto };
+
+    if (!Array.isArray(plain.idInquilini) || plain.idInquilini.length === 0) {
+        if (plain.idInquilino) {
+            plain.idInquilini = [plain.idInquilino];
+        } else {
+            plain.idInquilini = [];
+        }
+    }
+
+    return plain;
+};
+
 const getContratti = async (req, res) => {
     try {
         const userId = req.user?.sub || req.user?.id || req.user?._id; // Supporta sia sub che id a seconda di come è strutturato il token
@@ -21,10 +43,10 @@ const getContratti = async (req, res) => {
         }
 
         // Recupera tutti i contratti dell'utente loggato
-        const contratti = await Contratto.find({ idInquilino: userId }).populate('idAppartamento');
+        const contratti = await Contratto.find(buildContrattoInquilinoFilter(userId)).populate('idAppartamento').lean();
 
         // Restituisce i contratti così come sono, lasciando al frontend la separazione attivi/passati
-        return res.status(200).json({ contratti });
+        return res.status(200).json({ contratti: contratti.map(normalizzaContratto) });
     } catch (error) {
         console.error('Errore getContratti:', error)
         return res.status(500).json({ error: error.message, stack: error.stack });
@@ -54,11 +76,12 @@ const segnalaGuasto = async (req, res) => {
             return res.status(400).json({ errors: ['L\'appartamento associato è obbligatorio e deve essere valido'] });
         }
 
-        const contrattoAttivo = await Contratto.findOne({
-            idInquilino: userId,
-            idAppartamento: idAppartamento,
-            stato: 'attivo',
-        });
+        const contrattoAttivo = await Contratto.findOne(
+            buildContrattoInquilinoFilter(userId, {
+                idAppartamento: idAppartamento,
+                stato: 'attivo',
+            })
+        );
 
         if (!contrattoAttivo) {
             return res.status(403).json({ error: 'Non hai un contratto attivo per questo appartamento' });
@@ -117,7 +140,12 @@ const getGuastiAppartamento = async (req, res) => {
                 return res.status(403).json({ error: 'Non autorizzato a visualizzare le segnalazioni di questo appartamento' });
             }
         } else {
-            const contratto = await Contratto.findOne({ idInquilino: userId, idAppartamento: appId, stato: 'attivo' });
+            const contratto = await Contratto.findOne(
+                buildContrattoInquilinoFilter(userId, {
+                    idAppartamento: appId,
+                    stato: 'attivo',
+                })
+            );
             if (!contratto) return res.status(403).json({ error: 'Non autorizzato a visualizzare i guasti di questo appartamento' });
         }
 
@@ -173,7 +201,12 @@ const risolviGuasto = async (req, res) => {
         if (!guasto) return res.status(404).json({ error: 'Segnalazione non trovata' });
 
         // Verifica che l'utente abbia un contratto attivo per quell'appartamento
-        const contratto = await Contratto.findOne({ idInquilino: userId, idAppartamento: guasto.idAppartamento, stato: 'attivo' });
+        const contratto = await Contratto.findOne(
+            buildContrattoInquilinoFilter(userId, {
+                idAppartamento: guasto.idAppartamento,
+                stato: 'attivo',
+            })
+        );
         if (!contratto) return res.status(403).json({ error: 'Non autorizzato a modificare questa segnalazione' });
 
         // Verifica che lo stato sia "preso in carico"
