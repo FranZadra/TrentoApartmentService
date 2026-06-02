@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const OggettoSpesaSchema = new mongoose.Schema({
+    nome : { type: String, required: true },
+    quantita : { type: Number, required: true },
+    preso : { type: Boolean, default: false }
+}, { _id: false });
+
 const ContrattoSchema = new mongoose.Schema(
   {
     idAppartamento: {
@@ -7,10 +13,13 @@ const ContrattoSchema = new mongoose.Schema(
       ref: 'Appartamento',
       required: true,
     },
-    idInquilino: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+    idInquilini: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
       required: true,
+      validate: {
+        validator: (value) => Array.isArray(value) && value.length > 0,
+        message: 'Almeno un inquilino è obbligatorio',
+      },
     },
     dataInizio: {
       type: Date,
@@ -32,6 +41,10 @@ const ContrattoSchema = new mongoose.Schema(
     tipoContratto: {
       type: String,
       required: true
+    },
+    listaSpesa: {
+      type: [OggettoSpesaSchema],
+      default: []
     },
   },  
   {
