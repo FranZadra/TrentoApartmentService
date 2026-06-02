@@ -172,7 +172,14 @@
                     <h3 class="mt-1 text-xl font-display text-zinc-900">{{ titoloCalendario }}</h3>
                   </div>
 
-                  <div class="flex items-center gap-2 text-xs font-semibold text-zinc-500">
+                  <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-zinc-500">
+                    <button
+                      type="button"
+                      class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900 transition hover:bg-emerald-100"
+                      @click="apriCalendarioRifiuti"
+                    >
+                      Calendario rifiuti
+                    </button>
                     <button
                       type="button"
                       class="rounded-full px-3 py-2 transition"
@@ -457,13 +464,112 @@
     @saved="onGuastoSaved"
     @close="closeGuastoForm"
   />
+
+  <div
+    v-if="showCalendarioRifiutiModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/55 px-4 py-8 backdrop-blur-sm"
+  >
+    <div class="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+      <div class="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 sm:px-6">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Calendario rifiuti</p>
+          <h3 class="mt-2 text-xl font-display text-zinc-900">{{ indirizzoCompleto(appartamentoAttivo) }}</h3>
+          <p class="mt-2 text-sm text-zinc-600">
+            I giorni di raccolta sono condivisi tra tutti i coinquilini del contratto attivo.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="rounded-full border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-600 transition hover:border-primary hover:text-primary"
+          @click="chiudiCalendarioRifiuti"
+        >
+          Chiudi
+        </button>
+      </div>
+
+      <div class="space-y-4 px-5 py-5 sm:px-6">
+        <div
+          v-for="voce in calendarioRifiutiDaMostrare"
+          :key="voce.tipo"
+          class="rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-zinc-900">{{ voce.tipo }}</p>
+              <p class="mt-1 text-xs uppercase tracking-[0.18em] text-zinc-500">
+                {{ mostraGiorniRifiuti(voce.giorni) }}
+              </p>
+            </div>
+            <span class="rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500 shadow-sm">
+              {{ voce.giorni.length ? 'Attivo' : 'Non impostato' }}
+            </span>
+          </div>
+
+          <div v-if="isEditingCalendarioRifiuti" class="mt-3 flex flex-wrap gap-2">
+            <label
+              v-for="giorno in giorniSelezionabili"
+              :key="`${voce.tipo}-${giorno.value}`"
+              class="flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition"
+              :class="isGiornoSelezionatoBozza(voce.tipo, giorno.value)
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-zinc-200 bg-white text-zinc-700 hover:border-primary/40'"
+            >
+              <input
+                type="checkbox"
+                class="h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
+                :checked="isGiornoSelezionatoBozza(voce.tipo, giorno.value)"
+                @change="toggleGiornoCalendarioBozza(voce.tipo, giorno.value)"
+              />
+              <span>{{ giorno.label }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div v-if="calendarioRifiutiError" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ calendarioRifiutiError }}
+        </div>
+
+        <div v-if="calendarioRifiutiSuccess" class="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+          {{ calendarioRifiutiSuccess }}
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 border-t border-zinc-200 px-5 py-4 sm:px-6">
+        <p class="text-xs text-zinc-500">
+          {{ isEditingCalendarioRifiuti ? 'Seleziona i giorni di raccolta per ciascuna tipologia.' : 'Premi Modifica per aggiornare i giorni di raccolta.' }}
+        </p>
+
+        <div class="flex items-center gap-3">
+          <button
+            v-if="isEditingCalendarioRifiuti"
+            type="button"
+            class="rounded-full border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary"
+            @click="annullaModificaCalendarioRifiuti"
+          >
+            Annulla
+          </button>
+
+          <button
+            type="button"
+            class="rounded-full px-5 py-2.5 text-sm font-semibold text-white transition"
+            :class="salvataggioCalendarioRifiuti ? 'cursor-wait bg-zinc-400' : 'bg-primary hover:bg-primary-dark'"
+            :disabled="salvataggioCalendarioRifiuti"
+            @click="isEditingCalendarioRifiuti ? salvaCalendarioRifiuti() : entraInModificaCalendarioRifiuti()"
+          >
+            {{ isEditingCalendarioRifiuti ? 'Salva modifiche' : 'Modifica' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </AppLayout>
 </template>
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { getContrattiUtenteLoggato, getGuastiAppartamento, risolviGuasto } from '../services/gestioneInternaService'
+import { getContrattiUtenteLoggato, getCalendarioRifiutiAppartamento, aggiornaCalendarioRifiutiAppartamento, getGuastiAppartamento, risolviGuasto } from '../services/gestioneInternaService'
 import GuastoForm from '@/components/GuastoForm.vue'
 
 const contratti = ref([])
@@ -481,12 +587,29 @@ const nuovaFaccendaVisibilita = ref('privata')
 const filtroTurniAttivo = ref(true)
 const filtroRifiutiAttivo = ref(true)
 const statoTurni = ref({})
+const showCalendarioRifiutiModal = ref(false)
+const isEditingCalendarioRifiuti = ref(false)
+const salvataggioCalendarioRifiuti = ref(false)
+const calendarioRifiutiError = ref('')
+const calendarioRifiutiSuccess = ref('')
+const calendarioRifiuti = ref(creaCalendarioRifiutiDefault())
+const bozzaCalendarioRifiuti = ref(creaCalendarioRifiutiDefault())
 
 const giorniSettimana = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+const giorniSelezionabili = [
+  { value: 1, label: 'Lun' },
+  { value: 2, label: 'Mar' },
+  { value: 3, label: 'Mer' },
+  { value: 4, label: 'Gio' },
+  { value: 5, label: 'Ven' },
+  { value: 6, label: 'Sab' },
+  { value: 0, label: 'Dom' },
+]
 const dataCalendario = new Date()
 const meseCorrente = dataCalendario.getMonth()
 const annoCorrente = dataCalendario.getFullYear()
 const dataOggiISO = oggiISO()
+const tipiRifiuti = ['Organico', 'Carta', 'Imballaggi leggeri', 'Residuo', 'Vetro']
 
 const templateTurni = {
   1: { tipo: 'faccende', label: 'Turno casa', dettaglio: 'Pulizia pavimenti zone comuni' },
@@ -524,16 +647,22 @@ const celleCalendario = computed(() => {
     const inMese = giornoDelMese >= 1 && giornoDelMese <= giorniNelMese
     const data = inMese ? new Date(annoCorrente, meseCorrente, giornoDelMese) : null
     const giornoSettimana = data ? data.getDay() : null
-    const template = giornoSettimana !== null ? templateTurni[giornoSettimana] : null
+    const rifiutiDelGiorno = giornoSettimana !== null
+      ? calendarioRifiuti.value
+        .filter((voce) => Array.isArray(voce.giorni) && voce.giorni.includes(giornoSettimana))
+        .map((voce) => ({
+          key: `${annoCorrente}-${meseCorrente}-${giornoDelMese}-${voce.tipo}`,
+          tipo: voce.tipo,
+          dettaglio: voce.tipo,
+        }))
+      : []
 
     return {
       key: `${annoCorrente}-${meseCorrente}-${index}`,
       giorno: inMese ? giornoDelMese : '',
       inMese,
       oggi: inMese && data.toISOString().slice(0, 10) === dataOggiISO,
-      rifiuti: template && template.tipo === 'rifiuti' && filtroRifiutiAttivo.value
-        ? [{ key: `${annoCorrente}-${meseCorrente}-${giornoDelMese}-${template.label}-${template.tipo}`, ...template, data: data.toISOString() }]
-        : [],
+      rifiuti: filtroRifiutiAttivo.value ? rifiutiDelGiorno : [],
     }
   })
 })
@@ -599,14 +728,172 @@ const eventiProssimi = computed(() => {
 const contrattoAttivo = computed(() => contratti.value.find((contratto) => contratto.stato === 'attivo') || null)
 const contrattiPassati = computed(() => contratti.value.filter((contratto) => contratto.stato !== 'attivo'))
 const appartamentoAttivo = computed(() => contrattoAttivo.value?.idAppartamento || null)
+const calendarioRifiutiDaMostrare = computed(() => (isEditingCalendarioRifiuti.value ? bozzaCalendarioRifiuti.value : calendarioRifiuti.value))
 
 function oggiISO() {
   return new Date().toISOString().slice(0, 10)
 }
 
-watch(showGuastoForm, (open) => {
-  document.body.style.overflow = open ? 'hidden' : ''
+watch([showGuastoForm, showCalendarioRifiutiModal], ([openGuasto, openCalendario]) => {
+  document.body.style.overflow = openGuasto || openCalendario ? 'hidden' : ''
 })
+
+function creaCalendarioRifiutiDefault() {
+  return [
+    { tipo: 'Organico', giorni: [1, 4] },
+    { tipo: 'Carta', giorni: [2] },
+    { tipo: 'Imballaggi leggeri', giorni: [3] },
+    { tipo: 'Residuo', giorni: [5] },
+    { tipo: 'Vetro', giorni: [6] },
+  ]
+}
+
+function normalizzaCalendarioRifiuti(valore) {
+  const source = Array.isArray(valore) ? valore : creaCalendarioRifiutiDefault()
+  const mappa = new Map()
+
+  source.forEach((voce) => {
+    if (!voce || !tipiRifiuti.includes(voce.tipo)) return
+
+    const giorni = Array.isArray(voce.giorni)
+      ? [...new Set(voce.giorni.map((giorno) => Number.parseInt(giorno, 10)).filter((giorno) => Number.isInteger(giorno) && giorno >= 0 && giorno <= 6))].sort((a, b) => a - b)
+      : []
+
+    mappa.set(voce.tipo, giorni)
+  })
+
+  return tipiRifiuti.map((tipo) => ({
+    tipo,
+    giorni: mappa.has(tipo) ? mappa.get(tipo) : [],
+  }))
+}
+
+function copiaCalendarioRifiuti(valore) {
+  return normalizzaCalendarioRifiuti(valore).map((voce) => ({
+    tipo: voce.tipo,
+    giorni: [...voce.giorni],
+  }))
+}
+
+function getAppartamentoId(appartamento) {
+  return appartamento?._id || appartamento?.id || ''
+}
+
+function getVoceCalendarioRifiuti(tipo, source = calendarioRifiuti.value) {
+  return (source || []).find((voce) => voce.tipo === tipo) || { tipo, giorni: [] }
+}
+
+function mostraGiorniRifiuti(giorni) {
+  if (!Array.isArray(giorni) || giorni.length === 0) {
+    return 'Nessun giorno impostato'
+  }
+
+  return giorniSelezionabili.filter((giorno) => giorni.includes(giorno.value)).map((giorno) => giorno.label).join(', ')
+}
+
+function isGiornoSelezionatoBozza(tipo, giorno) {
+  const voce = getVoceCalendarioRifiuti(tipo, bozzaCalendarioRifiuti.value)
+  return Array.isArray(voce.giorni) && voce.giorni.includes(giorno)
+}
+
+function toggleGiornoCalendarioBozza(tipo, giorno) {
+  const prossimo = copiaCalendarioRifiuti(bozzaCalendarioRifiuti.value)
+  const voce = prossimo.find((elemento) => elemento.tipo === tipo)
+  if (!voce) return
+
+  if (voce.giorni.includes(giorno)) {
+    voce.giorni = voce.giorni.filter((valore) => valore !== giorno)
+  } else {
+    voce.giorni = [...voce.giorni, giorno].sort((a, b) => a - b)
+  }
+
+  bozzaCalendarioRifiuti.value = prossimo
+}
+
+async function loadCalendarioRifiuti() {
+  const appId = getAppartamentoId(appartamentoAttivo.value)
+  if (!appId) {
+    calendarioRifiuti.value = creaCalendarioRifiutiDefault()
+    bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
+    return
+  }
+
+  const response = await getCalendarioRifiutiAppartamento(appId)
+  if (response.success) {
+    calendarioRifiuti.value = normalizzaCalendarioRifiuti(response.data?.data)
+    bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
+    calendarioRifiutiError.value = ''
+  } else {
+    calendarioRifiuti.value = creaCalendarioRifiutiDefault()
+    bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
+    calendarioRifiutiError.value = response.error
+  }
+}
+
+function apriCalendarioRifiuti() {
+  calendarioRifiutiError.value = ''
+  calendarioRifiutiSuccess.value = ''
+  isEditingCalendarioRifiuti.value = false
+  bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
+  showCalendarioRifiutiModal.value = true
+}
+
+function chiudiCalendarioRifiuti() {
+  showCalendarioRifiutiModal.value = false
+  isEditingCalendarioRifiuti.value = false
+  calendarioRifiutiError.value = ''
+  calendarioRifiutiSuccess.value = ''
+  bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
+}
+
+function entraInModificaCalendarioRifiuti() {
+  calendarioRifiutiError.value = ''
+  calendarioRifiutiSuccess.value = ''
+  isEditingCalendarioRifiuti.value = true
+  bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
+}
+
+function annullaModificaCalendarioRifiuti() {
+  isEditingCalendarioRifiuti.value = false
+  calendarioRifiutiError.value = ''
+  bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
+}
+
+async function salvaCalendarioRifiuti() {
+  const appId = getAppartamentoId(appartamentoAttivo.value)
+  if (!appId) return
+
+  salvataggioCalendarioRifiuti.value = true
+  calendarioRifiutiError.value = ''
+  calendarioRifiutiSuccess.value = ''
+
+  const response = await aggiornaCalendarioRifiutiAppartamento(appId, bozzaCalendarioRifiuti.value)
+  if (response.success) {
+    calendarioRifiuti.value = normalizzaCalendarioRifiuti(response.data?.data)
+    bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
+    isEditingCalendarioRifiuti.value = false
+    calendarioRifiutiSuccess.value = 'Calendario rifiuti aggiornato correttamente.'
+    setTimeout(() => {
+      calendarioRifiutiSuccess.value = ''
+    }, 3000)
+  } else {
+    calendarioRifiutiError.value = response.error
+  }
+
+  salvataggioCalendarioRifiuti.value = false
+}
+
+function azionePlaceholder(tipo) {
+  const etichette = {
+    spesa: 'Lista spesa',
+    consumi: 'Consumi',
+  }
+
+  successMessage.value = `${etichette[tipo] || 'Funzione'} non ancora disponibile.`
+  setTimeout(() => {
+    successMessage.value = ''
+  }, 3000)
+}
 
 function indirizzoCompleto(appartamento) {
   if (!appartamento?.indirizzo) return 'Indirizzo non disponibile'
@@ -786,7 +1073,13 @@ onUnmounted(() => {
 watch(contrattoAttivo, (value) => {
   if (!value) showGuastoForm.value = false
   // quando cambia il contratto attivo, carica i guasti relativi
-  if (value) loadGuasti()
+  if (value) {
+    loadGuasti()
+    loadCalendarioRifiuti()
+  } else {
+    calendarioRifiuti.value = creaCalendarioRifiutiDefault()
+    bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
+  }
 })
 
 watch(vistaAttiva, (value) => {
@@ -805,7 +1098,10 @@ async function caricaContratti() {
     // se c'è un contratto attivo, carica i guasti
     if (contratti.value && contratti.value.length) {
       const ca = contratti.value.find((c) => c.stato === 'attivo')
-      if (ca) await loadGuasti()
+      if (ca) {
+        await loadGuasti()
+        await loadCalendarioRifiuti()
+      }
     }
   } else {
     errorMessage.value = response.error
