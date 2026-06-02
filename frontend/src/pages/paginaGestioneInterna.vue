@@ -457,6 +457,35 @@
     @saved="onGuastoSaved"
     @close="closeGuastoForm"
   />
+
+  <!-- Modal: Lista spesa del contratto attivo -->
+  <transition name="fade">
+    <div v-if="showListaSpesa" class="fixed inset-0 z-50 flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/40" @click="showListaSpesa = false"></div>
+      <div class="relative mx-4 w-full max-w-xl rounded-2xl bg-white p-6 shadow-lg">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-semibold text-zinc-900">Lista spesa</h3>
+            <p class="mt-1 text-sm text-zinc-600">Elementi salvati nel contratto attivo</p>
+          </div>
+          <button class="text-zinc-500 hover:text-zinc-800" @click="showListaSpesa = false">Chiudi</button>
+        </div>
+
+        <div class="mt-4 max-h-64 overflow-auto">
+          <ul v-if="listaSpesaAttiva.length" class="space-y-2">
+            <li v-for="(item, idx) in listaSpesaAttiva" :key="idx" class="flex items-center justify-between rounded-lg border px-3 py-2">
+              <span class="text-sm text-zinc-800">{{ item }}</span>
+            </li>
+          </ul>
+          <div v-else class="text-sm text-zinc-600">Nessun elemento nella lista spesa per questo contratto.</div>
+        </div>
+
+        <div class="mt-4 flex justify-end">
+          <button class="rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white" @click="showListaSpesa = false">OK</button>
+        </div>
+      </div>
+    </div>
+  </transition>
 </AppLayout>
 </template>
 
@@ -600,11 +629,23 @@ const contrattoAttivo = computed(() => contratti.value.find((contratto) => contr
 const contrattiPassati = computed(() => contratti.value.filter((contratto) => contratto.stato !== 'attivo'))
 const appartamentoAttivo = computed(() => contrattoAttivo.value?.idAppartamento || null)
 
+// Modal lista spesa
+const showListaSpesa = ref(false)
+
+const listaSpesaAttiva = computed(() => {
+  // aspettarsi che il contratto possa avere campo `listaSpesa` come array di stringhe
+  return Array.isArray(contrattoAttivo.value?.listaSpesa) ? contrattoAttivo.value.listaSpesa : []
+})
+
 function oggiISO() {
   return new Date().toISOString().slice(0, 10)
 }
 
 watch(showGuastoForm, (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+})
+
+watch(showListaSpesa, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
 })
 
@@ -667,6 +708,17 @@ function apriCalendarioCondiviso() {
   vistaAttiva.value = 'calendario'
   mostraSettimanaProssima.value = false
   rigeneraSettimane()
+}
+
+function azionePlaceholder(tipo) {
+  if (tipo === 'spesa') {
+    // apri modal lista spesa
+    showListaSpesa.value = true
+    return
+  }
+
+  // per gli altri tipi lasciare comportamento placeholder
+  console.log('Azione non implementata:', tipo)
 }
 
 function toggleFiltro(tipo) {
