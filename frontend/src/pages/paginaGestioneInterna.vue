@@ -383,7 +383,7 @@
                           </div>
                           <!-- Elimina: disponibile solo sulle faccende create dall'utente -->
                           <button
-                            v-if="!turno.isBase && turno.isMia"
+                            v-if="turno.isMia"
                             type="button"
                             class="mt-0.5 rounded-full px-2 py-1 text-[11px] font-semibold text-zinc-400 transition hover:text-primary"
                             @click.stop="eliminaFaccendaCorrente(turno)"
@@ -692,7 +692,6 @@ const nuovaFaccendaTitolo = ref('')
 const nuovaFaccendaVisibilita = ref('privata')
 const filtroTurniAttivo = ref(true)
 const filtroRifiutiAttivo = ref(true)
-const statoTurni = ref({})
 const showCalendarioRifiutiModal = ref(false)
 const isEditingCalendarioRifiuti = ref(false)
 const salvataggioCalendarioRifiuti = ref(false)
@@ -725,12 +724,6 @@ const templateTurni = {
   5: { tipo: 'faccende', label: 'Turno casa', dettaglio: 'Pulizia bagno' },
   6: { tipo: 'rifiuti', label: 'Rifiuti urbani', dettaglio: 'Plastica e vetro' },
 }
-
-const turniBase = [
-  { titolo: 'Pulizia pavimenti zone comuni', descrizione: 'Attività base del turno della settimana', visibilita: 'condivisa' },
-  { titolo: 'Pulizia cucina', descrizione: 'Turno base assegnato a rotazione', visibilita: 'condivisa' },
-  { titolo: 'Pulizia bagno', descrizione: 'Turno base assegnato a rotazione', visibilita: 'condivisa' },
-]
 
 // Faccende reali del contratto attivo, caricate dal backend (US23).
 const faccende = ref([])
@@ -781,28 +774,17 @@ function creaSettimana(offsetSettimane, isCurrent = false) {
   fine.setDate(inizio.getDate() + 6)
   const settimanaKey = inizio.toISOString().slice(0, 10)
 
-  const turni = turniBase.map((turno, index) => ({
-    id: `${settimanaKey}-base-${index}`,
-    titolo: turno.titolo,
-    descrizione: turno.descrizione,
-    visibilita: turno.visibilita,
-    completato: Boolean(statoTurni.value[`${settimanaKey}-base-${index}`]),
-    isBase: true,
+  // Tutti i turni provengono dalle faccende reali del contratto (persistite sul backend):
+  // le condivise sono visibili a tutti gli inquilini, le private solo al creatore.
+  const turni = faccende.value.map((faccenda) => ({
+    id: `${settimanaKey}-${faccenda._id}`,
+    faccendaId: faccenda._id,
+    titolo: faccenda.titolo,
+    descrizione: faccenda.descrizione,
+    visibilita: faccenda.visibilita,
+    completato: Boolean(faccenda.completato),
+    isMia: Boolean(faccenda.isMia),
   }))
-
-  // Faccende aggiunte dagli inquilini: il loro stato "completato" vive sul backend.
-  turni.push(
-    ...faccende.value.map((faccenda) => ({
-      id: `${settimanaKey}-${faccenda._id}`,
-      faccendaId: faccenda._id,
-      titolo: faccenda.titolo,
-      descrizione: faccenda.descrizione,
-      visibilita: faccenda.visibilita,
-      completato: Boolean(faccenda.completato),
-      isBase: false,
-      isMia: Boolean(faccenda.isMia),
-    })),
-  )
 
   return {
     key: `settimana-${offsetSettimane}`,
@@ -1148,17 +1130,7 @@ function toggleMostraSettimanaProssima() {
 async function toggleTurnoCompletato(turno) {
   if (!turno) return
 
-  // Attività base: stato di completamento locale, legato alla settimana.
-  if (turno.isBase) {
-    statoTurni.value = {
-      ...statoTurni.value,
-      [turno.id]: !statoTurni.value[turno.id],
-    }
-    rigeneraSettimane()
-    return
-  }
-
-  // Faccenda persistita: aggiorna "completato" sul backend e ricarica.
+  // Ogni turno è una faccenda persistita: aggiorna "completato" sul backend e ricarica.
   const appId = getAppartamentoId(appartamentoAttivo.value)
   if (!appId || !turno.faccendaId) return
 
