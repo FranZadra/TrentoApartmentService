@@ -25,6 +25,38 @@ const normalizzaContratto = (contratto) => {
     return plain;
 };
 
+const TIPI_RIFIUTI = ['Organico', 'Carta', 'Imballaggi leggeri', 'Residuo', 'Vetro'];
+const DEFAULT_CALENDARIO_RIFIUTI = [
+    { tipo: 'Organico', giorni: [1, 4] },
+    { tipo: 'Carta', giorni: [2] },
+    { tipo: 'Imballaggi leggeri', giorni: [3] },
+    { tipo: 'Residuo', giorni: [5] },
+    { tipo: 'Vetro', giorni: [6] },
+];
+
+const normalizzaCalendarioRifiuti = (calendarioRifiuti) => {
+    const haValore = Array.isArray(calendarioRifiuti);
+    const sorgente = haValore ? calendarioRifiuti : DEFAULT_CALENDARIO_RIFIUTI;
+    const mappa = new Map();
+
+    for (const voce of sorgente) {
+        if (!voce || !TIPI_RIFIUTI.includes(voce.tipo)) continue;
+
+        const giorni = Array.isArray(voce.giorni)
+            ? [...new Set(voce.giorni.map((giorno) => Number.parseInt(giorno, 10)).filter((giorno) => Number.isInteger(giorno) && giorno >= 0 && giorno <= 6))].sort((a, b) => a - b)
+            : [];
+
+        mappa.set(voce.tipo, giorni);
+    }
+
+    return TIPI_RIFIUTI.map((tipo) => ({
+        tipo,
+        giorni: mappa.has(tipo)
+            ? mappa.get(tipo)
+            : (haValore ? [] : (DEFAULT_CALENDARIO_RIFIUTI.find((voce) => voce.tipo === tipo)?.giorni || [])),
+    }));
+};
+
 const getContratti = async (req, res) => {
     try {
         const userId = req.user?.sub || req.user?.id || req.user?._id; // Supporta sia sub che id a seconda di come è strutturato il token
@@ -49,6 +81,94 @@ const getContratti = async (req, res) => {
         return res.status(200).json({ contratti: contratti.map(normalizzaContratto) });
     } catch (error) {
         console.error('Errore getContratti:', error)
+        return res.status(500).json({ error: error.message, stack: error.stack });
+    }
+};
+
+const getCalendarioRifiuti = async (req, res) => {
+    try {
+        const userId = req.user?.sub || req.user?.id || req.user?._id;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Utente non autenticato' });
+        }
+
+        const { appId } = req.params;
+        if (!appId) {
+            return res.status(400).json({ error: 'ID appartamento mancante' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: 'Utente non trovato' });
+        }
+
+        if (user.ruolo !== 'utente verificato' && user.ruolo !== 'inquilino') {
+            return res.status(403).json({ error: 'Utente non autorizzato' });
+        }
+
+        const contratto = await Contratto.findOne(
+            buildContrattoInquilinoFilter(userId, {
+                idAppartamento: appId,
+                stato: 'attivo',
+            })
+        );
+
+        if (!contratto) {
+            return res.status(403).json({ error: 'Non autorizzato per questo appartamento' });
+        }
+
+        return res.status(200).json({ data: normalizzaCalendarioRifiuti(contratto.calendarioRifiuti) });
+    } catch (error) {
+        console.error('Errore getCalendarioRifiuti:', error);
+        return res.status(500).json({ error: error.message, stack: error.stack });
+    }
+};
+
+const aggiornaCalendarioRifiuti = async (req, res) => {
+    try {
+        const userId = req.user?.sub || req.user?.id || req.user?._id;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Utente non autenticato' });
+        }
+
+        const { appId } = req.params;
+        if (!appId) {
+            return res.status(400).json({ error: 'ID appartamento mancante' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: 'Utente non trovato' });
+        }
+
+        if (user.ruolo !== 'utente verificato' && user.ruolo !== 'inquilino') {
+            return res.status(403).json({ error: 'Utente non autorizzato' });
+        }
+
+        const calendarioRifiuti = req.body?.calendarioRifiuti;
+        if (!Array.isArray(calendarioRifiuti)) {
+            return res.status(400).json({ error: 'Il calendario rifiuti deve essere un array valido' });
+        }
+
+        const contratto = await Contratto.findOne(
+            buildContrattoInquilinoFilter(userId, {
+                idAppartamento: appId,
+                stato: 'attivo',
+            })
+        );
+
+        if (!contratto) {
+            return res.status(403).json({ error: 'Non autorizzato per questo appartamento' });
+        }
+
+        contratto.calendarioRifiuti = normalizzaCalendarioRifiuti(calendarioRifiuti);
+        await contratto.save();
+
+        return res.status(200).json({ data: contratto.calendarioRifiuti });
+    } catch (error) {
+        console.error('Errore aggiornaCalendarioRifiuti:', error);
         return res.status(500).json({ error: error.message, stack: error.stack });
     }
 };
@@ -226,4 +346,4 @@ const risolviGuasto = async (req, res) => {
     }
 }
 
-module.exports = { getContratti, segnalaGuasto, getGuastiAppartamento, prendiInCaricoGuastoAdmin, risolviGuasto };
+module.exports = { getContratti, getCalendarioRifiuti, aggiornaCalendarioRifiuti, segnalaGuasto, getGuastiAppartamento, prendiInCaricoGuastoAdmin, risolviGuasto };

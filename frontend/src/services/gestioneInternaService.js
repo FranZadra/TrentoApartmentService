@@ -29,6 +29,26 @@ export async function getContrattiUtenteLoggato() {
   }
 }
 
+export async function getCalendarioRifiutiAppartamento(appId) {
+  try {
+    const response = await api.get(`/gestione-interna/rifiuti/${appId}`)
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message = error.response?.data?.error || 'Errore nel recupero del calendario rifiuti'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
+export async function aggiornaCalendarioRifiutiAppartamento(appId, calendarioRifiuti) {
+  try {
+    const response = await api.put(`/gestione-interna/rifiuti/${appId}`, { calendarioRifiuti })
+    return { success: true, data: response.data }
+  } catch (error) {
+    const message = error.response?.data?.error || 'Errore durante l\'aggiornamento del calendario rifiuti'
+    return { success: false, error: message, status: error.response?.status }
+  }
+}
+
 export async function segnalaGuasto(payload) {
   try {
     const response = await api.post('/gestione-interna/guasti', payload)

@@ -1,5 +1,29 @@
 const mongoose = require('mongoose');
 
+const TIPI_RIFIUTI = ['Organico', 'Carta', 'Imballaggi leggeri', 'Residuo', 'Vetro'];
+const DEFAULT_CALENDARIO_RIFIUTI = [
+  { tipo: 'Organico', giorni: [1, 4] },
+  { tipo: 'Carta', giorni: [2] },
+  { tipo: 'Imballaggi leggeri', giorni: [3] },
+  { tipo: 'Residuo', giorni: [5] },
+  { tipo: 'Vetro', giorni: [6] },
+];
+
+const CalendarioRifiutiSchema = new mongoose.Schema(
+  {
+    tipo: {
+      type: String,
+      enum: TIPI_RIFIUTI,
+      required: true,
+    },
+    giorni: {
+      type: [Number],
+      default: [],
+    },
+  },
+  { _id: false }
+);
+
 const OggettoSpesaSchema = new mongoose.Schema({
     nome : { type: String, required: true },
     quantita : { type: Number, required: true },
@@ -45,6 +69,10 @@ const ContrattoSchema = new mongoose.Schema(
     listaSpesa: {
       type: [OggettoSpesaSchema],
       default: []
+    },
+    calendarioRifiuti: {
+      type: [CalendarioRifiutiSchema],
+      default: () => DEFAULT_CALENDARIO_RIFIUTI,
     },
   },  
   {
