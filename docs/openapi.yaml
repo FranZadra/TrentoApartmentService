@@ -188,9 +188,14 @@ components:
           example: 665f1a2b3c4d5e6f7a8b9c10
         idAppartamento:
           $ref: '#/components/schemas/Appartamento'
-        idInquilino:
-          type: string
-          example: 665f1a2b3c4d5e6f7a8b9c0d
+        idInquilini:
+          type: array
+          items:
+            type: string
+          description: Elenco degli inquilini associati al contratto.
+          example:
+            - 665f1a2b3c4d5e6f7a8b9c0d
+            - 665f1a2b3c4d5e6f7a8b9c0e
         dataInizio:
           type: string
           format: date-time
@@ -1303,14 +1308,15 @@ paths:
       tags: [Gestione Interna]
       summary: Contratti dell'utente loggato
       description: |
-        Restituisce tutti i contratti (attivi e passati) associati all'inquilino autenticato.
+        Restituisce tutti i contratti (attivi e passati) associati all'utente autenticato.
+        Un contratto può contenere più inquilini compresenti nell'appartamento.
         Richiede autenticazione JWT. Accessibile solo agli utenti con ruolo `inquilino` o `utente verificato`.
       operationId: getContratti
       security:
         - bearerAuth: []
       responses:
         "200":
-          description: Lista contratti dell'inquilino
+          description: Lista contratti dell'utente autenticato
           content:
             application/json:
               schema:

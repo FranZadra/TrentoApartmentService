@@ -20,7 +20,7 @@
           Non hai alcun contratto registrato a tuo nome.
         </div>
 
-        <div v-else-if="contrattoAttivo" class="w-full rounded-2xl border border-zinc-200 bg-white shadow-lg">
+        <div v-else-if="contrattoAttivo && vistaAttiva === 'info'" class="w-full rounded-2xl border border-zinc-200 bg-white shadow-lg">
           <div class="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-start">
             <!-- Sezione sinistra: dati appartamento e guasti -->
             <div class="flex-1">
@@ -48,7 +48,7 @@
               <button
                 type="button"
                 class="rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary"
-                @click="azionePlaceholder('calendario')"
+                @click="apriCalendarioCondiviso"
               >
                 Faccende
               </button>
@@ -144,11 +144,268 @@
           </div>
         </div>
 
+        <div v-else-if="contrattoAttivo && vistaAttiva === 'calendario'" class="w-full rounded-2xl border border-zinc-200 bg-white shadow-lg">
+          <div class="flex flex-col gap-6 p-6 sm:p-8">
+            <div class="flex flex-col gap-4 border-b border-zinc-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Gestione interna</p>
+                <h2 class="mt-2 text-2xl font-display text-zinc-900">Calendario condiviso</h2>
+                <p class="mt-2 max-w-2xl text-sm text-zinc-600">
+                  I rifiuti urbani sono visibili a tutti nel calendario. Le faccende si gestiscono nel turno della settimana, con attività base e attività aggiunte dai membri.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                class="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary"
+                @click="vistaAttiva = 'info'"
+              >
+                Torna ai dettagli contratto
+              </button>
+            </div>
+
+            <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+              <div class="rounded-3xl border border-zinc-200 bg-zinc-50 p-4 sm:p-5">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Mese corrente</p>
+                    <h3 class="mt-1 text-xl font-display text-zinc-900">{{ titoloCalendario }}</h3>
+                  </div>
+
+                  <div class="flex items-center gap-2 text-xs font-semibold text-zinc-500">
+                    <button
+                      type="button"
+                      class="rounded-full px-3 py-2 transition"
+                      :class="filtroTurniAttivo ? 'bg-amber-100 text-amber-900 ring-1 ring-amber-200' : 'bg-white text-zinc-500 hover:text-zinc-700'"
+                      @click="toggleFiltro('turni')"
+                    >
+                      Turni faccende
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-full px-3 py-2 transition"
+                      :class="filtroRifiutiAttivo ? 'bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200' : 'bg-white text-zinc-500 hover:text-zinc-700'"
+                      @click="toggleFiltro('rifiuti')"
+                    >
+                      Rifiuti urbani
+                    </button>
+                  </div>
+                </div>
+
+                  <div v-if="settimanaInCorso && filtroTurniAttivo" class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.25em] text-amber-900">Turno della settimana</p>
+                        <p class="mt-1 text-sm text-amber-950">{{ settimanaInCorso.periodo }}</p>
+                      </div>
+                      <span class="rounded-full bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-900 shadow-sm">
+                        {{ settimanaInCorso.turni.filter((turno) => !turno.completato).length }} attività da svolgere
+                      </span>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      <span
+                        v-for="turno in settimanaInCorso.turni.slice(0, 4)"
+                        :key="turno.id"
+                        class="rounded-full px-3 py-2 text-[11px] font-semibold"
+                        :class="turno.completato ? 'bg-green-100 text-green-900 line-through' : 'bg-white text-zinc-800'"
+                      >
+                        {{ turno.titolo }}
+                      </span>
+                    </div>
+                  </div>
+
+                <div class="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                  <div v-for="giorno in giorniSettimana" :key="giorno" class="py-2">{{ giorno }}</div>
+                </div>
+
+                <div class="mt-2 grid grid-cols-7 gap-2">
+                  <div
+                    v-for="celle in celleCalendario"
+                    :key="celle.key"
+                    class="min-h-[128px] rounded-2xl border p-3 transition"
+                    :class="celle.inMese
+                      ? (isCurrentWeekCell(celle.giorno) ? 'border-amber-200 bg-amber-50 hover:border-amber-300' : 'border-zinc-200 bg-white hover:border-primary/40')
+                      : 'border-dashed border-zinc-200 bg-zinc-100 text-zinc-400'"
+                  >
+                    <div class="flex items-start justify-between gap-2">
+                      <span class="text-sm font-semibold" :class="celle.oggi ? 'text-primary' : 'text-zinc-900'">
+                        {{ celle.giorno }}
+                      </span>
+                      <span v-if="celle.oggi" class="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Oggi</span>
+                    </div>
+
+                    <div
+                      v-if="filtroTurniAttivo && isCurrentWeekCell(celle.giorno) && !settimanaInCorsoCompletata"
+                      class="mt-2 rounded-lg bg-amber-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-900"
+                    >
+                      Turno
+                    </div>
+
+                    <div v-if="filtroRifiutiAttivo" class="mt-3 space-y-2">
+                      <div
+                        v-for="evento in celle.rifiuti"
+                        :key="evento.label + celle.key"
+                        class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-950"
+                      >
+                        <div class="font-semibold">Rifiuti urbani</div>
+                        <div class="text-[11px] font-medium opacity-80">{{ evento.dettaglio }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <aside class="space-y-4">
+                <div class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                  <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Turni settimana corrente</p>
+                  <div class="mt-4 space-y-3">
+                    <article v-if="settimanaInCorso" class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
+                      <div class="flex items-start justify-between gap-3">
+                        <div>
+                          <p class="text-sm font-semibold text-zinc-900">Turno della settimana</p>
+                          <p class="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ settimanaInCorso.periodo }}</p>
+                        </div>
+                        <span class="rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" :class="settimanaInCorsoCompletata ? 'bg-green-100 text-green-900' : 'bg-amber-100 text-amber-900'">
+                          {{ settimanaInCorsoCompletata ? 'Completata' : 'In corso' }}
+                        </span>
+                      </div>
+
+                      <div class="mt-3 space-y-2">
+                        <div
+                          v-for="turno in settimanaInCorso.turni"
+                          :key="turno.id"
+                          class="flex cursor-pointer items-start gap-3 rounded-2xl border px-3 py-2 transition"
+                          :class="turno.completato ? 'border-green-200 bg-green-50' : 'border-zinc-200 bg-white hover:border-primary/30'"
+                        >
+                          <input
+                            type="checkbox"
+                            class="mt-1 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
+                            :checked="turno.completato"
+                            @click.stop
+                            @change="toggleTurnoCompletato(turno.id)"
+                          />
+                          <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                              <p class="text-sm font-semibold text-zinc-900" :class="turno.completato ? 'line-through text-zinc-500' : ''">
+                                {{ turno.titolo }}
+                              </p>
+                              <span class="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]" :class="turno.visibilita === 'condivisa' ? 'bg-sky-100 text-sky-900' : 'bg-violet-100 text-violet-900'">
+                                {{ turno.visibilita === 'condivisa' ? 'Condivisa' : 'Privata' }}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+
+                    <button
+                      type="button"
+                      class="w-full rounded-full border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                      @click="toggleMostraSettimanaProssima"
+                    >
+                      {{ mostraSettimanaProssima ? 'Nascondi turni settimana prossima' : 'Mostra turni settimana prossima' }}
+                    </button>
+
+                    <transition name="fade">
+                      <article v-if="mostraSettimanaProssima && settimanaSuccessiva" class="rounded-2xl border border-zinc-100 bg-zinc-50 p-4" :class="isSettimanaProssimaAttiva() ? '' : 'opacity-60'">
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <p class="text-sm font-semibold text-zinc-900">Settimana prossima</p>
+                            <p class="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">{{ settimanaSuccessiva.periodo }}</p>
+                          </div>
+                          <span class="rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" :class="isSettimanaProssimaAttiva() ? 'bg-emerald-100 text-emerald-900' : 'bg-zinc-200 text-zinc-700'">
+                            {{ isSettimanaProssimaAttiva() ? 'Aperta' : 'Bloccata' }}
+                          </span>
+                        </div>
+
+                        <div class="mt-3 space-y-2" :class="isSettimanaProssimaAttiva() ? '' : 'pointer-events-none'">
+                          <div
+                            v-for="turno in settimanaSuccessiva.turni"
+                            :key="turno.id"
+                            class="flex items-start gap-3 rounded-2xl border px-3 py-2 transition"
+                            :class="isSettimanaProssimaAttiva()
+                              ? (turno.completato ? 'border-green-200 bg-green-50' : 'border-zinc-200 bg-white hover:border-primary/30')
+                              : 'border-zinc-200 bg-zinc-100 text-zinc-500'"
+                          >
+                            <input
+                              type="checkbox"
+                              class="mt-1 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
+                              :checked="turno.completato"
+                              :disabled="!isSettimanaProssimaAttiva()"
+                              @click.stop
+                              @change="isSettimanaProssimaAttiva() && toggleTurnoCompletato(turno.id)"
+                            />
+                            <div class="min-w-0 flex-1">
+                              <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-zinc-900" :class="turno.completato ? 'line-through text-zinc-500' : ''">
+                                  {{ turno.titolo }}
+                                </p>
+                                <span class="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]" :class="turno.visibilita === 'condivisa' ? 'bg-sky-100 text-sky-900' : 'bg-violet-100 text-violet-900'">
+                                  {{ turno.visibilita === 'condivisa' ? 'Condivisa' : 'Privata' }}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    </transition>
+                  </div>
+                </div>
+
+                <div class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                  <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Aggiungi faccenda</p>
+                  <form class="mt-4 space-y-3" @submit.prevent="aggiungiFaccenda">
+                    <input
+                      v-model.trim="nuovaFaccendaTitolo"
+                      type="text"
+                      class="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-primary"
+                      placeholder="Es. Pulizia balcone"
+                    />
+                    <div class="grid gap-3 sm:grid-cols-2">
+                      <select
+                        v-model="nuovaFaccendaVisibilita"
+                        class="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-primary"
+                      >
+                        <option value="privata">Privata</option>
+                        <option value="condivisa">Condivisa</option>
+                      </select>
+
+                      <button
+                        type="submit"
+                        class="rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
+                      >
+                        Aggiungi
+                      </button>
+                    </div>
+                    <p class="text-xs text-zinc-500">
+                      La faccenda verrà aggiunta al turno della settimana corrente e resterà visibile secondo la sua impostazione.
+                    </p>
+                  </form>
+                </div>
+
+                <div class="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                  <p class="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">Legenda</p>
+                  <div class="mt-4 space-y-3 text-sm text-zinc-700">
+                    <div class="flex items-center gap-3">
+                      <span class="h-3 w-3 rounded-full bg-amber-400"></span>
+                      <span>Turni della settimana</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
+                      <span>Passaggio del servizio urbano dei rifiuti</span>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+
         <div v-else class="mx-auto max-w-3xl rounded-3xl border border-zinc-200 bg-white px-6 py-10 text-center text-zinc-600 shadow-sm">
           Non hai un contratto attivo al momento. Puoi consultare solo i contratti passati.
         </div>
 
-        <div v-if="contrattiPassati.length" class="w-full">
+        <div v-if="contrattiPassati.length && vistaAttiva !== 'calendario'" class="w-full">
           <div class="mb-4 text-center">
             <button
               type="button"
@@ -217,10 +474,135 @@ const mostraGuasti = ref(false)
 const showGuastoForm = ref(false)
 const guastiAttivi = ref([])
 const successMessage = ref('')
+const vistaAttiva = ref('info')
+const mostraSettimanaProssima = ref(false)
+const nuovaFaccendaTitolo = ref('')
+const nuovaFaccendaVisibilita = ref('privata')
+const filtroTurniAttivo = ref(true)
+const filtroRifiutiAttivo = ref(true)
+const statoTurni = ref({})
+
+const giorniSettimana = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+const dataCalendario = new Date()
+const meseCorrente = dataCalendario.getMonth()
+const annoCorrente = dataCalendario.getFullYear()
+const dataOggiISO = oggiISO()
+
+const templateTurni = {
+  1: { tipo: 'faccende', label: 'Turno casa', dettaglio: 'Pulizia pavimenti zone comuni' },
+  2: { tipo: 'rifiuti', label: 'Rifiuti urbani', dettaglio: 'Organico' },
+  3: { tipo: 'faccende', label: 'Turno casa', dettaglio: 'Pulizia cucina' },
+  4: { tipo: 'rifiuti', label: 'Rifiuti urbani', dettaglio: 'Carta e cartone' },
+  5: { tipo: 'faccende', label: 'Turno casa', dettaglio: 'Pulizia bagno' },
+  6: { tipo: 'rifiuti', label: 'Rifiuti urbani', dettaglio: 'Plastica e vetro' },
+}
+
+const turniBase = [
+  { titolo: 'Pulizia pavimenti zone comuni', descrizione: 'Attività base del turno della settimana', visibilita: 'condivisa' },
+  { titolo: 'Pulizia cucina', descrizione: 'Turno base assegnato a rotazione', visibilita: 'condivisa' },
+  { titolo: 'Pulizia bagno', descrizione: 'Turno base assegnato a rotazione', visibilita: 'condivisa' },
+]
+
+const turniCustom = ref([
+  { id: 'custom-1', titolo: 'Riordinare balcone', descrizione: 'Faccenda privata di esempio', visibilita: 'privata' },
+  { id: 'custom-2', titolo: 'Svuotare cestino ingresso', descrizione: 'Faccenda condivisa di esempio', visibilita: 'condivisa' },
+])
+
+const titoloCalendario = computed(() =>
+  new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(new Date(annoCorrente, meseCorrente, 1)),
+)
+
+const celleCalendario = computed(() => {
+  const primoGiorno = new Date(annoCorrente, meseCorrente, 1)
+  const ultimoGiorno = new Date(annoCorrente, meseCorrente + 1, 0)
+  const offset = (primoGiorno.getDay() + 6) % 7
+  const giorniNelMese = ultimoGiorno.getDate()
+  const totaleCelle = Math.ceil((offset + giorniNelMese) / 7) * 7
+
+  return Array.from({ length: totaleCelle }, (_, index) => {
+    const giornoDelMese = index - offset + 1
+    const inMese = giornoDelMese >= 1 && giornoDelMese <= giorniNelMese
+    const data = inMese ? new Date(annoCorrente, meseCorrente, giornoDelMese) : null
+    const giornoSettimana = data ? data.getDay() : null
+    const template = giornoSettimana !== null ? templateTurni[giornoSettimana] : null
+
+    return {
+      key: `${annoCorrente}-${meseCorrente}-${index}`,
+      giorno: inMese ? giornoDelMese : '',
+      inMese,
+      oggi: inMese && data.toISOString().slice(0, 10) === dataOggiISO,
+      rifiuti: template && template.tipo === 'rifiuti' && filtroRifiutiAttivo.value
+        ? [{ key: `${annoCorrente}-${meseCorrente}-${giornoDelMese}-${template.label}-${template.tipo}`, ...template, data: data.toISOString() }]
+        : [],
+    }
+  })
+})
+
+function creaSettimana(offsetSettimane, isCurrent = false) {
+  const dataBase = new Date()
+  dataBase.setDate(dataBase.getDate() + offsetSettimane * 7)
+  const inizio = new Date(dataBase)
+  inizio.setDate(dataBase.getDate() - ((dataBase.getDay() + 6) % 7))
+  const fine = new Date(inizio)
+  fine.setDate(inizio.getDate() + 6)
+  const settimanaKey = inizio.toISOString().slice(0, 10)
+
+  const turni = turniBase.map((turno, index) => ({
+    id: `${settimanaKey}-base-${index}`,
+    titolo: turno.titolo,
+    descrizione: turno.descrizione,
+    visibilita: turno.visibilita,
+    completato: Boolean(statoTurni.value[`${settimanaKey}-base-${index}`]),
+    isBase: true,
+  }))
+
+  turni.push(
+    ...turniCustom.value.map((turno) => ({
+      id: `${settimanaKey}-${turno.id}`,
+      titolo: turno.titolo,
+      descrizione: turno.descrizione,
+      visibilita: turno.visibilita,
+      completato: Boolean(statoTurni.value[`${settimanaKey}-${turno.id}`]),
+      isBase: false,
+    })),
+  )
+
+  return {
+    key: `settimana-${offsetSettimane}`,
+    isCurrent,
+    periodo: `${formattaDataBreve(inizio)} - ${formattaDataBreve(fine)}`,
+    turni,
+  }
+}
+
+const settimaneProssime = ref([])
+
+function rigeneraSettimane() {
+  settimaneProssime.value = [creaSettimana(0, true), creaSettimana(1, false)]
+}
+
+const settimanaInCorso = computed(() => settimaneProssime.value[0] || null)
+const settimanaSuccessiva = computed(() => settimaneProssime.value[1] || null)
+const settimanaInCorsoCompletata = computed(() => Boolean(settimanaInCorso.value?.turni.length) && settimanaInCorso.value.turni.every((turno) => turno.completato))
+
+const elencoFaccendeCondivise = computed(() =>
+  turniCustom.value
+    .filter((turno) => turno.visibilita === 'condivisa')
+    .slice(0, 3),
+)
+
+const eventiProssimi = computed(() => {
+  const settimana = settimaneProssime.value[0]
+  return settimana ? settimana.turni.slice(0, 5) : []
+})
 
 const contrattoAttivo = computed(() => contratti.value.find((contratto) => contratto.stato === 'attivo') || null)
 const contrattiPassati = computed(() => contratti.value.filter((contratto) => contratto.stato !== 'attivo'))
 const appartamentoAttivo = computed(() => contrattoAttivo.value?.idAppartamento || null)
+
+function oggiISO() {
+  return new Date().toISOString().slice(0, 10)
+}
 
 watch(showGuastoForm, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
@@ -281,8 +663,70 @@ function vaiAGuasti() {
   showGuastoForm.value = true
 }
 
-function azionePlaceholder() {
-  // azione temporanea: da collegare in seguito
+function apriCalendarioCondiviso() {
+  vistaAttiva.value = 'calendario'
+  mostraSettimanaProssima.value = false
+  rigeneraSettimane()
+}
+
+function toggleFiltro(tipo) {
+  if (tipo === 'turni') {
+    filtroTurniAttivo.value = !filtroTurniAttivo.value
+  } else if (tipo === 'rifiuti') {
+    filtroRifiutiAttivo.value = !filtroRifiutiAttivo.value
+  }
+}
+
+function toggleMostraSettimanaProssima() {
+  mostraSettimanaProssima.value = !mostraSettimanaProssima.value
+}
+
+function toggleTurnoCompletato(turnoId) {
+  statoTurni.value = {
+    ...statoTurni.value,
+    [turnoId]: !statoTurni.value[turnoId],
+  }
+  rigeneraSettimane()
+}
+
+function isCurrentWeekCell(giornoDelMese) {
+  if (!giornoDelMese) return false
+
+  const data = new Date(annoCorrente, meseCorrente, giornoDelMese)
+  const today = new Date()
+  const start = new Date(today)
+  start.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+  start.setHours(0, 0, 0, 0)
+
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+  end.setHours(23, 59, 59, 999)
+
+  return data >= start && data <= end
+}
+
+function isSettimanaProssimaAttiva() {
+  const today = new Date()
+  const start = new Date(today)
+  start.setDate(today.getDate() - ((today.getDay() + 6) % 7) + 7)
+  start.setHours(0, 0, 0, 0)
+  return today >= start
+}
+
+function aggiungiFaccenda() {
+  const titolo = nuovaFaccendaTitolo.value.trim()
+  if (!titolo) return
+
+  turniCustom.value.unshift({
+    id: `custom-${Date.now()}`,
+    titolo,
+    descrizione: nuovaFaccendaVisibilita.value === 'condivisa' ? 'Faccenda condivisa con tutti i membri' : 'Faccenda privata visibile solo a te',
+    visibilita: nuovaFaccendaVisibilita.value,
+  })
+
+  nuovaFaccendaTitolo.value = ''
+  nuovaFaccendaVisibilita.value = 'privata'
+  rigeneraSettimane()
 }
 
 function closeGuastoForm() {
@@ -327,6 +771,14 @@ async function confermaRisoluzione(guasto) {
   }
 }
 
+function formattaDataBreve(data) {
+  return new Intl.DateTimeFormat('it-IT', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  }).format(new Date(data))
+}
+
 onUnmounted(() => {
   document.body.style.overflow = ''
 })
@@ -335,6 +787,12 @@ watch(contrattoAttivo, (value) => {
   if (!value) showGuastoForm.value = false
   // quando cambia il contratto attivo, carica i guasti relativi
   if (value) loadGuasti()
+})
+
+watch(vistaAttiva, (value) => {
+  if (value === 'calendario') {
+    mostraGuasti.value = false
+  }
 })
 
 async function caricaContratti() {
