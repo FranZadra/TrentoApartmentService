@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Contratto = require('../models/Contratto');
 const Guasto = require('../models/Guasto');
 const Appartamento = require('../models/Appartamento');
@@ -163,10 +164,16 @@ const aggiornaCalendarioRifiuti = async (req, res) => {
             return res.status(403).json({ error: 'Non autorizzato per questo appartamento' });
         }
 
-        contratto.calendarioRifiuti = normalizzaCalendarioRifiuti(calendarioRifiuti);
-        await contratto.save();
+        // Aggiorniamo SOLO il campo calendarioRifiuti con un update mirato.
+        // NB: non usiamo contratto.save() perché save() rivalida l'INTERO documento;
+        // diversi contratti nel DB usano il campo legacy "idInquilino" (singolare) e
+        // non hanno "idInquilini"/"tipoContratto" valorizzati, quindi save() fallirebbe
+        // con un ValidationError (causa del bug di salvataggio). Con $set tocchiamo
+        // esclusivamente i rifiuti, senza rivalidare i campi legacy.
+        const calendarioNormalizzato = normalizzaCalendarioRifiuti(calendarioRifiuti);
+        await Contratto.updateOne({ _id: contratto._id }, { $set: { calendarioRifiuti: calendarioNormalizzato } });
 
-        return res.status(200).json({ data: contratto.calendarioRifiuti });
+        return res.status(200).json({ data: calendarioNormalizzato });
     } catch (error) {
         console.error('Errore aggiornaCalendarioRifiuti:', error);
         return res.status(500).json({ error: error.message, stack: error.stack });
@@ -346,4 +353,162 @@ const risolviGuasto = async (req, res) => {
     }
 }
 
-module.exports = { getContratti, getCalendarioRifiuti, aggiornaCalendarioRifiuti, segnalaGuasto, getGuastiAppartamento, prendiInCaricoGuastoAdmin, risolviGuasto };
+// ---- US23: Faccende del calendario condiviso ----
+
+// Helper: verifica autenticazione + ruolo inquilino (stretto) + contratto attivo
+// dell'inquilino per l'appartamento indicato. Ritorna { errore, status } in caso di
+// problema, altrimenti { contratto, userId } (userId come stringa per i confronti).
+const caricaContrattoInquilino = async (req) => {
+    const userId = req.user?.sub || req.user?.id || req.user?._id;
+    if (!userId) return { errore: 'Utente non autenticato', status: 401 };
+
+    const { appId } = req.params;
+    if (!appId) return { errore: 'ID appartamento mancante', status: 400 };
+
+    const user = await User.findById(userId);
+    if (!user) return { errore: 'Utente non trovato', status: 404 };
+    if (user.ruolo !== 'inquilino') return { errore: 'Utente non autorizzato', status: 403 };
+
+    const contratto = await Contratto.findOne(
+        buildContrattoInquilinoFilter(userId, { idAppartamento: appId, stato: 'attivo' })
+    );
+    if (!contratto) return { errore: 'Non autorizzato per questo appartamento', status: 403 };
+
+    return { contratto, userId: String(userId) };
+};
+
+const getFaccende = async (req, res) => {
+    try {
+        const { errore, status, contratto, userId } = await caricaContrattoInquilino(req);
+        if (errore) return res.status(status).json({ error: errore });
+
+        // Mostra tutte le faccende condivise + le private del solo richiedente.
+        const faccende = (contratto.faccende || [])
+            .filter((f) => f.visibilita === 'condivisa' || String(f.idCreatore) === userId)
+            .map((f) => ({ ...f.toObject(), isMia: String(f.idCreatore) === userId }));
+
+        return res.status(200).json({ data: faccende });
+    } catch (error) {
+        console.error('Errore getFaccende:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+const aggiungiFaccenda = async (req, res) => {
+    try {
+        const { errore, status, contratto, userId } = await caricaContrattoInquilino(req);
+        if (errore) return res.status(status).json({ error: errore });
+
+        const titolo = typeof req.body?.titolo === 'string' ? req.body.titolo.trim() : '';
+        if (!titolo) return res.status(400).json({ error: 'Il titolo della faccenda è obbligatorio' });
+
+        const visibilita = req.body?.visibilita === 'condivisa' ? 'condivisa' : 'privata';
+        const descrizione = typeof req.body?.descrizione === 'string' ? req.body.descrizione.trim() : '';
+
+        // Generiamo manualmente l'_id e usiamo $push per non rivalidare l'intero contratto
+        // (stesso motivo per cui i rifiuti usano updateOne: vedi aggiornaCalendarioRifiuti).
+        const nuovaFaccenda = {
+            _id: new mongoose.Types.ObjectId(),
+            titolo,
+            descrizione,
+            visibilita,
+            completato: false,
+            idCreatore: userId,
+        };
+
+        await Contratto.updateOne({ _id: contratto._id }, { $push: { faccende: nuovaFaccenda } });
+
+        return res.status(201).json({ data: { ...nuovaFaccenda, isMia: true } });
+    } catch (error) {
+        console.error('Errore aggiungiFaccenda:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+const aggiornaFaccenda = async (req, res) => {
+    try {
+        const { errore, status, contratto, userId } = await caricaContrattoInquilino(req);
+        if (errore) return res.status(status).json({ error: errore });
+
+        const { faccendaId } = req.params;
+        if (!mongoose.isValidObjectId(faccendaId)) {
+            return res.status(400).json({ error: 'ID faccenda non valido' });
+        }
+
+        const faccenda = contratto.faccende.id(faccendaId);
+        if (!faccenda) return res.status(404).json({ error: 'Faccenda non trovata' });
+
+        const isCreatore = String(faccenda.idCreatore) === userId;
+        // Una faccenda privata è gestibile solo dal suo creatore.
+        if (faccenda.visibilita === 'privata' && !isCreatore) {
+            return res.status(403).json({ error: 'Non puoi modificare questa faccenda' });
+        }
+
+        const set = {};
+        // "completato" può essere aggiornato da qualsiasi inquilino sulle faccende condivise
+        // e dal creatore su quelle private (già garantito dal controllo sopra).
+        if (typeof req.body?.completato === 'boolean') {
+            set['faccende.$[f].completato'] = req.body.completato;
+        }
+        // Titolo/descrizione/visibilità sono modificabili solo dal creatore.
+        if (isCreatore) {
+            if (typeof req.body?.titolo === 'string' && req.body.titolo.trim()) {
+                set['faccende.$[f].titolo'] = req.body.titolo.trim();
+            }
+            if (typeof req.body?.descrizione === 'string') {
+                set['faccende.$[f].descrizione'] = req.body.descrizione.trim();
+            }
+            if (req.body?.visibilita === 'privata' || req.body?.visibilita === 'condivisa') {
+                set['faccende.$[f].visibilita'] = req.body.visibilita;
+            }
+        }
+
+        if (Object.keys(set).length === 0) {
+            return res.status(400).json({ error: 'Nessun campo valido da aggiornare' });
+        }
+
+        // Update mirato con arrayFilters: aggiorna solo la faccenda indicata.
+        await Contratto.updateOne(
+            { _id: contratto._id },
+            { $set: set },
+            { arrayFilters: [{ 'f._id': new mongoose.Types.ObjectId(faccendaId) }] }
+        );
+
+        return res.status(200).json({ data: { _id: faccendaId } });
+    } catch (error) {
+        console.error('Errore aggiornaFaccenda:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+const eliminaFaccenda = async (req, res) => {
+    try {
+        const { errore, status, contratto, userId } = await caricaContrattoInquilino(req);
+        if (errore) return res.status(status).json({ error: errore });
+
+        const { faccendaId } = req.params;
+        if (!mongoose.isValidObjectId(faccendaId)) {
+            return res.status(400).json({ error: 'ID faccenda non valido' });
+        }
+
+        const faccenda = contratto.faccende.id(faccendaId);
+        if (!faccenda) return res.status(404).json({ error: 'Faccenda non trovata' });
+
+        // Solo il creatore può eliminare la propria faccenda.
+        if (String(faccenda.idCreatore) !== userId) {
+            return res.status(403).json({ error: 'Non puoi eliminare questa faccenda' });
+        }
+
+        await Contratto.updateOne(
+            { _id: contratto._id },
+            { $pull: { faccende: { _id: new mongoose.Types.ObjectId(faccendaId) } } }
+        );
+
+        return res.status(200).json({ data: { _id: faccendaId } });
+    } catch (error) {
+        console.error('Errore eliminaFaccenda:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+module.exports = { getContratti, getCalendarioRifiuti, aggiornaCalendarioRifiuti, segnalaGuasto, getGuastiAppartamento, prendiInCaricoGuastoAdmin, risolviGuasto, getFaccende, aggiungiFaccenda, aggiornaFaccenda, eliminaFaccenda };

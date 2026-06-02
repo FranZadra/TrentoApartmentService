@@ -178,7 +178,7 @@
                       class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900 transition hover:bg-emerald-100"
                       @click="apriCalendarioRifiuti"
                     >
-                      Calendario rifiuti
+                      Rifiuti urbani
                     </button>
                     <button
                       type="button"
@@ -194,7 +194,7 @@
                       :class="filtroRifiutiAttivo ? 'bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200' : 'bg-white text-zinc-500 hover:text-zinc-700'"
                       @click="toggleFiltro('rifiuti')"
                     >
-                      Rifiuti urbani
+                      Mostra rifiuti
                     </button>
                   </div>
                 </div>
@@ -289,7 +289,7 @@
                             class="mt-1 h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
                             :checked="turno.completato"
                             @click.stop
-                            @change="toggleTurnoCompletato(turno.id)"
+                            @change="toggleTurnoCompletato(turno)"
                           />
                           <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
@@ -301,8 +301,21 @@
                               </span>
                             </div>
                           </div>
+                          <!-- Elimina: disponibile solo sulle faccende create dall'utente -->
+                          <button
+                            v-if="!turno.isBase && turno.isMia"
+                            type="button"
+                            class="mt-0.5 rounded-full px-2 py-1 text-[11px] font-semibold text-zinc-400 transition hover:text-primary"
+                            @click.stop="eliminaFaccendaCorrente(turno)"
+                          >
+                            Elimina
+                          </button>
                         </div>
                       </div>
+
+                      <p v-if="faccendeError" class="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        {{ faccendeError }}
+                      </p>
                     </article>
 
                     <button
@@ -340,7 +353,7 @@
                               :checked="turno.completato"
                               :disabled="!isSettimanaProssimaAttiva()"
                               @click.stop
-                              @change="isSettimanaProssimaAttiva() && toggleTurnoCompletato(turno.id)"
+                              @change="isSettimanaProssimaAttiva() && toggleTurnoCompletato(turno)"
                             />
                             <div class="min-w-0 flex-1">
                               <div class="flex flex-wrap items-center gap-2">
@@ -472,7 +485,7 @@
     <div class="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
       <div class="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 sm:px-6">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Calendario rifiuti</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Rifiuti urbani</p>
           <h3 class="mt-2 text-xl font-display text-zinc-900">{{ indirizzoCompleto(appartamentoAttivo) }}</h3>
           <p class="mt-2 text-sm text-zinc-600">
             I giorni di raccolta sono condivisi tra tutti i coinquilini del contratto attivo.
@@ -569,7 +582,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { getContrattiUtenteLoggato, getCalendarioRifiutiAppartamento, aggiornaCalendarioRifiutiAppartamento, getGuastiAppartamento, risolviGuasto } from '../services/gestioneInternaService'
+import { getContrattiUtenteLoggato, getCalendarioRifiutiAppartamento, aggiornaCalendarioRifiutiAppartamento, getGuastiAppartamento, risolviGuasto, getFaccendeAppartamento, aggiungiFaccendaAppartamento, aggiornaFaccendaAppartamento, eliminaFaccendaAppartamento } from '../services/gestioneInternaService'
 import GuastoForm from '@/components/GuastoForm.vue'
 
 const contratti = ref([])
@@ -626,10 +639,9 @@ const turniBase = [
   { titolo: 'Pulizia bagno', descrizione: 'Turno base assegnato a rotazione', visibilita: 'condivisa' },
 ]
 
-const turniCustom = ref([
-  { id: 'custom-1', titolo: 'Riordinare balcone', descrizione: 'Faccenda privata di esempio', visibilita: 'privata' },
-  { id: 'custom-2', titolo: 'Svuotare cestino ingresso', descrizione: 'Faccenda condivisa di esempio', visibilita: 'condivisa' },
-])
+// Faccende reali del contratto attivo, caricate dal backend (US23).
+const faccende = ref([])
+const faccendeError = ref('')
 
 const titoloCalendario = computed(() =>
   new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(new Date(annoCorrente, meseCorrente, 1)),
@@ -685,14 +697,17 @@ function creaSettimana(offsetSettimane, isCurrent = false) {
     isBase: true,
   }))
 
+  // Faccende aggiunte dagli inquilini: il loro stato "completato" vive sul backend.
   turni.push(
-    ...turniCustom.value.map((turno) => ({
-      id: `${settimanaKey}-${turno.id}`,
-      titolo: turno.titolo,
-      descrizione: turno.descrizione,
-      visibilita: turno.visibilita,
-      completato: Boolean(statoTurni.value[`${settimanaKey}-${turno.id}`]),
+    ...faccende.value.map((faccenda) => ({
+      id: `${settimanaKey}-${faccenda._id}`,
+      faccendaId: faccenda._id,
+      titolo: faccenda.titolo,
+      descrizione: faccenda.descrizione,
+      visibilita: faccenda.visibilita,
+      completato: Boolean(faccenda.completato),
       isBase: false,
+      isMia: Boolean(faccenda.isMia),
     })),
   )
 
@@ -715,8 +730,8 @@ const settimanaSuccessiva = computed(() => settimaneProssime.value[1] || null)
 const settimanaInCorsoCompletata = computed(() => Boolean(settimanaInCorso.value?.turni.length) && settimanaInCorso.value.turni.every((turno) => turno.completato))
 
 const elencoFaccendeCondivise = computed(() =>
-  turniCustom.value
-    .filter((turno) => turno.visibilita === 'condivisa')
+  faccende.value
+    .filter((faccenda) => faccenda.visibilita === 'condivisa')
     .slice(0, 3),
 )
 
@@ -872,7 +887,7 @@ async function salvaCalendarioRifiuti() {
     calendarioRifiuti.value = normalizzaCalendarioRifiuti(response.data?.data)
     bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
     isEditingCalendarioRifiuti.value = false
-    calendarioRifiutiSuccess.value = 'Calendario rifiuti aggiornato correttamente.'
+    calendarioRifiutiSuccess.value = 'Rifiuti urbani aggiornati correttamente.'
     setTimeout(() => {
       calendarioRifiutiSuccess.value = ''
     }, 3000)
@@ -950,9 +965,10 @@ function vaiAGuasti() {
   showGuastoForm.value = true
 }
 
-function apriCalendarioCondiviso() {
+async function apriCalendarioCondiviso() {
   vistaAttiva.value = 'calendario'
   mostraSettimanaProssima.value = false
+  await loadFaccende()
   rigeneraSettimane()
 }
 
@@ -968,12 +984,30 @@ function toggleMostraSettimanaProssima() {
   mostraSettimanaProssima.value = !mostraSettimanaProssima.value
 }
 
-function toggleTurnoCompletato(turnoId) {
-  statoTurni.value = {
-    ...statoTurni.value,
-    [turnoId]: !statoTurni.value[turnoId],
+async function toggleTurnoCompletato(turno) {
+  if (!turno) return
+
+  // Attività base: stato di completamento locale, legato alla settimana.
+  if (turno.isBase) {
+    statoTurni.value = {
+      ...statoTurni.value,
+      [turno.id]: !statoTurni.value[turno.id],
+    }
+    rigeneraSettimane()
+    return
   }
-  rigeneraSettimane()
+
+  // Faccenda persistita: aggiorna "completato" sul backend e ricarica.
+  const appId = getAppartamentoId(appartamentoAttivo.value)
+  if (!appId || !turno.faccendaId) return
+
+  const res = await aggiornaFaccendaAppartamento(appId, turno.faccendaId, { completato: !turno.completato })
+  if (res.success) {
+    await loadFaccende()
+    rigeneraSettimane()
+  } else {
+    faccendeError.value = res.error
+  }
 }
 
 function isCurrentWeekCell(giornoDelMese) {
@@ -1000,20 +1034,57 @@ function isSettimanaProssimaAttiva() {
   return today >= start
 }
 
-function aggiungiFaccenda() {
+async function loadFaccende() {
+  const appId = getAppartamentoId(appartamentoAttivo.value)
+  if (!appId) {
+    faccende.value = []
+    return
+  }
+
+  const res = await getFaccendeAppartamento(appId)
+  if (res.success) {
+    faccende.value = Array.isArray(res.data?.data) ? res.data.data : []
+    faccendeError.value = ''
+  } else {
+    faccende.value = []
+    faccendeError.value = res.error
+  }
+}
+
+async function aggiungiFaccenda() {
   const titolo = nuovaFaccendaTitolo.value.trim()
   if (!titolo) return
 
-  turniCustom.value.unshift({
-    id: `custom-${Date.now()}`,
+  const appId = getAppartamentoId(appartamentoAttivo.value)
+  if (!appId) return
+
+  faccendeError.value = ''
+  const res = await aggiungiFaccendaAppartamento(appId, {
     titolo,
-    descrizione: nuovaFaccendaVisibilita.value === 'condivisa' ? 'Faccenda condivisa con tutti i membri' : 'Faccenda privata visibile solo a te',
     visibilita: nuovaFaccendaVisibilita.value,
   })
 
-  nuovaFaccendaTitolo.value = ''
-  nuovaFaccendaVisibilita.value = 'privata'
-  rigeneraSettimane()
+  if (res.success) {
+    nuovaFaccendaTitolo.value = ''
+    nuovaFaccendaVisibilita.value = 'privata'
+    await loadFaccende()
+    rigeneraSettimane()
+  } else {
+    faccendeError.value = res.error
+  }
+}
+
+async function eliminaFaccendaCorrente(turno) {
+  const appId = getAppartamentoId(appartamentoAttivo.value)
+  if (!appId || !turno?.faccendaId) return
+
+  const res = await eliminaFaccendaAppartamento(appId, turno.faccendaId)
+  if (res.success) {
+    await loadFaccende()
+    rigeneraSettimane()
+  } else {
+    faccendeError.value = res.error
+  }
 }
 
 function closeGuastoForm() {
@@ -1076,9 +1147,11 @@ watch(contrattoAttivo, (value) => {
   if (value) {
     loadGuasti()
     loadCalendarioRifiuti()
+    loadFaccende()
   } else {
     calendarioRifiuti.value = creaCalendarioRifiutiDefault()
     bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
+    faccende.value = []
   }
 })
 
@@ -1101,6 +1174,7 @@ async function caricaContratti() {
       if (ca) {
         await loadGuasti()
         await loadCalendarioRifiuti()
+        await loadFaccende()
       }
     }
   } else {
