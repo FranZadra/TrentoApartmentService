@@ -85,7 +85,13 @@
             {{ guastiCount > 9 ? '9+' : guastiCount }}
           </span>
         </button>
-        
+        <button
+          v-if="showBolletteAction"
+          @click="$emit('bollette')"
+          class="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+        >
+          Bollette
+        </button>
       </div>
     </div>
   </div>
@@ -117,9 +123,13 @@ defineProps({
     type: Number,
     default: 0,
   },
+  showBolletteAction: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-defineEmits(['view', 'edit', 'annuncio', 'guasti'])
+defineEmits(['view', 'edit', 'annuncio', 'guasti', 'bollette'])
 </script>
 
 <style scoped>

@@ -81,6 +81,86 @@
             </div>
           </div>
 
+          <!-- Sezione bollette: lista e grafici consumi -->
+          <div class="px-6 sm:px-8 mb-4">
+            <div class="mt-2 rounded-2xl border border-zinc-200 bg-white p-3 text-sm text-zinc-700">
+              <div class="mb-2 flex items-center justify-between gap-3 px-4">
+                <p class="flex h-7 items-center text-xs font-semibold uppercase leading-none tracking-[0.2em] text-zinc-500">
+                  Bollette
+                </p>
+                <button
+                  type="button"
+                  class="flex h-7 items-center text-xs font-semibold leading-none text-primary transition hover:text-primary-dark hover:underline"
+                  @click="mostraBollette = !mostraBollette"
+                >
+                  {{ mostraBollette ? 'Nascondi' : 'Mostra' }}
+                </button>
+              </div>
+
+              <transition name="fade">
+                <div v-if="mostraBollette" class="px-1 pb-2">
+                  <div v-if="bolletteLoading" class="py-4 text-center text-sm text-zinc-500">Caricamento bollette...</div>
+
+                  <div v-else-if="!bollette.length" class="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-500">
+                    Nessuna bolletta disponibile per il tuo appartamento.
+                  </div>
+
+                  <template v-else>
+                    <!-- Filtro per utenza -->
+                    <div class="mb-3 flex flex-wrap gap-2 px-1">
+                      <button
+                        v-for="u in filtriUtenza"
+                        :key="u.valore"
+                        @click="filtroUtenzaAttivo = u.valore"
+                        class="rounded-full px-3 py-1 text-xs font-semibold transition"
+                        :class="filtroUtenzaAttivo === u.valore ? 'bg-[#9a1528] text-white' : 'border border-zinc-300 text-zinc-600 hover:bg-zinc-100'"
+                      >
+                        {{ u.etichetta }}
+                      </button>
+                    </div>
+
+                    <!-- Lista bollette filtrate -->
+                    <ul class="mb-5 space-y-2">
+                      <li
+                        v-for="b in bolletteFiltrate"
+                        :key="b._id"
+                        class="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3"
+                      >
+                        <div class="flex-1">
+                          <div class="flex items-center gap-2">
+                            <span class="rounded-full px-2 py-0.5 text-xs font-semibold text-white" :class="coloreUtenzaInq(b.utenza)">
+                              {{ capitalizeFirst(b.utenza) }}
+                            </span>
+                            <span class="font-semibold text-zinc-900">€ {{ Number(b.importo).toFixed(2) }}</span>
+                            <span v-if="b.pagata" class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Pagata</span>
+                            <span v-else class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">Da pagare</span>
+                          </div>
+                          <p class="mt-1 text-xs text-zinc-500">
+                            {{ formatoDataBreve(b.periodoInizio) }} — {{ formatoDataBreve(b.periodoFine) }}
+                          </p>
+                        </div>
+                        <a
+                          v-if="b.pdfNomeFile"
+                          :href="`/api/v1/bollette/${b._id}/pdf`"
+                          target="_blank"
+                          class="rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100"
+                        >
+                          PDF
+                        </a>
+                      </li>
+                    </ul>
+
+                    <!-- Grafico consumi: importo per periodo -->
+                    <div v-if="datiGraficoBollette.labels.length" class="rounded-xl border border-zinc-100 bg-zinc-50 p-4">
+                      <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Andamento consumi</p>
+                      <Bar :data="datiGraficoBollette" :options="opzioniGraficoBollette" />
+                    </div>
+                  </template>
+                </div>
+              </transition>
+            </div>
+          </div>
+
           <!-- Sezione segnalazioni estesa: occupa tutta la larghezza della card -->
           <div class="px-6 sm:px-8 mb-4">
             <div v-if="guastiAttivi.length" class="mt-2 rounded-2xl border border-zinc-200 bg-white p-3 text-sm text-zinc-700">
@@ -583,7 +663,20 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { getContrattiUtenteLoggato, getCalendarioRifiutiAppartamento, aggiornaCalendarioRifiutiAppartamento, getGuastiAppartamento, risolviGuasto, getFaccendeAppartamento, aggiungiFaccendaAppartamento, aggiornaFaccendaAppartamento, eliminaFaccendaAppartamento } from '../services/gestioneInternaService'
+import { getBolletteInquilino } from '../services/bolletteService'
 import GuastoForm from '@/components/GuastoForm.vue'
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+} from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const contratti = ref([])
 const isLoading = ref(true)
@@ -747,6 +840,74 @@ const calendarioRifiutiDaMostrare = computed(() => (isEditingCalendarioRifiuti.v
 
 function oggiISO() {
   return new Date().toISOString().slice(0, 10)
+}
+
+// ── Stato bollette inquilino ──────────────────────────────────────────────────
+const bollette = ref([])
+const bolletteLoading = ref(false)
+const mostraBollette = ref(false)
+const filtroUtenzaAttivo = ref('tutti')
+
+const filtriUtenza = [
+  { valore: 'tutti', etichetta: 'Tutte' },
+  { valore: 'luce', etichetta: 'Luce' },
+  { valore: 'gas', etichetta: 'Gas' },
+  { valore: 'acqua', etichetta: 'Acqua' },
+]
+
+const graficiBollette = ref(null)
+
+const bolletteFiltrate = computed(() => {
+  if (filtroUtenzaAttivo.value === 'tutti') return bollette.value
+  return bollette.value.filter((b) => b.utenza === filtroUtenzaAttivo.value)
+})
+
+const datiGraficoBollette = computed(() => {
+  // Usa i dati grafici precalcolati dal backend, filtrati per utenza se necessario
+  if (!graficiBollette.value) return { labels: [], datasets: [] }
+  if (filtroUtenzaAttivo.value === 'tutti') return graficiBollette.value
+  return {
+    labels: graficiBollette.value.labels,
+    datasets: graficiBollette.value.datasets.filter(
+      (ds) => ds.label.toLowerCase() === filtroUtenzaAttivo.value
+    ),
+  }
+})
+
+const opzioniGraficoBollette = {
+  responsive: true,
+  plugins: {
+    legend: { position: 'bottom' },
+    tooltip: {
+      callbacks: { label: (ctx) => ` € ${Number(ctx.raw).toFixed(2)}` },
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: { callback: (v) => `€ ${v}` },
+    },
+  },
+}
+
+function coloreUtenzaInq(utenza) {
+  const mappa = { luce: 'bg-amber-500', gas: 'bg-blue-500', acqua: 'bg-cyan-500' }
+  return mappa[utenza] || 'bg-zinc-500'
+}
+
+function formatoDataBreve(dateValue) {
+  if (!dateValue) return '—'
+  return new Date(dateValue).toLocaleDateString('it-IT')
+}
+
+async function caricaBollette() {
+  bolletteLoading.value = true
+  const res = await getBolletteInquilino()
+  if (res.success) {
+    bollette.value = res.data?.data || []
+    graficiBollette.value = res.data?.grafici || null
+  }
+  bolletteLoading.value = false
 }
 
 watch([showGuastoForm, showCalendarioRifiutiModal], ([openGuasto, openCalendario]) => {
@@ -1148,10 +1309,12 @@ watch(contrattoAttivo, (value) => {
     loadGuasti()
     loadCalendarioRifiuti()
     loadFaccende()
+    caricaBollette()
   } else {
     calendarioRifiuti.value = creaCalendarioRifiutiDefault()
     bozzaCalendarioRifiuti.value = copiaCalendarioRifiuti(calendarioRifiuti.value)
     faccende.value = []
+    bollette.value = []
   }
 })
 
@@ -1168,13 +1331,14 @@ async function caricaContratti() {
   const response = await getContrattiUtenteLoggato()
   if (response.success) {
     contratti.value = response.data?.contratti ?? []
-    // se c'è un contratto attivo, carica i guasti
+    // se c'è un contratto attivo, carica guasti e bollette
     if (contratti.value && contratti.value.length) {
       const ca = contratti.value.find((c) => c.stato === 'attivo')
       if (ca) {
         await loadGuasti()
         await loadCalendarioRifiuti()
         await loadFaccende()
+        await caricaBollette()
       }
     }
   } else {
