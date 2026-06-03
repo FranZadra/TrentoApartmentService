@@ -244,6 +244,7 @@
                 <option value="luce">Luce</option>
                 <option value="gas">Gas</option>
                 <option value="acqua">Acqua</option>
+                <option value="elettricità">Elettricità</option>
               </select>
             </div>
             <!-- Importo -->
@@ -659,7 +660,7 @@ function capitalizeFirst(str) {
 }
 
 function coloreUtenza(utenza) {
-  const mappa = { luce: 'bg-amber-500', gas: 'bg-blue-500', acqua: 'bg-cyan-500' }
+  const mappa = { luce: 'bg-amber-500', gas: 'bg-blue-500', acqua: 'bg-cyan-500', elettricità: 'bg-violet-500' }
   return mappa[utenza] || 'bg-zinc-500'
 }
 

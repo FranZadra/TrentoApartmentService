@@ -16,7 +16,7 @@ const BollettaSchema = new mongoose.Schema(
     },
     utenza: {
       type: String,
-      enum: ['luce', 'gas', 'acqua'],
+      enum: ['luce', 'gas', 'acqua', 'elettricità'],
       required: [true, 'Il tipo di utenza è obbligatorio'],
     },
     periodoInizio: {

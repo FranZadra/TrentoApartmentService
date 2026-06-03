@@ -249,8 +249,8 @@ function costruisciDatiGrafici(bollette) {
   const labels = [...labelsSet];
 
   // Per ogni tipo di utenza costruisce un dataset con i valori per ogni periodo
-  const utenze = ['luce', 'gas', 'acqua'];
-  const colori = { luce: '#f59e0b', gas: '#3b82f6', acqua: '#06b6d4' };
+  const utenze = ['luce', 'gas', 'acqua', 'elettricità'];
+  const colori = { luce: '#f59e0b', gas: '#3b82f6', acqua: '#06b6d4', elettricità: '#8b5cf6' };
 
   const datasets = utenze
     .map((u) => {

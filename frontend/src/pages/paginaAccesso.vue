@@ -38,7 +38,7 @@
 								</h1>
 								<hr class="border-white/20" />
 								<p class="text-sm leading-6 text-white/80">
-									Registrati per accedere ai servizi della piattaforma in un ambiente elegante, leggibile e coerente con il brand.
+									Benvenuto in TAS! Crea il tuo account in pochi passaggi e inizia subito a gestire le tue locazioni a Trento.
 								</p>
 							</div>
 						</transition>
