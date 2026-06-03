@@ -92,6 +92,13 @@
         >
           Bollette
         </button>
+        <button
+          v-if="showAssociaAction"
+          @click="$emit('associa')"
+          class="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+        >
+          Associa inquilino
+        </button>
       </div>
     </div>
   </div>
@@ -127,9 +134,13 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  showAssociaAction: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-defineEmits(['view', 'edit', 'annuncio', 'guasti', 'bollette'])
+defineEmits(['view', 'edit', 'annuncio', 'guasti', 'bollette', 'associa'])
 </script>
 
 <style scoped>

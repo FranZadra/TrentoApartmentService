@@ -6,6 +6,7 @@
 const Appartamento = require('../models/Appartamento');
 const Annuncio = require('../models/annuncio');
 const User = require('../models/User');
+const Contratto = require('../models/Contratto');
 const { geocodificaIndirizzo } = require('../services/geocodingService');
 const { costruisciLinkWhatsApp } = require('../services/whatsappService');
 
@@ -318,6 +319,107 @@ async function getContattoAdmin(req, res) {
   }
 }
 
+/**
+ * Associa un utente (verificato o inquilino) a un appartamento creando o
+ * aggiornando un contratto. È il legame amministratore→inquilino della US.
+ *
+ * Regole:
+ *  - solo l'amministratore proprietario dell'appartamento può farlo;
+ *  - l'utente va indicato tramite email e non deve avere contratti attivi;
+ *  - se l'appartamento ha già un contratto attivo, l'utente viene aggiunto come
+ *    coinquilino a quel contratto; altrimenti se ne crea uno nuovo (servono in
+ *    questo caso le date, il canone e il tipo di contratto).
+ *
+ * Params: appartamentoId
+ * Body: { email, dataInizio, dataFine, canoneMensile, tipoContratto }
+ */
+async function associaInquilino(req, res) {
+  try {
+    const adminId = req.user?.sub || req.user?.id || req.user?._id;
+    if (req.user?.ruolo !== 'amministratore') {
+      return res.status(403).json({ success: false, message: 'Solo gli amministratori possono associare un inquilino' });
+    }
+
+    const { appartamentoId } = req.params;
+    const appartamento = await Appartamento.findOne({ _id: appartamentoId, amministratoreId: adminId });
+    if (!appartamento) {
+      return res.status(403).json({ success: false, message: 'Non sei il proprietario di questo appartamento' });
+    }
+
+    const { email, dataInizio, dataFine, canoneMensile, tipoContratto } = req.body;
+    if (!email || email.trim() === '') {
+      return res.status(400).json({ success: false, message: 'Email dell\'utente obbligatoria' });
+    }
+
+    // L'utente da associare dev'essere già registrato e verificato
+    const utente = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!utente) {
+      return res.status(404).json({ success: false, message: 'Nessun utente registrato con questa email' });
+    }
+    if (!['utente verificato', 'inquilino'].includes(utente.ruolo)) {
+      return res.status(400).json({ success: false, message: 'L\'utente deve essere verificato per poter essere associato a un contratto' });
+    }
+
+    // Non deve avere altri contratti in corso (attivo o in chiusura)
+    const contrattoInCorso = await Contratto.findOne({
+      $or: [{ idInquilini: utente._id }, { idInquilino: utente._id }],
+      stato: { $in: ['attivo', 'in chiusura'] },
+    });
+    if (contrattoInCorso) {
+      return res.status(409).json({ success: false, message: 'L\'utente ha già un contratto attivo' });
+    }
+
+    // Se l'appartamento ha già un contratto attivo, aggiungiamo l'utente come
+    // coinquilino; in caso contrario creiamo un nuovo contratto.
+    let contratto = await Contratto.findOne({
+      idAppartamento: appartamentoId,
+      stato: { $in: ['attivo', 'in chiusura'] },
+    });
+
+    if (contratto) {
+      contratto.idInquilini.push(utente._id);
+      await contratto.save();
+    } else {
+      if (!dataInizio || !dataFine || canoneMensile === undefined || !tipoContratto) {
+        return res.status(400).json({
+          success: false,
+          message: 'Per un nuovo contratto servono data inizio, data fine, canone mensile e tipo di contratto',
+        });
+      }
+      contratto = await Contratto.create({
+        idAppartamento: appartamentoId,
+        idInquilini: [utente._id],
+        dataInizio: new Date(dataInizio),
+        dataFine: new Date(dataFine),
+        canoneMensile: Number(canoneMensile),
+        tipoContratto,
+        stato: 'attivo',
+      });
+    }
+
+    // L'utente diventa a tutti gli effetti un inquilino
+    if (utente.ruolo !== 'inquilino') {
+      utente.ruolo = 'inquilino';
+      await utente.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `${utente.nome} ${utente.cognome} associato all'appartamento`,
+      data: contratto,
+    });
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    return res.status(500).json({
+      success: false,
+      message: 'Errore nell\'associazione dell\'inquilino',
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   creaAppartamento,
   getAppartamenti,
@@ -326,4 +428,5 @@ module.exports = {
   eliminaAppartamento,
   getAppartamentiAdmin,
   getContattoAdmin,
+  associaInquilino,
 };

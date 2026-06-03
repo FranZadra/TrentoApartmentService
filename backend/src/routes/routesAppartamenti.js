@@ -11,6 +11,7 @@ const {
   eliminaAppartamento,
   getAppartamentiAdmin,
   getContattoAdmin,
+  associaInquilino,
 } = require('../controllers/controllerAppartamenti')
 
 const { autenticaToken } = require('../middleware/auth')
@@ -34,6 +35,9 @@ router.get('/:id', getAppartamentoDaId)
 
 // Aggiorna un appartamento solo se appartiene all'utente autenticato.
 router.put('/:id', autenticaToken, verificaProprietario, verificaBodyAggiornamento, aggiornaAppartamento)
+
+// Associa un inquilino (via email) all'appartamento creando/aggiornando un contratto.
+router.post('/:appartamentoId/associa-inquilino', autenticaToken, associaInquilino)
 
 // Elimina un appartamento solo se appartiene all'utente autenticato.
 router.delete('/:id', autenticaToken, verificaProprietario, eliminaAppartamento)
