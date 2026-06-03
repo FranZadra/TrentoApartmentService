@@ -33,6 +33,7 @@
             :show-annuncio-action="true"
             :show-guasti-action="true"
             :show-bollette-action="true"
+            :show-associa-action="true"
             guasti-action-label="Mostra segnalazioni"
             :guasti-count="getGuastiAttiviCount(apt)"
             @view="viewDetails(apt._id)"
@@ -40,6 +41,7 @@
             @annuncio="openAnnuncio(apt)"
             @guasti="openGuastiModal(apt)"
             @bollette="openBolletteModal(apt)"
+            @associa="openAssociaModal(apt)"
           />
         </div>
       </div>
@@ -244,6 +246,7 @@
                 <option value="luce">Luce</option>
                 <option value="gas">Gas</option>
                 <option value="acqua">Acqua</option>
+                <option value="elettricità">Elettricità</option>
               </select>
             </div>
             <!-- Importo -->
@@ -312,9 +315,9 @@
                 </p>
               </div>
               <div class="flex items-center gap-2">
-                <a v-if="b.pdfNomeFile" :href="`/api/v1/bollette/${b._id}/pdf`" target="_blank" class="rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100">
+                <button v-if="b.pdfNomeFile" type="button" @click="apriPdf(b)" class="rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100">
                   PDF
-                </a>
+                </button>
                 <button v-if="!b.pagata" @click="segnaComePagata(b)" class="rounded-full border border-green-300 px-3 py-1.5 text-xs font-semibold text-green-700 transition hover:bg-green-50">
                   Segna pagata
                 </button>
@@ -350,6 +353,65 @@
     </div>
   </div>
 
+  <!-- Modale associazione inquilino → contratto -->
+  <div v-if="showAssociaModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" @click.self="closeAssociaModal">
+    <div class="relative flex w-full max-w-lg flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl ring-1 ring-black/5">
+      <div class="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.35em] text-[#9a1528]">Associazione inquilino</p>
+          <h3 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">Associa un inquilino</h3>
+          <p class="mt-1 text-sm text-zinc-500">{{ selectedApartmentForAssocia?.indirizzo?.via }}</p>
+        </div>
+        <button type="button" @click="closeAssociaModal" class="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900" aria-label="Chiudi">✕</button>
+      </div>
+
+      <form @submit.prevent="submitAssocia" class="px-6 py-5 sm:px-8">
+        <p class="mb-4 text-sm text-zinc-600">
+          Inserisci l'email di un utente verificato senza contratti attivi. Se l'appartamento ha già
+          un contratto attivo, l'utente verrà aggiunto come coinquilino; altrimenti compila anche i
+          dati del contratto qui sotto.
+        </p>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="flex flex-col gap-1 sm:col-span-2">
+            <label class="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">Email utente</label>
+            <input v-model="associaForm.email" type="email" required placeholder="nome@example.com" class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#9a1528]" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">Data inizio</label>
+            <input v-model="associaForm.dataInizio" type="date" class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#9a1528]" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">Data fine</label>
+            <input v-model="associaForm.dataFine" type="date" class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#9a1528]" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">Canone mensile (€)</label>
+            <input v-model.number="associaForm.canoneMensile" type="number" min="0" step="0.01" placeholder="es. 850" class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#9a1528]" />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">Tipo contratto</label>
+            <select v-model="associaForm.tipoContratto" class="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-[#9a1528]">
+              <option value="Residenziale">Residenziale</option>
+              <option value="Studenti">Studenti</option>
+              <option value="Transitorio">Transitorio</option>
+            </select>
+          </div>
+        </div>
+
+        <div v-if="associaErrore" class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ associaErrore }}</div>
+        <div v-if="associaSuccesso" class="mt-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{{ associaSuccesso }}</div>
+
+        <div class="mt-6 flex justify-end gap-3">
+          <button type="button" @click="closeAssociaModal" class="rounded-full border border-zinc-300 px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-100">Chiudi</button>
+          <button type="submit" :disabled="associaInvioInCorso" class="rounded-full bg-[#9a1528] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#7f1020] disabled:opacity-50">
+            {{ associaInvioInCorso ? 'Associazione...' : 'Associa' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   </AppLayout>
 </template>
 
@@ -361,7 +423,7 @@ import ApartmentForm from '../components/ApartmentForm.vue'
 import ApartmentCard from '../components/ApartmentCard.vue'
 import AnnuncioForm from '../components/AnnuncioForm.vue'
 import { getGuastiAppartamento, prendiInCaricoGuastoAdmin } from '../services/gestioneInternaService'
-import { getBolletteAdmin, caricaBolletta, segnaBollettaPagata, eliminaBolletta } from '../services/bolletteService'
+import { getBolletteAdmin, caricaBolletta, segnaBollettaPagata, eliminaBolletta, apriPdfBolletta } from '../services/bolletteService'
 
 const apartments = ref([])
 const loading = ref(false)
@@ -396,10 +458,18 @@ const pdfSelezionato = ref(null)
 const showEliminaModal = ref(false)
 const bollettaDaEliminare = ref(null)
 
+// Stato modale "Associa inquilino" (voce 5)
+const showAssociaModal = ref(false)
+const selectedApartmentForAssocia = ref(null)
+const associaForm = ref({ email: '', dataInizio: '', dataFine: '', canoneMensile: null, tipoContratto: 'Residenziale' })
+const associaErrore = ref('')
+const associaSuccesso = ref('')
+const associaInvioInCorso = ref(false)
+
 const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
 
-watch([showDetails, showForm, showAnnuncioForm, showGuastiModal, showBolletteModal], ([detailsOpen, formOpen, annuncioOpen, guastiOpen, bolletteOpen]) => {
-  document.body.style.overflow = detailsOpen || formOpen || annuncioOpen || guastiOpen || bolletteOpen ? 'hidden' : ''
+watch([showDetails, showForm, showAnnuncioForm, showGuastiModal, showBolletteModal, showAssociaModal], (stati) => {
+  document.body.style.overflow = stati.some(Boolean) ? 'hidden' : ''
 })
 
 function getAuthHeaders() {
@@ -659,12 +729,18 @@ function capitalizeFirst(str) {
 }
 
 function coloreUtenza(utenza) {
-  const mappa = { luce: 'bg-amber-500', gas: 'bg-blue-500', acqua: 'bg-cyan-500' }
+  const mappa = { luce: 'bg-amber-500', gas: 'bg-blue-500', acqua: 'bg-cyan-500', elettricità: 'bg-violet-500' }
   return mappa[utenza] || 'bg-zinc-500'
 }
 
 function onPdfSelezionato(event) {
   pdfSelezionato.value = event.target.files[0] || null
+}
+
+// Apre il PDF della bolletta passando dal service (che allega il token JWT)
+async function apriPdf(bolletta) {
+  const res = await apriPdfBolletta(bolletta._id)
+  if (!res.success) bolletteErrore.value = res.error
 }
 
 async function openBolletteModal(apt) {
@@ -675,6 +751,46 @@ async function openBolletteModal(apt) {
   nuovaBolletta.value = { utenza: '', importo: '', periodoInizio: '', periodoFine: '' }
   pdfSelezionato.value = null
   await caricaListaBollette(apt)
+}
+
+// ── Associazione inquilino (voce 5) ─────────────────────────────────────────────
+
+function openAssociaModal(apt) {
+  selectedApartmentForAssocia.value = apt
+  associaForm.value = { email: '', dataInizio: '', dataFine: '', canoneMensile: null, tipoContratto: 'Residenziale' }
+  associaErrore.value = ''
+  associaSuccesso.value = ''
+  showAssociaModal.value = true
+}
+
+function closeAssociaModal() {
+  showAssociaModal.value = false
+  selectedApartmentForAssocia.value = null
+}
+
+async function submitAssocia() {
+  associaErrore.value = ''
+  associaSuccesso.value = ''
+  associaInvioInCorso.value = true
+  try {
+    const res = await fetch(`${API_BASE}/appartamenti/${selectedApartmentForAssocia.value._id}/associa-inquilino`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(associaForm.value),
+    })
+    const body = await res.json()
+    if (res.ok) {
+      associaSuccesso.value = body.message || 'Inquilino associato con successo'
+      // Ricarichiamo gli appartamenti per riflettere eventuali cambi (es. contatori)
+      await reload()
+    } else {
+      associaErrore.value = body.message || 'Errore durante l\'associazione'
+    }
+  } catch (err) {
+    associaErrore.value = 'Errore di rete. Assicurati che il backend sia avviato.'
+  } finally {
+    associaInvioInCorso.value = false
+  }
 }
 
 function closeBolletteModal() {

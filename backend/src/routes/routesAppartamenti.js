@@ -10,6 +10,8 @@ const {
   aggiornaAppartamento,
   eliminaAppartamento,
   getAppartamentiAdmin,
+  getContattoAdmin,
+  associaInquilino,
 } = require('../controllers/controllerAppartamenti')
 
 const { autenticaToken } = require('../middleware/auth')
@@ -25,11 +27,17 @@ router.post('/', autenticaToken, verificaBodyCreazione, creaAppartamento)
 // Elenco degli appartamenti collegati all'amministratore loggato.
 router.get('/admin', autenticaToken, getAppartamentiAdmin)
 
+// Contatto WhatsApp dell'amministratore: solo utenti autenticati (registrati).
+router.get('/:id/contatto-admin', autenticaToken, getContattoAdmin)
+
 // Dettaglio di un singolo appartamento.
 router.get('/:id', getAppartamentoDaId)
 
 // Aggiorna un appartamento solo se appartiene all'utente autenticato.
 router.put('/:id', autenticaToken, verificaProprietario, verificaBodyAggiornamento, aggiornaAppartamento)
+
+// Associa un inquilino (via email) all'appartamento creando/aggiornando un contratto.
+router.post('/:appartamentoId/associa-inquilino', autenticaToken, associaInquilino)
 
 // Elimina un appartamento solo se appartiene all'utente autenticato.
 router.delete('/:id', autenticaToken, verificaProprietario, eliminaAppartamento)

@@ -171,12 +171,47 @@
                 <span class="font-semibold text-zinc-800">{{ dataFormattata }}</span>
               </p>
               <hr class="my-4 border-zinc-100" />
-              <p class="text-sm text-zinc-600 leading-relaxed">
-                Per maggiori informazioni su questo appartamento, contatta il gestore della piattaforma TAS.
-              </p>
+
+              <!-- Contatto amministratore: il numero e il pulsante WhatsApp sono
+                   visibili solo agli utenti registrati (TC voce 4). -->
+              <template v-if="auth.isAuthenticated">
+                <template v-if="contattoAdmin?.linkWhatsApp">
+                  <p class="text-sm text-zinc-600 leading-relaxed">
+                    Contatta direttamente l'amministratore dell'appartamento.
+                  </p>
+                  <a
+                    :href="contattoAdmin.linkWhatsApp"
+                    target="_blank"
+                    rel="noopener"
+                    class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1da851]"
+                  >
+                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M17.5 14.4c-.3-.15-1.8-.9-2.08-1-.28-.1-.48-.15-.68.15-.2.3-.78 1-.96 1.2-.18.2-.35.22-.65.07-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.78-1.67-2.08-.18-.3-.02-.46.13-.6.13-.14.3-.35.45-.53.15-.18.2-.3.3-.5.1-.2.05-.38-.02-.53-.08-.15-.68-1.63-.93-2.23-.24-.58-.5-.5-.68-.5h-.58c-.2 0-.53.07-.8.38-.28.3-1.05 1.02-1.05 2.5s1.08 2.9 1.23 3.1c.15.2 2.12 3.24 5.13 4.54.72.3 1.28.49 1.71.63.72.23 1.38.2 1.9.12.58-.08 1.8-.73 2.05-1.44.25-.7.25-1.3.18-1.43-.07-.13-.27-.2-.57-.35z M12 2a10 10 0 00-8.6 15.04L2 22l5.1-1.34A10 10 0 1012 2zm0 1.8a8.2 8.2 0 016.7 12.92l.1.15-.6 2.18-2.24-.59-.14.08A8.2 8.2 0 1112 3.8z"/>
+                    </svg>
+                    Contatta su WhatsApp
+                  </a>
+                </template>
+                <p v-else class="text-sm text-zinc-500 leading-relaxed">
+                  L'amministratore non ha indicato un recapito telefonico.
+                </p>
+              </template>
+
+              <!-- Utente non autenticato: lo invitiamo ad accedere/registrarsi -->
+              <template v-else>
+                <p class="text-sm text-zinc-600 leading-relaxed">
+                  Accedi o registrati per contattare l'amministratore dell'appartamento.
+                </p>
+                <router-link
+                  :to="{ name: 'accesso' }"
+                  class="mt-4 inline-block w-full rounded-full bg-[#9a1528] px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-[#7f1020]"
+                >
+                  Accedi / Registrati
+                </router-link>
+              </template>
+
               <router-link
                 :to="{ name: 'annunci' }"
-                class="mt-4 inline-block w-full rounded-full border border-zinc-300 px-4 py-2 text-center text-sm font-semibold text-zinc-700 hover:border-[#9a1528] hover:text-[#9a1528] transition-colors"
+                class="mt-3 inline-block w-full rounded-full border border-zinc-300 px-4 py-2 text-center text-sm font-semibold text-zinc-700 hover:border-[#9a1528] hover:text-[#9a1528] transition-colors"
               >
                 ← Tutti gli annunci
               </router-link>
@@ -218,15 +253,20 @@ import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import MappaDettaglio from '@/components/shared/MappaDettaglio.vue'
 import { annunciService } from '@/services/annunciService.js'
+import { useAuthStore } from '@/stores/authStore'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 
 // Stato della pagina
 const annuncio = ref(null)  // dati dell'annuncio con appartamento popolato
 const caricamento = ref(true)
 const errore = ref(null)
 const fotoCorrente = ref(0) // indice della foto mostrata nella galleria
+// Dati di contatto dell'admin (solo se autenticati). Include linkWhatsApp già
+// pronto, costruito dal backend tramite whatsappService.
+const contattoAdmin = ref(null)
 
 // Array di foto dell'appartamento (può essere vuoto → TC33)
 const foto = computed(() => annuncio.value?.appartamento?.foto ?? [])
@@ -269,6 +309,19 @@ async function caricaDettaglio() {
   try {
     const risposta = await annunciService.getById(route.params.id)
     annuncio.value = risposta.data.data
+
+    // Carichiamo il contatto dell'admin solo se l'utente è autenticato: l'endpoint
+    // è protetto e gli utenti anonimi non devono vedere il numero di telefono.
+    const appartamentoId = annuncio.value?.appartamento?._id || annuncio.value?.appartamentoId?._id
+    if (auth.isAuthenticated && appartamentoId) {
+      try {
+        const c = await annunciService.getContattoAdmin(appartamentoId)
+        contattoAdmin.value = c.data.data
+      } catch {
+        // Se il contatto non è recuperabile non blocchiamo la pagina dell'annuncio
+        contattoAdmin.value = null
+      }
+    }
   } catch (err) {
     const status = err.response?.status
     if (status === 404) {

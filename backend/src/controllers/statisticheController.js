@@ -30,47 +30,60 @@ const getStatistiche = async (req, res) => {
       matchCamera['camere.tipo'] = tipoCamera;
     }
 
-    // --- Aggregazione A: statistiche per CAP (prezzo €/m², occupazione) ---
+    // --- Aggregazione A: statistiche per CAP (prezzo €/m²) ---
+    // Le singole camere non vengono mai popolate nell'app, quindi il prezzo al m²
+    // lo ricaviamo a livello di appartamento: canone mensile del contratto attivo
+    // diviso i metri quadri totali dichiarati (mqTot).
     const pipelinePerCAP = [
       { $match: matchAppartamento },
-      { $unwind: '$camere' },
-      ...(Object.keys(matchCamera).length ? [{ $match: matchCamera }] : []),
+      {
+        // Aggancia il contratto attivo dell'appartamento per leggerne il canone
+        $lookup: {
+          from: 'contrattos',
+          let: { appId: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$idAppartamento', '$$appId'] }, stato: 'attivo' } },
+            { $project: { canoneMensile: 1 } },
+          ],
+          as: 'contrattoAttivo',
+        },
+      },
       {
         $group: {
           _id: '$indirizzo.CAP',
-          // $addToSet per contare appartamenti unici (non camere)
-          appartamentiIds: { $addToSet: '$_id' },
-          // Raccoglie i prezzi al m² di ogni camera (escluse camere con mq=0)
-          prezziPerMq: {
-            $push: {
+          numAppartamenti: { $sum: 1 },
+          // Somma e conteggio dei €/m²: consideriamo solo gli appartamenti che hanno
+          // un contratto attivo (quindi un canone) e una metratura valida.
+          prezzoSommaMq: {
+            $sum: {
               $cond: [
-                { $gt: ['$camere.mq', 0] },
-                { $divide: ['$camere.prezzo', '$camere.mq'] },
-                null,
+                { $and: [{ $gt: [{ $size: '$contrattoAttivo' }, 0] }, { $gt: ['$mqTot', 0] }] },
+                { $divide: [{ $arrayElemAt: ['$contrattoAttivo.canoneMensile', 0] }, '$mqTot'] },
+                0,
               ],
             },
           },
-          camereTotali: { $sum: 1 },
-          camereDisponibili: { $sum: { $cond: ['$camere.disponibile', 1, 0] } },
+          prezzoCountMq: {
+            $sum: {
+              $cond: [
+                { $and: [{ $gt: [{ $size: '$contrattoAttivo' }, 0] }, { $gt: ['$mqTot', 0] }] },
+                1,
+                0,
+              ],
+            },
+          },
         },
       },
       {
         $project: {
           _id: 0,
           cap: '$_id',
-          numAppartamenti: { $size: '$appartamentiIds' },
-          // Filtra i null prima di calcolare la media
+          numAppartamenti: 1,
+          prezzoSommaMq: 1,
+          prezzoCountMq: 1,
           prezzoMedioMq: {
-            $avg: {
-              $filter: {
-                input: '$prezziPerMq',
-                as: 'p',
-                cond: { $ne: ['$$p', null] },
-              },
-            },
+            $cond: [{ $gt: ['$prezzoCountMq', 0] }, { $divide: ['$prezzoSommaMq', '$prezzoCountMq'] }, null],
           },
-          camereTotali: 1,
-          camereDisponibili: 1,
         },
       },
       { $sort: { cap: 1 } },
@@ -113,30 +126,24 @@ const getStatistiche = async (req, res) => {
 
     const totaleAppartamenti = totaleResult?.totale ?? 0;
 
-    // Calcolo tasso di occupazione globale e prezzo medio globale dai dati per CAP
-    let camereTotaliGlobali = 0;
-    let camereDisponibiliGlobali = 0;
+    // Prezzo medio globale: media ponderata sui singoli appartamenti (somma dei
+    // €/m² diviso il numero di appartamenti con prezzo), non media-di-medie per CAP.
     let sommaPrezziMq = 0;
     let conteggioPrezziMq = 0;
-
     for (const zona of perCAP) {
-      camereTotaliGlobali += zona.camereTotali;
-      camereDisponibiliGlobali += zona.camereDisponibili;
-      if (zona.prezzoMedioMq != null) {
-        sommaPrezziMq += zona.prezzoMedioMq;
-        conteggioPrezziMq++;
-      }
+      sommaPrezziMq += zona.prezzoSommaMq;
+      conteggioPrezziMq += zona.prezzoCountMq;
     }
-
-    const tassoOccupazione =
-      camereTotaliGlobali > 0
-        ? parseFloat(((camereTotaliGlobali - camereDisponibiliGlobali) / camereTotaliGlobali).toFixed(4))
-        : 0;
 
     const prezzoMedioGlobalePerMq =
       conteggioPrezziMq > 0
         ? parseFloat((sommaPrezziMq / conteggioPrezziMq).toFixed(2))
         : 0;
+
+    // Il tasso di occupazione è in attesa di ridefinizione (le camere non sono
+    // popolate): lo lasciamo a 0 finché non si decide se calcolarlo per
+    // appartamento o per stanza. Vedi nota US16.
+    const tassoOccupazione = 0;
 
     // --- Query contratti: conteggio per stato + turnover ultimo anno ---
     const unAnnoFa = new Date();
@@ -173,9 +180,15 @@ const getStatistiche = async (req, res) => {
       else if (row._id === 'in chiusura') contratti.inChiusura = row.count;
     }
 
-    // Arrotonda il prezzo medio per CAP a 2 decimali nella risposta
+    // Lista completa dei CAP presenti, indipendente dai filtri: serve a popolare
+    // la tendina di selezione CAP, che altrimenti si svuoterebbe dopo un filtro.
+    const capDisponibili = (await Appartamento.distinct('indirizzo.CAP')).sort();
+
+    // Prepara la distribuzione per CAP per la risposta: arrotonda il prezzo e
+    // scarta i campi di servizio (somma/conteggio) usati solo per i calcoli.
     const distribuzionePerCAP = perCAP.map((zona) => ({
-      ...zona,
+      cap: zona.cap,
+      numAppartamenti: zona.numAppartamenti,
       prezzoMedioMq: zona.prezzoMedioMq != null ? parseFloat(zona.prezzoMedioMq.toFixed(2)) : null,
     }));
 
@@ -187,6 +200,7 @@ const getStatistiche = async (req, res) => {
         prezzoMedioGlobalePerMq,
         contratti,
         turnoverUltimoAnno: turnoverResult,
+        capDisponibili,
         distribuzionePerCAP,
         distribuzionePerTipo: perTipo,
       },

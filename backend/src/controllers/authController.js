@@ -23,6 +23,7 @@ const register = async (req, res) => {
     // Campi amministratore
     privato,
     pIVA,
+    telefono,
     // Campi dipendente comunale
     ruoloDipendente,
     dipartimento,
@@ -58,6 +59,10 @@ const register = async (req, res) => {
     // privato deve essere esplicitamente boolean
     if (typeof privato !== 'boolean') {
       return res.status(400).json({ messaggio: 'Tipo account (privato/agenzia) obbligatorio per amministratori' });
+    }
+    // Il telefono è richiesto: serve a mettere in contatto gli utenti via WhatsApp
+    if (!telefono || telefono.trim() === '') {
+      return res.status(400).json({ messaggio: 'Numero di telefono obbligatorio per amministratori' });
     }
     // Se è un'agenzia, la partita IVA è obbligatoria e deve essere 11 cifre
     if (privato === false) {
@@ -101,6 +106,7 @@ const register = async (req, res) => {
 
   if (ruoloNormalizzato === 'amministratore') {
     datiUtente.privato = privato;
+    datiUtente.telefono = telefono.trim();
     if (privato === false) {
       datiUtente.pIVA = pIVA.trim();
     }

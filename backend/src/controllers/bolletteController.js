@@ -13,6 +13,20 @@ function estraiUserId(req) {
   return req.user?.sub || req.user?.id || req.user?._id;
 }
 
+// Quando a un utente viene assegnato un contratto diventa 'utente verificato';
+// alcuni record/flussi più vecchi usano ancora 'inquilino'. Per individuare un
+// inquilino dobbiamo accettare entrambi i ruoli.
+function isRuoloInquilino(utente) {
+  return utente?.ruolo === 'utente verificato' || utente?.ruolo === 'inquilino';
+}
+
+// Il model Contratto usa 'idInquilini' (array), ma in DB sopravvivono contratti
+// col vecchio campo 'idInquilino' (singolare). Cerchiamo l'inquilino su entrambi,
+// coerentemente con quanto fa il controller della gestione interna.
+function filtroContrattoInquilino(userId) {
+  return { $or: [{ idInquilini: userId }, { idInquilino: userId }] };
+}
+
 // Verifica che l'appartamento esista e appartenga all'amministratore loggato
 async function verificaAdminAppartamento(appartamentoId, adminId) {
   const appartamento = await Appartamento.findOne({
@@ -188,13 +202,13 @@ const getBolletteInquilino = async (req, res) => {
     if (!inquilinoId) return res.status(401).json({ error: 'Utente non autenticato' });
 
     const inquilino = await User.findById(inquilinoId);
-    if (!inquilino || inquilino.ruolo !== 'inquilino') {
+    if (!inquilino || !isRuoloInquilino(inquilino)) {
       return res.status(403).json({ error: 'Solo gli inquilini possono accedere a questa sezione' });
     }
 
     // Recupera il contratto attivo o in chiusura dell'inquilino
     const contratto = await Contratto.findOne({
-      idInquilino: inquilinoId,
+      ...filtroContrattoInquilino(inquilinoId),
       stato: { $in: ['attivo', 'in chiusura'] },
     });
 
@@ -235,8 +249,8 @@ function costruisciDatiGrafici(bollette) {
   const labels = [...labelsSet];
 
   // Per ogni tipo di utenza costruisce un dataset con i valori per ogni periodo
-  const utenze = ['luce', 'gas', 'acqua'];
-  const colori = { luce: '#f59e0b', gas: '#3b82f6', acqua: '#06b6d4' };
+  const utenze = ['luce', 'gas', 'acqua', 'elettricità'];
+  const colori = { luce: '#f59e0b', gas: '#3b82f6', acqua: '#06b6d4', elettricità: '#8b5cf6' };
 
   const datasets = utenze
     .map((u) => {
@@ -292,14 +306,13 @@ const scaricaPdf = async (req, res) => {
 
     // Verifica autorizzazione: admin proprietario o inquilino con contratto attivo/in chiusura
     const isAdmin = utente.ruolo === 'amministratore';
-    const isInquilino = utente.ruolo === 'inquilino';
 
     if (isAdmin) {
       const appartamento = await verificaAdminAppartamento(bolletta.idAppartamento, userId);
       if (!appartamento) return res.status(403).json({ error: 'Non autorizzato' });
-    } else if (isInquilino) {
+    } else if (isRuoloInquilino(utente)) {
       const contratto = await Contratto.findOne({
-        idInquilino: userId,
+        ...filtroContrattoInquilino(userId),
         idAppartamento: bolletta.idAppartamento,
         stato: { $in: ['attivo', 'in chiusura'] },
       });

@@ -131,14 +131,14 @@
                               {{ formatoDataBreve(b.periodoInizio) }} — {{ formatoDataBreve(b.periodoFine) }}
                             </p>
                           </div>
-                          <a
+                          <button
                             v-if="b.pdfNomeFile"
-                            :href="`/api/v1/bollette/${b._id}/pdf`"
-                            target="_blank"
+                            type="button"
+                            @click="apriPdf(b)"
                             class="rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100"
                           >
                             PDF
-                          </a>
+                          </button>
                         </li>
                       </ul>
 
@@ -674,10 +674,13 @@
 
             <button
               type="button"
-              class="rounded-full border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-600 transition hover:border-primary hover:text-primary"
+              class="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-primary"
+              aria-label="Chiudi"
               @click="chiudiCalendarioRifiuti"
             >
-              Chiudi
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
 
@@ -765,7 +768,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { getContrattiUtenteLoggato, getCalendarioRifiutiAppartamento, aggiornaCalendarioRifiutiAppartamento, getGuastiAppartamento, risolviGuasto, getFaccendeAppartamento, aggiungiFaccendaAppartamento, aggiornaFaccendaAppartamento, eliminaFaccendaAppartamento, aggiornaListaSpesa } from '../services/gestioneInternaService'
-import { getBolletteInquilino } from '../services/bolletteService'
+import { getBolletteInquilino, apriPdfBolletta } from '../services/bolletteService'
 import GuastoForm from '@/components/GuastoForm.vue'
 import { Bar } from 'vue-chartjs'
 import {
@@ -919,6 +922,7 @@ const filtriUtenza = [
   { valore: 'luce', etichetta: 'Luce' },
   { valore: 'gas', etichetta: 'Gas' },
   { valore: 'acqua', etichetta: 'Acqua' },
+  { valore: 'elettricità', etichetta: 'Elettricità' },
 ]
 
 const bolletteFiltrate = computed(() => {
@@ -954,7 +958,7 @@ const opzioniGraficoBollette = {
 }
 
 function coloreUtenzaInq(utenza) {
-  const mappa = { luce: 'bg-amber-500', gas: 'bg-blue-500', acqua: 'bg-cyan-500' }
+  const mappa = { luce: 'bg-amber-500', gas: 'bg-blue-500', acqua: 'bg-cyan-500', elettricità: 'bg-violet-500' }
   return mappa[utenza] || 'bg-zinc-500'
 }
 
@@ -971,6 +975,11 @@ async function caricaBollette() {
     graficiBollette.value = res.data?.grafici || null
   }
   bolletteLoading.value = false
+}
+
+// Apre il PDF della bolletta tramite il service, che allega il token JWT alla richiesta
+async function apriPdf(bolletta) {
+  await apriPdfBolletta(bolletta._id)
 }
 
 function normalizeListaSpesaItem(item, index = 0) {

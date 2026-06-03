@@ -99,7 +99,7 @@
             <div class="flex flex-col gap-2 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
               <p class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">Prezzo medio €/m²</p>
               <p class="text-3xl font-bold text-zinc-900">{{ formatEuro(statistiche.prezzoMedioGlobalePerMq) }}</p>
-              <p class="text-xs text-zinc-500">media su tutte le camere</p>
+              <p class="text-xs text-zinc-500">canone / m² appartamento</p>
             </div>
           </div>
 
@@ -150,8 +150,7 @@
                     <tr class="border-b border-zinc-100 text-left text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">
                       <th class="pb-2 pr-4">CAP</th>
                       <th class="pb-2 pr-4">Appartamenti</th>
-                      <th class="pb-2 pr-4">€/m² medio</th>
-                      <th class="pb-2">Camere libere</th>
+                      <th class="pb-2">€/m² medio</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -162,8 +161,7 @@
                     >
                       <td class="py-2 pr-4 font-semibold">{{ zona.cap }}</td>
                       <td class="py-2 pr-4">{{ zona.numAppartamenti }}</td>
-                      <td class="py-2 pr-4">{{ zona.prezzoMedioMq != null ? formatEuro(zona.prezzoMedioMq) : '—' }}</td>
-                      <td class="py-2">{{ zona.camereDisponibili }} / {{ zona.camereTotali }}</td>
+                      <td class="py-2">{{ zona.prezzoMedioMq != null ? formatEuro(zona.prezzoMedioMq) : '—' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -210,10 +208,9 @@ const errorMessage = ref('')
 // Filtri selezionati dall'utente
 const filtri = ref({ cap: '', tipoCamera: '', perStudenti: '' })
 
-// Lista dei CAP disponibili estratta dai dati ricevuti
-const capDisponibili = computed(() =>
-  statistiche.value?.distribuzionePerCAP?.map((z) => z.cap) ?? []
-)
+// Lista dei CAP disponibili: arriva dal backend ed è completa (non dipende dai
+// filtri attivi), così la tendina resta selezionabile anche dopo aver filtrato.
+const capDisponibili = computed(() => statistiche.value?.capDisponibili ?? [])
 
 // --- Funzioni di formattazione ---
 
