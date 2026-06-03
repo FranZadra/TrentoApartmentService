@@ -142,10 +142,10 @@ const searchAnnunciWithFilters = async (req, res, next) => {
     const filtroAppartamento = {};
 
     if (req.query.numStanze) {
-      filtroAppartamento.numStanze = Number(req.query.numStanze);
+      filtroAppartamento.numStanze = { $gte: Number(req.query.numStanze) };
     }
     if (req.query.numBagni) {
-      filtroAppartamento.numBagni = Number(req.query.numBagni);
+      filtroAppartamento.numBagni = { $gte: Number(req.query.numBagni) };
     }
     if (req.query.terrazzo) {
       filtroAppartamento.terrazzo = req.query.terrazzo === 'true';

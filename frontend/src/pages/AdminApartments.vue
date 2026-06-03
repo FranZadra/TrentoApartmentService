@@ -59,7 +59,7 @@
     @close="closeAnnuncio"
   />
   <!-- Modal risolvi guasto -->
-  <div v-if="showResolveModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" @click.self="closeResolveModal">
+  <div v-if="showResolveModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" @click.self="closeResolveModal">
     <div class="relative flex w-full max-w-lg flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl ring-1 ring-black/5">
       <div class="flex items-start justify-between gap-4 px-6 pt-6">
         <div>

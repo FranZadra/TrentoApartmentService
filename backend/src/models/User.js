@@ -46,7 +46,12 @@ const utenteSchema = new mongoose.Schema(
       required: false,
       default: null,
     },*/
-    
+    telefono: {
+      type: String,
+      required: false,
+      default: null,
+    },
+
     // Ruolo dell'utente nell'applicazione
     // 'inquilino'    = cerca appartamenti
     // 'proprietario' = pubblica annunci

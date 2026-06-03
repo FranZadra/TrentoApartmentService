@@ -119,7 +119,7 @@ function logout() {
 
 .btn-logout {
     padding: 0.75rem 1.5rem;
-    background-color: #dc3545;
+    background-color: #9a1528;
     color: white;
     border: none;
     border-radius: 4px;
@@ -129,7 +129,7 @@ function logout() {
 }
 
 .btn-logout:hover {
-    background-color: #c82333;
+    background-color: #9a1528;
 }
 
 .btn-logout:disabled {

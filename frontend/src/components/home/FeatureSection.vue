@@ -21,10 +21,6 @@
             </div>
           </div>
 
-          <router-link to="/annunci" class="group inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#9a1528]">
-            Vai alla ricerca
-            <span class="transition-transform group-hover:translate-x-1">→</span>
-          </router-link>
         </article>
 
         <article class="flex min-h-[18rem] flex-col justify-between border-b border-zinc-200 p-8 md:border-b-0 md:border-r md:last:border-r-0">
@@ -45,10 +41,7 @@
             </div>
           </div>
 
-          <router-link to="/mansioni" class="group inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#9a1528]">
-            Organizza i task
-            <span class="transition-transform group-hover:translate-x-1">→</span>
-          </router-link>
+
         </article>
 
         <article class="flex min-h-[18rem] flex-col justify-between p-8">
@@ -67,11 +60,7 @@
               </p>
             </div>
           </div>
-
-          <router-link to="/guasti" class="group inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#9a1528]">
-            Segnala un guasto
-            <span class="transition-transform group-hover:translate-x-1">→</span>
-          </router-link>
+          
         </article>
       </div>
     </div>

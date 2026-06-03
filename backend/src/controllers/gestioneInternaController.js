@@ -397,7 +397,6 @@ const aggiornaListaSpesa = async (req, res) => {
     }
 }
 
-module.exports = { getContratti, segnalaGuasto, getGuastiAppartamento, prendiInCaricoGuastoAdmin, risolviGuasto, aggiornaListaSpesa };
 // ---- US23: Faccende del calendario condiviso ----
 
 // Helper: verifica autenticazione + ruolo inquilino (stretto) + contratto attivo
@@ -556,4 +555,4 @@ const eliminaFaccenda = async (req, res) => {
     }
 };
 
-module.exports = { getContratti, getCalendarioRifiuti, aggiornaCalendarioRifiuti, segnalaGuasto, getGuastiAppartamento, prendiInCaricoGuastoAdmin, risolviGuasto, getFaccende, aggiungiFaccenda, aggiornaFaccenda, eliminaFaccenda };
+module.exports = { getContratti, getCalendarioRifiuti, aggiornaCalendarioRifiuti, segnalaGuasto, getGuastiAppartamento, prendiInCaricoGuastoAdmin, risolviGuasto, getFaccende, aggiungiFaccenda, aggiornaFaccenda, eliminaFaccenda, aggiornaListaSpesa };
