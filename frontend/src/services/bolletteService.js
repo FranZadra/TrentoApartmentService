@@ -69,7 +69,33 @@ export async function getBolletteInquilino() {
   }
 }
 
-// Restituisce l'URL per aprire/scaricare il PDF in una nuova scheda del browser
-export function getPdfUrl(bollettaId) {
-  return `/api/v1/bollette/${bollettaId}/pdf`
+// Apre il PDF di una bolletta in una nuova scheda.
+// Non basta un semplice <a href>: l'endpoint del PDF è protetto da JWT e un link
+// diretto non porta con sé l'header Authorization. Il backend risponde quindi 401
+// e il browser mostra il messaggio di errore al posto del documento.
+// Soluzione: scarichiamo il file con axios (l'interceptor allega il token), lo
+// trasformiamo in un object URL locale e lo apriamo.
+export async function apriPdfBolletta(bollettaId) {
+  try {
+    const res = await api.get(`/bollette/${bollettaId}/pdf`, { responseType: 'blob' })
+
+    const blobUrl = URL.createObjectURL(res.data)
+
+    // Aprire con un click su <a> è più affidabile di window.open() dopo un await
+    // (i blocca-popup tendono a bloccare quest'ultimo perché non più legato al click)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.target = '_blank'
+    link.rel = 'noopener'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+
+    // Liberiamo la memoria una volta che la scheda ha avuto il tempo di caricare il blob
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
+
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: 'Impossibile aprire il PDF della bolletta' }
+  }
 }

@@ -131,14 +131,14 @@
                               {{ formatoDataBreve(b.periodoInizio) }} — {{ formatoDataBreve(b.periodoFine) }}
                             </p>
                           </div>
-                          <a
+                          <button
                             v-if="b.pdfNomeFile"
-                            :href="`/api/v1/bollette/${b._id}/pdf`"
-                            target="_blank"
+                            type="button"
+                            @click="apriPdf(b)"
                             class="rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100"
                           >
                             PDF
-                          </a>
+                          </button>
                         </li>
                       </ul>
 
@@ -765,7 +765,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { getContrattiUtenteLoggato, getCalendarioRifiutiAppartamento, aggiornaCalendarioRifiutiAppartamento, getGuastiAppartamento, risolviGuasto, getFaccendeAppartamento, aggiungiFaccendaAppartamento, aggiornaFaccendaAppartamento, eliminaFaccendaAppartamento, aggiornaListaSpesa } from '../services/gestioneInternaService'
-import { getBolletteInquilino } from '../services/bolletteService'
+import { getBolletteInquilino, apriPdfBolletta } from '../services/bolletteService'
 import GuastoForm from '@/components/GuastoForm.vue'
 import { Bar } from 'vue-chartjs'
 import {
@@ -971,6 +971,11 @@ async function caricaBollette() {
     graficiBollette.value = res.data?.grafici || null
   }
   bolletteLoading.value = false
+}
+
+// Apre il PDF della bolletta tramite il service, che allega il token JWT alla richiesta
+async function apriPdf(bolletta) {
+  await apriPdfBolletta(bolletta._id)
 }
 
 function normalizeListaSpesaItem(item, index = 0) {

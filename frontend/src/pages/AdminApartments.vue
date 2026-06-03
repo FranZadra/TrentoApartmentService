@@ -312,9 +312,9 @@
                 </p>
               </div>
               <div class="flex items-center gap-2">
-                <a v-if="b.pdfNomeFile" :href="`/api/v1/bollette/${b._id}/pdf`" target="_blank" class="rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100">
+                <button v-if="b.pdfNomeFile" type="button" @click="apriPdf(b)" class="rounded-full border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100">
                   PDF
-                </a>
+                </button>
                 <button v-if="!b.pagata" @click="segnaComePagata(b)" class="rounded-full border border-green-300 px-3 py-1.5 text-xs font-semibold text-green-700 transition hover:bg-green-50">
                   Segna pagata
                 </button>
@@ -361,7 +361,7 @@ import ApartmentForm from '../components/ApartmentForm.vue'
 import ApartmentCard from '../components/ApartmentCard.vue'
 import AnnuncioForm from '../components/AnnuncioForm.vue'
 import { getGuastiAppartamento, prendiInCaricoGuastoAdmin } from '../services/gestioneInternaService'
-import { getBolletteAdmin, caricaBolletta, segnaBollettaPagata, eliminaBolletta } from '../services/bolletteService'
+import { getBolletteAdmin, caricaBolletta, segnaBollettaPagata, eliminaBolletta, apriPdfBolletta } from '../services/bolletteService'
 
 const apartments = ref([])
 const loading = ref(false)
@@ -665,6 +665,12 @@ function coloreUtenza(utenza) {
 
 function onPdfSelezionato(event) {
   pdfSelezionato.value = event.target.files[0] || null
+}
+
+// Apre il PDF della bolletta passando dal service (che allega il token JWT)
+async function apriPdf(bolletta) {
+  const res = await apriPdfBolletta(bolletta._id)
+  if (!res.success) bolletteErrore.value = res.error
 }
 
 async function openBolletteModal(apt) {
