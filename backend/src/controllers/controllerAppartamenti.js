@@ -5,6 +5,7 @@
 
 const Appartamento = require('../models/Appartamento');
 const Annuncio = require('../models/annuncio');
+const { geocodificaIndirizzo } = require('../services/geocodingService');
 
 /**
  * Crea un nuovo appartamento.
@@ -34,6 +35,10 @@ async function creaAppartamento(req, res) {
       });
     }
 
+    // Geocodifichiamo l'indirizzo così l'appartamento compare subito sulla mappa.
+    // Se il client invia già una posizione la rispettiamo; altrimenti la calcoliamo.
+    const posizione = data.posizione || (await geocodificaIndirizzo(data.indirizzo));
+
     const appartamento = new Appartamento({
       indirizzo: data.indirizzo,
       mqTot: data.mqTot,
@@ -45,7 +50,7 @@ async function creaAppartamento(req, res) {
       lavatrice: data.lavatrice || false,
       classeEnergetica: data.classeEnergetica,
       amministratoreId,
-      posizione: data.posizione,
+      posizione,
     });
 
     const saved = await appartamento.save();
@@ -149,6 +154,13 @@ async function aggiornaAppartamento(req, res) {
   try {
     const { id } = req.params;
     const updates = req.body;
+
+    // Se l'indirizzo viene modificato ricalcoliamo le coordinate, così il marker
+    // resta allineato. Salvo che il client non passi esplicitamente una posizione.
+    if (updates.indirizzo && updates.posizione === undefined) {
+      const posizione = await geocodificaIndirizzo(updates.indirizzo);
+      if (posizione) updates.posizione = posizione;
+    }
 
     const appartamento = await Appartamento.findByIdAndUpdate(
       id,
