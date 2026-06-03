@@ -12,8 +12,8 @@ Il token viene rilasciato al login o alla registrazione e ha una durata di 7 gio
 - `utente base` *(default)* — cerca annunci
 - `utente verificato` — cerca annunci (account verificato)
 - `amministratore` — gestisce appartamenti e annunci; può essere privato o agenzia (con partita IVA)
-- `dipendente comune` — operatore del comune con ruolo e dipartimento
-- `inquilino` — cerca appartamenti
+- `dipendente comune` — operatore del comune; accede alla dashboard statistica TAS Data
+- `inquilino` — inquilino con contratto attivo
 
 ---
 
@@ -32,8 +32,8 @@ Il token viene rilasciato al login o alla registrazione e ha una durata di 7 gio
 - via: `Via Roma` (string, required)
 - numero: 10 (number, required)
 - città: `Trento` (string, required)
-- CAP: `38100` (string, required)
-- Stato: `IT` (string, required)
+- CAP: `38122` (string, required)
+- Stato: `Italia` (string, required)
 
 ## Posizione (object)
 - latitudine: 46.0748 (number, optional)
@@ -43,7 +43,7 @@ Il token viene rilasciato al login o alla registrazione e ha una durata di 7 gio
 - _id: `665f1a2b3c4d5e6f7a8b9c0d` (string)
 - indirizzo (Indirizzo, required)
 - mqTot: 90 (number, optional) - Superficie totale in metri quadri
-- perStudenti: false (boolean, required) - Adatto a studenti (default: false)
+- perStudenti: false (boolean, optional) - Adatto a studenti (default: false)
 - numStanze: 3 (number, required)
 - numBagni: 2 (number, required)
 - foto (array[string], optional) - URL delle immagini
@@ -61,7 +61,7 @@ Il token viene rilasciato al login o alla registrazione e ha una durata di 7 gio
     - `F`
     - `G`
 - posizione (Posizione, optional) - Coordinate geografiche per la mappa
-- amministratoreId: `665f1a2b3c4d5e6f7a8b9c01` (string, required) - ID utente proprietario
+- amministratoreId: `665f1a2b3c4d5e6f7a8b9c01` (string, required) - ID MongoDB dell'amministratore proprietario
 - camere (array[Camera], optional) - Sotto-documenti annidati
 
 ## Annuncio (object)
@@ -80,12 +80,85 @@ Il token viene rilasciato al login o alla registrazione e ha una durata di 7 gio
 - cognome: `Rossi` (string)
 - email: `mario.rossi@example.com` (string)
 - ruolo: `utente base` (string)
+- telefono: `+39 351 1234567` (string, optional, nullable) - Recapito telefonico (obbligatorio per gli amministratori, usato per il contatto WhatsApp)
+
+## Contratto (object)
+- _id: `665f1a2b3c4d5e6f7a8b9c10` (string)
+- idAppartamento (Appartamento) - Appartamento associato al contratto
+- idInquilini (array[string]) - Elenco degli ID degli inquilini associati al contratto
+- dataInizio: `2025-09-01T00:00:00.000Z` (string)
+- dataFine: `2026-08-31T00:00:00.000Z` (string)
+- canoneMensile: 450 (number)
+- stato: `attivo` (enum[string])
+    - `attivo`
+    - `terminato`
+    - `in chiusura`
+- tipoContratto: `4+4` (string)
+
+## Guasto (object)
+- _id: `665f1a2b3c4d5e6f7a8b9c20` (string)
+- idAppartamento: `665f1a2b3c4d5e6f7a8b9c0d` (string)
+- idInquilino: `665f1a2b3c4d5e6f7a8b9c01` (string)
+- descrizione: `Il rubinetto del bagno perde acqua` (string)
+- categoria: `Idraulica` (string)
+- priorita: `media` (enum[string])
+    - `scarsa`
+    - `media`
+    - `urgente`
+- stato: `segnalato` (enum[string])
+    - `segnalato`
+    - `in lavorazione`
+    - `risolto`
+    - `archiviato`
+- foto (array[string], optional) - URL delle foto allegate
+- createdAt: `2026-01-15T10:00:00.000Z` (string)
+
+## Bolletta (object)
+- _id: `665f1a2b3c4d5e6f7a8b9c30` (string)
+- idAppartamento: `665f1a2b3c4d5e6f7a8b9c0d` (string)
+- utenza: `elettricità` (enum[string])
+    - `luce`
+    - `gas`
+    - `acqua`
+    - `elettricità`
+- periodoInizio: `2026-01-01` (string)
+- periodoFine: `2026-03-31` (string)
+- importo: 85.5 (number)
+- pagata: false (boolean) - default: false
+- pdfNomeFile: `bolletta-gennaio.pdf` (string, optional, nullable) - Nome del PDF allegato, se presente
 
 ## Paginazione (object)
 - currentPage: 1 (number)
 - totalPages: 5 (number)
 - totalItems: 48 (number)
 - itemsPerPage: 10 (number)
+
+## StatistichePerCAP (object)
+- cap: `38122` (string)
+- numAppartamenti: 3 (number)
+- prezzoMedioMq: 8.95 (number, nullable) - Prezzo medio mensile per metro quadro della zona; null se nessun appartamento ha un contratto attivo
+
+## StatistichePerTipo (object)
+- tipo: `SINGOLA` (enum[string])
+    - `SINGOLA`
+    - `DOPPIA`
+- count: 11 (number)
+- prezzoMedio: 424.55 (number) - Prezzo medio mensile in euro
+
+## StatisticheContratti (object)
+- attivi: 5 (number)
+- terminati: 4 (number)
+- inChiusura: 1 (number)
+
+## StatisticheData (object)
+- totaleAppartamenti: 7 (number)
+- tassoOccupazione: 0 (number) - Frazione di occupazione (0–1)
+- prezzoMedioGlobalePerMq: 8.95 (number) - Media globale del prezzo mensile per metro quadro
+- contratti (StatisticheContratti)
+- turnoverUltimoAnno: 3 (number) - Numero di contratti terminati negli ultimi 12 mesi
+- capDisponibili (array[string]) - Elenco completo dei CAP presenti
+- distribuzionePerCAP (array[StatistichePerCAP])
+- distribuzionePerTipo (array[StatistichePerTipo])
 
 ---
 
@@ -136,8 +209,8 @@ Risultato ordinato per data di pubblicazione decrescente.
                             "via": "Via Roma",
                             "numero": 10,
                             "città": "Trento",
-                            "CAP": "38100",
-                            "Stato": "IT"
+                            "CAP": "38122",
+                            "Stato": "Italia"
                         },
                         "mqTot": 90,
                         "perStudenti": false,
@@ -175,7 +248,7 @@ Risultato ordinato per data di pubblicazione decrescente.
                             "numero": 5,
                             "città": "Trento",
                             "CAP": "38122",
-                            "Stato": "IT"
+                            "Stato": "Italia"
                         },
                         "mqTot": 35,
                         "perStudenti": true,
@@ -199,8 +272,6 @@ Risultato ordinato per data di pubblicazione decrescente.
         }
 
 + Response 500 (application/json)
-
-    Errore interno del server.
 
         {
             "success": false,
@@ -230,8 +301,6 @@ una camera dell'appartamento deve soddisfare **tutti** i criteri indicati contem
 
 + Response 200 (application/json)
 
-    Esempio: `GET /api/v1/annunci/search/filter?numStanze=3&terrazzo=true&prezzoMin=300&prezzoMax=500`
-
         {
             "success": true,
             "count": 1,
@@ -247,8 +316,8 @@ una camera dell'appartamento deve soddisfare **tutti** i criteri indicati contem
                             "via": "Via Roma",
                             "numero": 10,
                             "città": "Trento",
-                            "CAP": "38100",
-                            "Stato": "IT"
+                            "CAP": "38122",
+                            "Stato": "Italia"
                         },
                         "mqTot": 90,
                         "perStudenti": false,
@@ -310,8 +379,8 @@ Utile per la pagina di dettaglio al click su una card o un marker della mappa.
                         "via": "Via Roma",
                         "numero": 10,
                         "città": "Trento",
-                        "CAP": "38100",
-                        "Stato": "IT"
+                        "CAP": "38122",
+                        "Stato": "Italia"
                     },
                     "mqTot": 90,
                     "perStudenti": false,
@@ -368,8 +437,7 @@ La modifica e l'eliminazione richiedono inoltre che l'utente autenticato sia il 
 | Codice | Causa | Messaggio |
 |--------|-------|-----------|
 | 401 | Token assente | `"Token non fornito. Usa Authorization: Bearer <token>"` |
-| 401 | Token scaduto (`TokenExpiredError`) | `"Token scaduto"` |
-| 403 | Token non valido (firma errata, ecc.) | `"Token non valido"` |
+| 403 | Token non valido o scaduto | `"Token non valido"` |
 
 **Errori di autorizzazione (`verificaProprietario`, solo PUT e DELETE):**
 
@@ -377,7 +445,7 @@ La modifica e l'eliminazione richiedono inoltre che l'utente autenticato sia il 
 |--------|-------|-----------|
 | 403 | Utente non proprietario | `"Non sei autorizzato a modificare questo appartamento."` |
 | 403 | Appartamento senza `amministratoreId` | `"Appartamento senza amministratore assegnato — operazione non consentita."` |
-| 404 | Appartamento non trovato (controllo anticipato nel middleware) | `"Appartamento non trovato"` |
+| 404 | Appartamento non trovato | `"Appartamento non trovato"` |
 
 ## Appartamenti Collection [/api/v1/appartamenti{?page,limit,perStudenti,città}]
 
@@ -403,8 +471,8 @@ Restituisce la lista paginata di tutti gli appartamenti. Non richiede autenticaz
                         "via": "Via Roma",
                         "numero": 10,
                         "città": "Trento",
-                        "CAP": "38100",
-                        "Stato": "IT"
+                        "CAP": "38122",
+                        "Stato": "Italia"
                     },
                     "mqTot": 90,
                     "perStudenti": false,
@@ -442,18 +510,18 @@ Restituisce la lista paginata di tutti gli appartamenti. Non richiede autenticaz
 
         {
             "success": false,
-            "message": "Errore nel recupero degli appartamenti",
-            "error": "dettaglio errore"
+            "message": "Errore interno del server"
         }
 
 ### Crea appartamento [POST]
 
 Crea un nuovo appartamento. Richiede autenticazione JWT.
 
-L'`amministratoreId` viene estratto automaticamente dal token JWT (`sub`); in alternativa
-può essere passato esplicitamente nel body (utile per test).
+L'`amministratoreId` viene estratto automaticamente dal token JWT (`sub`).
+La `posizione` (lat/lon) viene calcolata automaticamente dall'indirizzo tramite geocoding
+(Nominatim/OpenStreetMap) se non fornita dal client.
 
-**Campi obbligatori:** `indirizzo` (con `via`, `numero`, `città`, `CAP`, `Stato`), `mqTot`, `numStanze`, `numBagni`.
+**Campi obbligatori:** `indirizzo` (con `via`, `numero`, `città`, `CAP`, `Stato`), `numStanze`, `numBagni`.
 
 + Request (application/json)
 
@@ -469,7 +537,7 @@ può essere passato esplicitamente nel body (utile per test).
                     "numero": 42,
                     "città": "Trento",
                     "CAP": "38121",
-                    "Stato": "IT"
+                    "Stato": "Italia"
                 },
                 "mqTot": 75,
                 "perStudenti": true,
@@ -498,8 +566,6 @@ può essere passato esplicitamente nel body (utile per test).
 
 + Response 201 (application/json)
 
-    Appartamento creato con successo.
-
         {
             "success": true,
             "message": "Appartamento registrato con successo",
@@ -510,7 +576,7 @@ può essere passato esplicitamente nel body (utile per test).
                     "numero": 42,
                     "città": "Trento",
                     "CAP": "38121",
-                    "Stato": "IT"
+                    "Stato": "Italia"
                 },
                 "mqTot": 75,
                 "perStudenti": true,
@@ -539,8 +605,6 @@ può essere passato esplicitamente nel body (utile per test).
 
 + Response 400 (application/json)
 
-    Errore di validazione del body o `amministratoreId` mancante.
-
         {
             "success": false,
             "message": "Errori di validazione nel body",
@@ -552,16 +616,12 @@ può essere passato esplicitamente nel body (utile per test).
 
 + Response 401 (application/json)
 
-    Token JWT assente.
-
         {
             "success": false,
             "message": "Token non fornito. Usa Authorization: Bearer <token>"
         }
 
 + Response 403 (application/json)
-
-    Token JWT non valido o scaduto.
 
         {
             "success": false,
@@ -601,8 +661,8 @@ la stringa `"admin"` sia interpretata come un ObjectId.
                         "via": "Via Roma",
                         "numero": 10,
                         "città": "Trento",
-                        "CAP": "38100",
-                        "Stato": "IT"
+                        "CAP": "38122",
+                        "Stato": "Italia"
                     },
                     "mqTot": 90,
                     "perStudenti": false,
@@ -626,8 +686,6 @@ la stringa `"admin"` sia interpretata come un ObjectId.
 
 + Response 401 (application/json)
 
-    Token JWT assente o utente non identificabile nel token.
-
         {
             "success": false,
             "message": "Token non fornito. Usa Authorization: Bearer <token>"
@@ -644,8 +702,7 @@ la stringa `"admin"` sia interpretata come un ObjectId.
 
         {
             "success": false,
-            "message": "Errore nel recupero degli appartamenti dell'amministratore",
-            "error": "dettaglio errore"
+            "message": "Errore interno del server"
         }
 
 ## Appartamento [/api/v1/appartamenti/{id}]
@@ -668,8 +725,8 @@ Restituisce i dati completi di un singolo appartamento. Non richiede autenticazi
                     "via": "Via Roma",
                     "numero": 10,
                     "città": "Trento",
-                    "CAP": "38100",
-                    "Stato": "IT"
+                    "CAP": "38122",
+                    "Stato": "Italia"
                 },
                 "mqTot": 90,
                 "perStudenti": false,
@@ -707,8 +764,7 @@ Restituisce i dati completi di un singolo appartamento. Non richiede autenticazi
 
         {
             "success": false,
-            "message": "Errore nel recupero dell'appartamento",
-            "error": "dettaglio errore"
+            "message": "Errore interno del server"
         }
 
 ### Aggiorna appartamento [PUT]
@@ -718,6 +774,7 @@ autenticato sia il proprietario (`amministratoreId`) dell'appartamento.
 
 Tutti i campi del body sono opzionali, ma almeno uno deve essere presente.
 I campi non inclusi nel body non vengono modificati.
+Se l'`indirizzo` viene modificato, la `posizione` viene ricalcolata via geocoding.
 
 + Request (application/json)
 
@@ -744,8 +801,6 @@ I campi non inclusi nel body non vengono modificati.
 
 + Response 200 (application/json)
 
-    Appartamento aggiornato con successo. Restituisce il documento aggiornato.
-
         {
             "success": true,
             "message": "Appartamento aggiornato con successo",
@@ -755,8 +810,8 @@ I campi non inclusi nel body non vengono modificati.
                     "via": "Via Roma",
                     "numero": 10,
                     "città": "Trento",
-                    "CAP": "38100",
-                    "Stato": "IT"
+                    "CAP": "38122",
+                    "Stato": "Italia"
                 },
                 "mqTot": 90,
                 "perStudenti": false,
@@ -781,8 +836,6 @@ I campi non inclusi nel body non vengono modificati.
 
 + Response 400 (application/json)
 
-    Body vuoto o errori di validazione sui campi forniti.
-
         {
             "success": false,
             "message": "Errori di validazione nel body",
@@ -799,8 +852,6 @@ I campi non inclusi nel body non vengono modificati.
         }
 
 + Response 403 (application/json)
-
-    Token non valido, scaduto o utente non proprietario dell'appartamento.
 
         {
             "success": false,
@@ -829,8 +880,6 @@ il campo `warnings` con il conteggio degli annunci orfani (non vengono eliminati
 
 + Response 200 (application/json)
 
-    Appartamento eliminato. Il campo `warnings` è presente solo se esistevano annunci associati.
-
         {
             "success": true,
             "message": "Appartamento eliminato con successo",
@@ -840,8 +889,8 @@ il campo `warnings` con il conteggio degli annunci orfani (non vengono eliminati
                     "via": "Via Roma",
                     "numero": 10,
                     "città": "Trento",
-                    "CAP": "38100",
-                    "Stato": "IT"
+                    "CAP": "38122",
+                    "Stato": "Italia"
                 },
                 "mqTot": 90,
                 "perStudenti": false,
@@ -877,8 +926,141 @@ il campo `warnings` con il conteggio degli annunci orfani (non vengono eliminati
 
         {
             "success": false,
-            "message": "Errore nell'eliminazione dell'appartamento",
-            "error": "dettaglio errore"
+            "message": "Errore interno del server"
+        }
+
+## Contatto Admin [/api/v1/appartamenti/{id}/contatto-admin]
+
++ Parameters
+    + id (string, required) - ID dell'appartamento
+
+### Contatto WhatsApp dell'amministratore [GET]
+
+Restituisce nome e link WhatsApp dell'amministratore dell'appartamento.
+Riservato agli utenti autenticati: alimenta il pulsante "Contatta su WhatsApp" nella pagina dell'annuncio.
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "data": {
+                "nome": "Luca",
+                "cognome": "Bianchi",
+                "telefono": "+39 351 1234567",
+                "linkWhatsApp": "https://wa.me/393511234567?text=Salve%2C%20sono%20interessato..."
+            }
+        }
+
++ Response 401 (application/json)
+
+        {
+            "success": false,
+            "message": "Token non fornito. Usa Authorization: Bearer <token>"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "success": false,
+            "message": "Appartamento o amministratore non trovato"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "success": false,
+            "message": "Errore interno del server"
+        }
+
+## Associa Inquilino [/api/v1/appartamenti/{appartamentoId}/associa-inquilino]
+
++ Parameters
+    + appartamentoId (string, required) - MongoDB ObjectId dell'appartamento
+
+### Associa un inquilino a un appartamento [POST]
+
+Crea il legame amministratore→inquilino tramite contratto. Eseguibile solo dall'amministratore
+proprietario. L'utente, indicato per email, deve essere verificato/inquilino e senza contratti attivi.
+
+Se l'appartamento ha già un contratto attivo, l'utente viene aggiunto come coinquilino;
+altrimenti si crea un nuovo contratto (servono `dataInizio`, `dataFine`, `canoneMensile` e `tipoContratto`).
+A fine operazione l'utente assume il ruolo `inquilino`.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
+    + Body
+
+            {
+                "email": "greta.delai@example.com",
+                "dataInizio": "2026-01-01",
+                "dataFine": "2026-12-31",
+                "canoneMensile": 850,
+                "tipoContratto": "Residenziale"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "message": "Greta Delai associato all'appartamento",
+            "data": {
+                "_id": "665f1a2b3c4d5e6f7a8b9c10",
+                "idAppartamento": "665f1a2b3c4d5e6f7a8b9c0d",
+                "idInquilini": [
+                    "665f1a2b3c4d5e6f7a8b9c0d",
+                    "665f1a2b3c4d5e6f7a8b9c0e"
+                ],
+                "dataInizio": "2026-01-01T00:00:00.000Z",
+                "dataFine": "2026-12-31T00:00:00.000Z",
+                "canoneMensile": 850,
+                "stato": "attivo",
+                "tipoContratto": "Residenziale"
+            }
+        }
+
++ Response 400 (application/json)
+
+        {
+            "success": false,
+            "message": "Email mancante, utente non verificato o dati contratto incompleti"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "success": false,
+            "message": "Accesso non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "success": false,
+            "message": "Nessun utente registrato con questa email"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "success": false,
+            "message": "L'utente ha già un contratto attivo"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "success": false,
+            "message": "Errore interno del server"
         }
 
 ---
@@ -898,23 +1080,20 @@ Il payload JWT contiene: `sub` (ID utente), `email`, `ruolo`.
 
 Crea un nuovo account nel sistema e restituisce il token JWT.
 
-**Campi obbligatori per tutti i ruoli:** `nome`, `cognome`, `email`, `password`.
+**Campi obbligatori per tutti i ruoli:** `nome`, `cognome`, `email`, `password`, `ruolo`.
 
 **Campi aggiuntivi per ruolo `amministratore`:**
 - `privato` (boolean, **obbligatorio**) — `true` se privato, `false` se agenzia
+- `telefono` (string, **obbligatorio**) — usato per il contatto WhatsApp dagli utenti
 - `pIVA` (string, **obbligatorio se `privato: false`**) — partita IVA, esattamente 11 cifre
 
 **Campi aggiuntivi per ruolo `dipendente comune`:**
 - `ruoloDipendente` (string, **obbligatorio**) — ruolo nel comune
 - `dipartimento` (string, **obbligatorio**) — dipartimento di appartenenza
 
-**Ruoli accettati:** `utente base`, `amministratore`, `dipendente comune`.
+**Ruoli accettati:** `utente base`, `utente verificato`, `inquilino`, `amministratore`, `dipendente comune`.
 
 + Request Utente base (application/json)
-
-    Il campo `ruolo` è obbligatorio. Il valore minimo è `"utente base"`.
-    **Attenzione:** omettere `ruolo` causa un 400 (`"Ruolo non valido: utente"`) — il default nel
-    controller è `'utente'` che non rientra tra i ruoli validi.
 
     + Body
 
@@ -928,22 +1107,19 @@ Crea un nuovo account nel sistema e restituisce il token JWT.
 
 + Request Amministratore privato (application/json)
 
-    Proprietario privato (persona fisica).
-
     + Body
 
             {
                 "nome": "Luca",
                 "cognome": "Bianchi",
                 "email": "luca.bianchi@example.com",
-                "password": "SecurePass!99",
+                "password": "SecurePass99",
                 "ruolo": "amministratore",
-                "privato": true
+                "privato": true,
+                "telefono": "+39 351 1234567"
             }
 
 + Request Agenzia immobiliare (application/json)
-
-    Agenzia (persona giuridica) — richiede `pIVA`.
 
     + Body
 
@@ -951,15 +1127,14 @@ Crea un nuovo account nel sistema e restituisce il token JWT.
                 "nome": "Agenzia",
                 "cognome": "Casa",
                 "email": "info@agenziacasa.it",
-                "password": "AgenziaPass!1",
+                "password": "AgenziaPass1",
                 "ruolo": "amministratore",
                 "privato": false,
+                "telefono": "+39 0461 123456",
                 "pIVA": "12345678901"
             }
 
-+ Request Dipendente Comunale (application/json)
-
-    Operatore del comune — richiede `ruoloDipendente` e `dipartimento`.
++ Request Dipendente comunale (application/json)
 
     + Body
 
@@ -967,7 +1142,7 @@ Crea un nuovo account nel sistema e restituisce il token JWT.
                 "nome": "Anna",
                 "cognome": "Verdi",
                 "email": "anna.verdi@comune.trento.it",
-                "password": "ComunePass!5",
+                "password": "ComunePass5",
                 "ruolo": "dipendente comune",
                 "ruoloDipendente": "Responsabile urbanistica",
                 "dipartimento": "Urbanistica"
@@ -975,32 +1150,26 @@ Crea un nuovo account nel sistema e restituisce il token JWT.
 
 + Response 201 (application/json)
 
-    Utente creato con successo.
-
         {
             "messaggio": "Utente registrato con successo",
-            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjVmMWEyYjNjNGQ1ZTZmN2E4YjljMGQiLCJlbWFpbCI6Im1hcmlvLnJvc3NpQGV4YW1wbGUuY29tIiwicnVvbG8iOiJ1dGVudGUgYmFzZSIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwNjA0ODAwfQ.signature",
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
             "utente": {
                 "id": "665f1a2b3c4d5e6f7a8b9c0d",
                 "nome": "Mario",
                 "cognome": "Rossi",
                 "email": "mario.rossi@example.com",
-                "ruolo": "utente base"
+                "ruolo": "utente base",
+                "telefono": null
             }
         }
 
 + Response 400 (application/json)
 
-    Campo obbligatorio mancante, formato email non valido, ruolo non valido o
-    validazione specifica del ruolo fallita (es. `pIVA` non a 11 cifre).
-
         {
-            "messaggio": "Nome: campo obbligatorio mancante"
+            "messaggio": "Nome campo obbligatorio mancante"
         }
 
 + Response 409 (application/json)
-
-    Esiste già un account registrato con questa email.
 
         {
             "messaggio": "Email già in uso"
@@ -1024,32 +1193,626 @@ Restituisce un token JWT valido per 7 giorni.
 
 + Response 200 (application/json)
 
-    Login effettuato con successo.
-
         {
             "messaggio": "Login effettuato con successo",
-            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjVmMWEyYjNjNGQ1ZTZmN2E4YjljMGQiLCJlbWFpbCI6Im1hcmlvLnJvc3NpQGV4YW1wbGUuY29tIiwicnVvbG8iOiJ1dGVudGUgYmFzZSIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwNjA0ODAwfQ.signature",
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
             "utente": {
                 "id": "665f1a2b3c4d5e6f7a8b9c0d",
                 "nome": "Mario",
                 "cognome": "Rossi",
                 "email": "mario.rossi@example.com",
-                "ruolo": "utente base"
+                "ruolo": "utente base",
+                "telefono": null
             }
         }
 
 + Response 400 (application/json)
 
-    Campo obbligatorio mancante o formato email non valido.
-
         {
-            "messaggio": "Email: campo obbligatorio mancante"
+            "messaggio": "Email campo obbligatorio mancante"
         }
 
 + Response 401 (application/json)
 
-    Utente non trovato o password errata.
-
         {
             "messaggio": "Password non valida"
+        }
+
+## Verifica Identità [/api/v1/users/verificaIdentita]
+
+### Verifica identità [PUT]
+
+Aggiorna il ruolo dell'utente da `utente base` a `utente verificato`.
+Per gli altri ruoli (inquilino, amministratore, dipendente comune) non produce effetti.
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+        {
+            "messaggio": "Verifica identità effettuata con successo",
+            "utente": {
+                "id": "665f1a2b3c4d5e6f7a8b9c0d",
+                "nome": "Mario",
+                "cognome": "Rossi",
+                "email": "mario.rossi@example.com",
+                "ruolo": "utente verificato",
+                "telefono": null
+            }
+        }
+
++ Response 401 (application/json)
+
+        {
+            "success": false,
+            "message": "Token non fornito. Usa Authorization: Bearer <token>"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "messaggio": "Utente non trovato"
+        }
+
+## Reset Password — Richiesta [/api/v1/users/password/forgot]
+
+### Richiedi reset password [POST]
+
+Invia un link di reset password via email. La risposta è sempre generica per non
+rivelare se l'indirizzo email è registrato nel sistema.
+
++ Request (application/json)
+
+    + Body
+
+            {
+                "email": "mario.rossi@example.com"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "messaggio": "Se l'email è presente nel sistema, riceverai un messaggio con le istruzioni per il reset."
+        }
+
++ Response 400 (application/json)
+
+        {
+            "messaggio": "Email campo obbligatorio mancante"
+        }
+
+## Reset Password — Completamento [/api/v1/users/password/reset]
+
+### Completa reset password [POST]
+
+Imposta la nuova password usando il token ricevuto via email.
+
++ Request (application/json)
+
+    + Body
+
+            {
+                "token": "a1b2c3d4e5f6...",
+                "password": "NuovaPassword123"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "messaggio": "Password aggiornata con successo"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "messaggio": "Token di reset non valido o scaduto"
+        }
+
+---
+
+# Group Gestione Interna
+
+Endpoint per la gestione di contratti e guasti, riservati agli utenti autenticati con contratto attivo.
+
+## Contratti [/api/v1/gestione-interna/contratti]
+
+### Contratti dell'utente loggato [GET]
+
+Restituisce tutti i contratti (attivi e passati) associati all'utente autenticato.
+Un contratto può contenere più inquilini compresenti nell'appartamento.
+Accessibile solo agli utenti con ruolo `inquilino` o `utente verificato`.
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+        {
+            "contratti": [
+                {
+                    "_id": "665f1a2b3c4d5e6f7a8b9c10",
+                    "idAppartamento": {
+                        "_id": "665f1a2b3c4d5e6f7a8b9c0d",
+                        "indirizzo": {
+                            "via": "Via Roma",
+                            "numero": 10,
+                            "città": "Trento",
+                            "CAP": "38122",
+                            "Stato": "Italia"
+                        },
+                        "numStanze": 3,
+                        "numBagni": 2
+                    },
+                    "idInquilini": [
+                        "665f1a2b3c4d5e6f7a8b9c0d",
+                        "665f1a2b3c4d5e6f7a8b9c0e"
+                    ],
+                    "dataInizio": "2025-09-01T00:00:00.000Z",
+                    "dataFine": "2026-08-31T00:00:00.000Z",
+                    "canoneMensile": 450,
+                    "stato": "attivo",
+                    "tipoContratto": "4+4"
+                }
+            ]
+        }
+
++ Response 401 (application/json)
+
+        {
+            "error": "Utente non autenticato"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Utente non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Utente non trovato"
+        }
+
+## Guasti — Segnalazione [/api/v1/gestione-interna/guasti]
+
+### Segnala un guasto [POST]
+
+Crea una nuova segnalazione di guasto per l'appartamento dell'inquilino autenticato.
+Richiede autenticazione JWT e ruolo `inquilino` con contratto attivo sull'appartamento indicato.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
+    + Body
+
+            {
+                "idAppartamento": "665f1a2b3c4d5e6f7a8b9c0d",
+                "descrizione": "Il rubinetto del bagno perde acqua",
+                "categoria": "Idraulica",
+                "priorita": "media",
+                "foto": []
+            }
+
++ Response 201 (application/json)
+
+        {
+            "data": {
+                "_id": "665f1a2b3c4d5e6f7a8b9c20",
+                "idAppartamento": "665f1a2b3c4d5e6f7a8b9c0d",
+                "idInquilino": "665f1a2b3c4d5e6f7a8b9c01",
+                "descrizione": "Il rubinetto del bagno perde acqua",
+                "categoria": "Idraulica",
+                "priorita": "media",
+                "stato": "segnalato",
+                "foto": [],
+                "createdAt": "2026-01-15T10:00:00.000Z"
+            }
+        }
+
++ Response 400 (application/json)
+
+        {
+            "errors": ["La descrizione del guasto è obbligatoria"]
+        }
+
++ Response 401 (application/json)
+
+        {
+            "error": "Utente non autenticato"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Non hai un contratto attivo per questo appartamento"
+        }
+
+## Guasti — Per Appartamento [/api/v1/gestione-interna/guasti/{appId}]
+
++ Parameters
+    + appId (string, required) - MongoDB ObjectId dell'appartamento
+
+### Guasti di un appartamento [GET]
+
+Restituisce i guasti non archiviati dell'appartamento specificato.
+Richiede autenticazione JWT e un contratto attivo sull'appartamento.
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+        {
+            "data": [
+                {
+                    "_id": "665f1a2b3c4d5e6f7a8b9c20",
+                    "idAppartamento": "665f1a2b3c4d5e6f7a8b9c0d",
+                    "idInquilino": "665f1a2b3c4d5e6f7a8b9c01",
+                    "descrizione": "Il rubinetto del bagno perde acqua",
+                    "categoria": "Idraulica",
+                    "priorita": "media",
+                    "stato": "segnalato",
+                    "foto": [],
+                    "createdAt": "2026-01-15T10:00:00.000Z"
+                }
+            ]
+        }
+
++ Response 401 (application/json)
+
+        {
+            "error": "Utente non autenticato"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Non autorizzato a visualizzare i guasti di questo appartamento"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Appartamento non trovato"
+        }
+
+---
+
+# Group Bollette
+
+Endpoint per il caricamento e la consultazione delle bollette, accessibili all'amministratore
+proprietario e all'inquilino con contratto attivo.
+
+## Bollette per Appartamento [/api/v1/bollette/{appartamentoId}]
+
++ Parameters
+    + appartamentoId (string, required) - MongoDB ObjectId dell'appartamento
+
+### Carica una nuova bolletta [POST]
+
+Solo l'amministratore proprietario dell'appartamento può caricare bollette.
+Il PDF, se allegato, deve essere in formato `application/pdf` (max 10 MB).
+
++ Request (multipart/form-data)
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
+    + Body
+
+            {
+                "utenza": "elettricità",
+                "periodoInizio": "2026-01-01",
+                "periodoFine": "2026-03-31",
+                "importo": 85.5,
+                "pdf": "<file binario opzionale>"
+            }
+
++ Response 201 (application/json)
+
+        {
+            "success": true,
+            "data": {
+                "_id": "665f1a2b3c4d5e6f7a8b9c30",
+                "idAppartamento": "665f1a2b3c4d5e6f7a8b9c0d",
+                "utenza": "elettricità",
+                "periodoInizio": "2026-01-01",
+                "periodoFine": "2026-03-31",
+                "importo": 85.5,
+                "pagata": false,
+                "pdfNomeFile": "bolletta-gennaio.pdf"
+            }
+        }
+
++ Response 400 (application/json)
+
+        {
+            "success": false,
+            "message": "Campi mancanti o file non PDF"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "success": false,
+            "message": "Non sei l'amministratore proprietario"
+        }
+
+## Bollette Admin [/api/v1/bollette/admin/{appartamentoId}]
+
++ Parameters
+    + appartamentoId (string, required) - MongoDB ObjectId dell'appartamento
+
+### Lista bollette di un appartamento (vista amministratore) [GET]
+
+Restituisce l'elenco completo delle bollette di un appartamento. Riservato all'amministratore proprietario.
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "data": [
+                {
+                    "_id": "665f1a2b3c4d5e6f7a8b9c30",
+                    "idAppartamento": "665f1a2b3c4d5e6f7a8b9c0d",
+                    "utenza": "elettricità",
+                    "periodoInizio": "2026-01-01",
+                    "periodoFine": "2026-03-31",
+                    "importo": 85.5,
+                    "pagata": false,
+                    "pdfNomeFile": "bolletta-gennaio.pdf"
+                }
+            ]
+        }
+
++ Response 403 (application/json)
+
+        {
+            "success": false,
+            "message": "Accesso non autorizzato"
+        }
+
+## Bollette Inquilino [/api/v1/bollette/inquilino]
+
+### Lista bollette dell'inquilino loggato [GET]
+
+Restituisce le bollette dell'appartamento in cui l'inquilino ha un contratto attivo o in chiusura,
+più i dati aggregati per i grafici dei consumi.
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "data": [
+                {
+                    "_id": "665f1a2b3c4d5e6f7a8b9c30",
+                    "idAppartamento": "665f1a2b3c4d5e6f7a8b9c0d",
+                    "utenza": "elettricità",
+                    "periodoInizio": "2026-01-01",
+                    "periodoFine": "2026-03-31",
+                    "importo": 85.5,
+                    "pagata": false,
+                    "pdfNomeFile": null
+                }
+            ],
+            "grafici": {
+                "labels": ["Gen 2026", "Feb 2026", "Mar 2026"],
+                "datasets": {
+                    "elettricità": [85.5, 90.0, 78.3]
+                }
+            }
+        }
+
++ Response 403 (application/json)
+
+        {
+            "success": false,
+            "message": "Solo gli inquilini possono accedere"
+        }
+
+## Segna Bolletta Pagata [/api/v1/bollette/{bollettaId}/paga]
+
++ Parameters
+    + bollettaId (string, required) - MongoDB ObjectId della bolletta
+
+### Segna una bolletta come pagata [PATCH]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "data": {
+                "_id": "665f1a2b3c4d5e6f7a8b9c30",
+                "idAppartamento": "665f1a2b3c4d5e6f7a8b9c0d",
+                "utenza": "elettricità",
+                "periodoInizio": "2026-01-01",
+                "periodoFine": "2026-03-31",
+                "importo": 85.5,
+                "pagata": true,
+                "pdfNomeFile": null
+            }
+        }
+
++ Response 404 (application/json)
+
+        {
+            "success": false,
+            "message": "Bolletta non trovata"
+        }
+
+## Bolletta [/api/v1/bollette/{bollettaId}]
+
++ Parameters
+    + bollettaId (string, required) - MongoDB ObjectId della bolletta
+
+### Elimina una bolletta [DELETE]
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "message": "Bolletta eliminata"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "success": false,
+            "message": "Bolletta non trovata"
+        }
+
+## PDF Bolletta [/api/v1/bollette/{bollettaId}/pdf]
+
++ Parameters
+    + bollettaId (string, required) - MongoDB ObjectId della bolletta
+
+### Scarica il PDF di una bolletta [GET]
+
+Restituisce il PDF (`application/pdf`) inline. Accessibile all'amministratore proprietario
+e all'inquilino con contratto attivo o in chiusura.
+L'endpoint è protetto: il client deve inviare il token JWT nell'header Authorization.
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/pdf)
+
+    File PDF della bolletta.
+
++ Response 403 (application/json)
+
+        {
+            "success": false,
+            "message": "Non autorizzato a vedere questa bolletta"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "success": false,
+            "message": "Bolletta non trovata o nessun PDF allegato"
+        }
+
+---
+
+# Group Statistiche
+
+Dashboard TAS Data — dati aggregati e anonimizzati per dipendenti comunali (US16).
+
+## Dashboard Statistica [/api/v1/statistiche{?cap,tipoCamera,perStudenti}]
+
+### Dati statistici aggregati [GET]
+
+Restituisce dati statistici **aggregati e anonimizzati** sul mercato degli affitti a Trento
+(RF29, RF30, RF33, RNF10). Nessun dato personale viene esposto (no nomi, email o ID inquilini).
+
+La "zona" è identificata dal campo `indirizzo.CAP` dell'appartamento.
+Il prezzo al metro quadro è calcolato come `camera.prezzo / camera.mq` per ogni camera.
+
+**Accesso riservato al ruolo `dipendente comune`.** Il controllo avviene sul campo `ruolo`
+già presente nel payload JWT (senza query aggiuntive al DB).
+
++ Parameters
+    + cap (string, optional) - Filtra i risultati per CAP specifico (es. `38122`)
+    + tipoCamera (string, optional) - Filtra per tipo di camera (`SINGOLA` o `DOPPIA`)
+    + perStudenti (boolean, optional) - Filtra per appartamenti dedicati agli studenti
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "data": {
+                "totaleAppartamenti": 5,
+                "tassoOccupazione": 0,
+                "prezzoMedioGlobalePerMq": 8.95,
+                "contratti": {
+                    "attivi": 1,
+                    "terminati": 1,
+                    "inChiusura": 0
+                },
+                "turnoverUltimoAnno": 1,
+                "capDisponibili": ["36066", "36100", "38122", "38123"],
+                "distribuzionePerCAP": [
+                    {
+                        "cap": "38122",
+                        "numAppartamenti": 2,
+                        "prezzoMedioMq": 8.95
+                    },
+                    {
+                        "cap": "38123",
+                        "numAppartamenti": 1,
+                        "prezzoMedioMq": null
+                    }
+                ],
+                "distribuzionePerTipo": []
+            }
+        }
+
++ Response 401 (application/json)
+
+        {
+            "success": false,
+            "message": "Token non fornito. Usa Authorization: Bearer <token>"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "success": false,
+            "message": "Accesso riservato ai dipendenti comunali"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "success": false,
+            "message": "Errore interno del server"
         }
