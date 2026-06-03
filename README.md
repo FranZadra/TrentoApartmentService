@@ -14,29 +14,31 @@ Link documentazione delle API (Apiary): https://app.apiary.io/trentoapartmentser
 
 ### Strategia di branching
 - **Main branch**: ramo principale del repository che rimane inalterato fino al momento della release di una versione valida e funzionante;
-- **Dev branch**: ramo di sviluppo principale su cui andranno a convergere i branch delle varie feature;
+- **Dev branch (develop)**: ramo di sviluppo principale su cui andranno a convergere i branch delle varie feature;
 - **Releases branches**: rami temporanei che si distaccano dal branch di dev nel momento in cui il lavoro effettuato compone una versione che soddisfa la definizione di "done";
-- **Features branches**: rami di sviluppo delle singole feature su cui lavorano direttamente i membri del team.
+- **Features branches (ex. feature/us*)**: rami di sviluppo delle singole feature su cui lavorano direttamente i membri del team.
+- **HotFix branches**: rami temporanei che si distaccano dal branch di dev per effettuare sistemazioni senza lavorare direttamente su develop;
 
 ### Struttura del repository
 ```
 TrentoApartmentService/
 ├── backend/
 │   ├── node_modules/
+│   ├── config/
+│   │   └── db.js
 │   ├── src/
 │   │   ├── config/
 │   │   ├── controllers/
 │   │   ├── middleware/
 │   │   ├── models/
 │   │   ├── routes/
+│   │   ├── services/
 │   │   └── app.js
 │   ├── .env.example
 │   ├── package-lock.json
 │   ├── package.json
-│   ├── README.md
 │   └── server.js
 ├── frontend/
-│   ├── dist/
 │   ├── node_modules/
 │   ├── public/
 │   ├── src/
@@ -55,17 +57,17 @@ TrentoApartmentService/
 │   ├── postcss.config.js
 │   ├── tailwind.config.js
 │   └── vite.config.js
+├── docs/
 ├── .gitignore
-├── apiary.apib
 └── README.md
 ```
 
 
 - **backend/**: contiene il server Node.js con tutta la logica applicativa lato server.
 - **frontend/**: contiene l'applicazione client Vue.js sviluppata con Vite + Tailwind CSS.
-- **apiary.apib** – file Blueprint per la documentazione delle API su Apiary
+- **docs/**: contiene la documentazione OpenAPI, Apiary e i deliverable delle milestones precedenti.
 
 ## Autori
-- Mikele Golemi     mat. 243170
-- Leonardo Tartini    mat. 245119
-- Francesco Zadra    mat. 244544
+- Mikele Golemi (mat. 243170)
+- Leonardo Tartini (mat. 245119)
+- Francesco Zadra (mat. 244544)
