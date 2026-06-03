@@ -179,6 +179,11 @@ components:
         ruolo:
           type: string
           example: utente base
+        telefono:
+          type: string
+          nullable: true
+          description: Recapito telefonico (obbligatorio per gli amministratori, usato per il contatto WhatsApp)
+          example: "+39 351 1234567"
 
     Contratto:
       type: object
@@ -250,6 +255,41 @@ components:
           type: string
           format: date-time
 
+    Bolletta:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 665f1a2b3c4d5e6f7a8b9c30
+        idAppartamento:
+          type: string
+          example: 665f1a2b3c4d5e6f7a8b9c0d
+        utenza:
+          type: string
+          enum: [luce, gas, acqua, elettricità]
+          example: elettricità
+        periodoInizio:
+          type: string
+          format: date
+          example: "2026-01-01"
+        periodoFine:
+          type: string
+          format: date
+          example: "2026-03-31"
+        importo:
+          type: number
+          minimum: 0
+          example: 85.5
+        pagata:
+          type: boolean
+          default: false
+          example: false
+        pdfNomeFile:
+          type: string
+          nullable: true
+          description: Nome del PDF allegato, se presente
+          example: bolletta-gennaio.pdf
+
     Paginazione:
       type: object
       properties:
@@ -282,14 +322,11 @@ components:
           type: number
           format: double
           nullable: true
-          example: 34.73
-          description: Prezzo medio mensile per metro quadro (null se nessuna camera ha mq valorizzato)
-        camereTotali:
-          type: integer
-          example: 9
-        camereDisponibili:
-          type: integer
-          example: 2
+          example: 8.95
+          description: >-
+            Prezzo medio mensile per metro quadro della zona, calcolato come
+            canone del contratto attivo diviso i m² totali dell'appartamento
+            (null se nessun appartamento della zona ha un contratto attivo).
 
     StatistichePerTipo:
       type: object
@@ -333,19 +370,29 @@ components:
           format: double
           minimum: 0
           maximum: 1
-          example: 0.7368
-          description: Frazione di camere occupate sul totale (0–1)
+          example: 0
+          description: >-
+            Frazione di occupazione (0–1). Attualmente fissata a 0: la metrica è
+            in fase di ridefinizione perché i dati delle camere non sono popolati.
         prezzoMedioGlobalePerMq:
           type: number
           format: double
-          example: 29.11
-          description: Media globale del prezzo mensile per metro quadro tra tutti i CAP
+          example: 8.95
+          description: >-
+            Media globale del prezzo mensile per metro quadro, calcolata sui
+            singoli appartamenti come canone del contratto attivo diviso i m² totali.
         contratti:
           $ref: '#/components/schemas/StatisticheContratti'
         turnoverUltimoAnno:
           type: integer
           example: 3
           description: Numero di contratti terminati negli ultimi 12 mesi
+        capDisponibili:
+          type: array
+          description: Elenco completo dei CAP presenti, per popolare il filtro a tendina (indipendente dai filtri applicati)
+          items:
+            type: string
+          example: ["38122", "38123"]
         distribuzionePerCAP:
           type: array
           items:
@@ -641,6 +688,8 @@ paths:
       description: |
         Crea un nuovo appartamento. Richiede autenticazione JWT.
         L'`amministratoreId` viene estratto automaticamente dal token JWT (`sub`).
+        La `posizione` (lat/lon) viene calcolata automaticamente dall'indirizzo
+        tramite geocoding (Nominatim/OpenStreetMap) se non fornita dal client.
       operationId: creaAppartamento
       security:
         - bearerAuth: []
@@ -841,6 +890,7 @@ paths:
         Aggiorna i campi di un appartamento esistente.
         Richiede autenticazione JWT e che l'utente sia il proprietario (`amministratoreId`).
         Tutti i campi del body sono opzionali; i campi non inclusi non vengono modificati.
+        Se l'`indirizzo` viene modificato, la `posizione` viene ricalcolata via geocoding.
       operationId: aggiornaAppartamento
       security:
         - bearerAuth: []
@@ -981,6 +1031,169 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErroreGenerico'
 
+  /api/v1/appartamenti/{id}/contatto-admin:
+    get:
+      tags: [Appartamenti]
+      summary: Contatto WhatsApp dell'amministratore
+      description: >-
+        Restituisce nome e link WhatsApp dell'amministratore dell'appartamento.
+        Riservato agli utenti autenticati (registrati): alimenta il pulsante
+        "Contatta su WhatsApp" nella pagina dell'annuncio.
+      operationId: getContattoAdmin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID dell'appartamento
+      responses:
+        "200":
+          description: Contatto recuperato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      nome:
+                        type: string
+                        example: Luca
+                      cognome:
+                        type: string
+                        example: Bianchi
+                      telefono:
+                        type: string
+                        nullable: true
+                        example: "+39 351 1234567"
+                      linkWhatsApp:
+                        type: string
+                        nullable: true
+                        description: Link click-to-chat (wa.me) gia' pronto; null se l'admin non ha un numero valido
+                        example: "https://wa.me/393511234567?text=Salve%2C%20sono%20interessato..."
+        "401":
+          description: Token assente o non valido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "404":
+          description: Appartamento o amministratore non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "500":
+          description: Errore interno del server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  /api/v1/appartamenti/{appartamentoId}/associa-inquilino:
+    post:
+      tags: [Appartamenti]
+      summary: Associa un inquilino a un appartamento (contratto)
+      description: >-
+        Crea il legame amministratore->inquilino tramite contratto. Eseguibile
+        solo dall'amministratore proprietario. L'utente, indicato per email,
+        dev'essere verificato/inquilino e senza contratti attivi. Se l'appartamento
+        ha gia' un contratto attivo l'utente viene aggiunto come coinquilino,
+        altrimenti se ne crea uno nuovo (servono date, canone e tipo). A fine
+        operazione l'utente assume il ruolo `inquilino`.
+      operationId: associaInquilino
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appartamentoId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: greta.delai@example.com
+                dataInizio:
+                  type: string
+                  format: date
+                  description: Obbligatoria solo se si crea un nuovo contratto
+                  example: "2026-01-01"
+                dataFine:
+                  type: string
+                  format: date
+                  description: Obbligatoria solo se si crea un nuovo contratto
+                  example: "2026-12-31"
+                canoneMensile:
+                  type: number
+                  description: Obbligatorio solo se si crea un nuovo contratto
+                  example: 850
+                tipoContratto:
+                  type: string
+                  description: Obbligatorio solo se si crea un nuovo contratto
+                  example: Residenziale
+      responses:
+        "200":
+          description: Inquilino associato (contratto creato o aggiornato)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Greta Delai associato all'appartamento
+                  data:
+                    $ref: '#/components/schemas/Contratto'
+        "400":
+          description: Email mancante, utente non verificato o dati contratto incompleti
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "403":
+          description: Non autenticato come amministratore proprietario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+        "404":
+          description: Nessun utente registrato con questa email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "409":
+          description: L'utente ha gia' un contratto attivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "500":
+          description: Errore interno del server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
   # ── Utenti ────────────────────────────────────────────────────────────────
 
   /api/v1/users/register:
@@ -994,6 +1207,7 @@ paths:
 
         **Campi aggiuntivi per `amministratore`:**
         - `privato` (boolean, obbligatorio)
+        - `telefono` (string, obbligatorio) — usato per il contatto WhatsApp dagli utenti
         - `pIVA` (string, obbligatorio se `privato: false`) — esattamente 11 cifre
 
         **Campi aggiuntivi per `dipendente comune`:**
@@ -1029,6 +1243,10 @@ paths:
                 privato:
                   type: boolean
                   description: Solo per ruolo `amministratore`
+                telefono:
+                  type: string
+                  description: Obbligatorio per ruolo `amministratore`. Usato per il contatto WhatsApp.
+                  example: "+39 351 1234567"
                 pIVA:
                   type: string
                   description: Solo per amministratori agenzia (privato=false). Deve essere 11 cifre.
@@ -1059,6 +1277,7 @@ paths:
                   password: SecurePass99
                   ruolo: amministratore
                   privato: true
+                  telefono: "+39 351 1234567"
               agenzia:
                 summary: Agenzia immobiliare
                 value:
@@ -1068,6 +1287,7 @@ paths:
                   password: AgenziaPass1
                   ruolo: amministratore
                   privato: false
+                  telefono: "+39 0461 123456"
                   pIVA: "12345678901"
               dipendente_comunale:
                 summary: Dipendente comunale
@@ -1503,6 +1723,245 @@ paths:
   
   # ── Statistiche (US16) ────────────────────────────────────────────────────
 
+  # ── Bollette ──────────────────────────────────────────────────────────────
+
+  /api/v1/bollette/{appartamentoId}:
+    post:
+      tags: [Bollette]
+      summary: Carica una nuova bolletta (con PDF opzionale)
+      description: Solo l'amministratore proprietario dell'appartamento. Il PDF, se presente, deve essere in formato application/pdf.
+      operationId: caricaBolletta
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appartamentoId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [utenza, periodoInizio, periodoFine, importo]
+              properties:
+                utenza:
+                  type: string
+                  enum: [luce, gas, acqua, elettricità]
+                periodoInizio:
+                  type: string
+                  format: date
+                periodoFine:
+                  type: string
+                  format: date
+                importo:
+                  type: number
+                pdf:
+                  type: string
+                  format: binary
+                  description: File PDF della bolletta (opzionale, max 10 MB)
+      responses:
+        "201":
+          description: Bolletta creata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Bolletta'
+        "400":
+          description: Campi mancanti o file non PDF
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "403":
+          description: Non sei l'amministratore proprietario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+
+  /api/v1/bollette/admin/{appartamentoId}:
+    get:
+      tags: [Bollette]
+      summary: Lista bollette di un appartamento (vista amministratore)
+      operationId: getBolletteAdmin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appartamentoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Elenco bollette
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Bolletta'
+        "403":
+          description: Accesso non autorizzato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+
+  /api/v1/bollette/inquilino:
+    get:
+      tags: [Bollette]
+      summary: Lista bollette dell'inquilino loggato (con dati per i grafici)
+      description: Restituisce le bollette dell'appartamento in cui l'inquilino ha un contratto attivo o in chiusura, piu' i dati aggregati per i grafici dei consumi.
+      operationId: getBolletteInquilino
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Elenco bollette e grafici
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Bolletta'
+                  grafici:
+                    type: object
+                    description: Dataset pronto per i grafici (labels e datasets per utenza)
+        "403":
+          description: Solo gli inquilini possono accedere
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+
+  /api/v1/bollette/{bollettaId}/paga:
+    patch:
+      tags: [Bollette]
+      summary: Segna una bolletta come pagata
+      operationId: segnaBollettaPagata
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bollettaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Bolletta aggiornata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Bolletta'
+        "404":
+          description: Bolletta non trovata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  /api/v1/bollette/{bollettaId}:
+    delete:
+      tags: [Bollette]
+      summary: Elimina una bolletta
+      operationId: eliminaBolletta
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bollettaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Bolletta eliminata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Bolletta eliminata
+        "404":
+          description: Bolletta non trovata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  /api/v1/bollette/{bollettaId}/pdf:
+    get:
+      tags: [Bollette]
+      summary: Scarica/visualizza il PDF di una bolletta
+      description: >-
+        Restituisce il PDF (application/pdf) inline. Accessibile all'amministratore
+        proprietario e all'inquilino con contratto attivo/in chiusura. L'endpoint e'
+        protetto: il client deve inviare il token JWT nell'header Authorization
+        (un link diretto senza token riceve 401).
+      operationId: scaricaPdfBolletta
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bollettaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: PDF della bolletta
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "403":
+          description: Non autorizzato a vedere questa bolletta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+        "404":
+          description: Bolletta non trovata o nessun PDF allegato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
   /api/v1/statistiche:
     get:
       tags: [Statistiche]
@@ -1554,37 +2013,23 @@ paths:
               example:
                 success: true
                 data:
-                  totaleAppartamenti: 7
-                  tassoOccupazione: 0.7368
-                  prezzoMedioGlobalePerMq: 29.11
+                  totaleAppartamenti: 5
+                  tassoOccupazione: 0
+                  prezzoMedioGlobalePerMq: 8.95
                   contratti:
-                    attivi: 5
-                    terminati: 4
-                    inChiusura: 1
-                  turnoverUltimoAnno: 3
+                    attivi: 1
+                    terminati: 1
+                    inChiusura: 0
+                  turnoverUltimoAnno: 1
+                  capDisponibili: ["36066", "36100", "38122", "38123"]
                   distribuzionePerCAP:
-                    - cap: "38121"
-                      numAppartamenti: 2
-                      prezzoMedioMq: 27.52
-                      camereTotali: 5
-                      camereDisponibili: 2
                     - cap: "38122"
-                      numAppartamenti: 3
-                      prezzoMedioMq: 34.73
-                      camereTotali: 9
-                      camereDisponibili: 2
-                    - cap: "38123"
                       numAppartamenti: 2
-                      prezzoMedioMq: 25.09
-                      camereTotali: 5
-                      camereDisponibili: 1
-                  distribuzionePerTipo:
-                    - tipo: DOPPIA
-                      count: 8
-                      prezzoMedio: 621.25
-                    - tipo: SINGOLA
-                      count: 11
-                      prezzoMedio: 424.55
+                      prezzoMedioMq: 8.95
+                    - cap: "38123"
+                      numAppartamenti: 1
+                      prezzoMedioMq: null
+                  distribuzionePerTipo: []
         "401":
           description: Token JWT assente
           content:
@@ -1622,5 +2067,7 @@ tags:
     description: Registrazione, login e gestione account
   - name: Gestione Interna
     description: Contratti e guasti per inquilini autenticati
+  - name: Bollette
+    description: Caricamento e consultazione bollette (amministratore e inquilino)
   - name: Statistiche
     description: Dashboard TAS Data — dati aggregati per dipendenti comunali (US16)
