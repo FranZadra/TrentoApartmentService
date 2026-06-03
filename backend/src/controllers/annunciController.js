@@ -60,6 +60,14 @@ const ensureAnnuncioOwnership = async (appartamentoId, req, res) => {
     return null;
   }
 
+  if (req.user.ruolo !== 'amministratore') {
+    res.status(403).json({
+      success: false,
+      message: 'Non sei autorizzato a gestire questo annuncio',
+    });
+    return null;
+  }
+
   if (normalizeId(appartamento.amministratoreId) !== normalizeId(utenteId)) {
     res.status(403).json({
       success: false,
@@ -241,6 +249,14 @@ const getAnnuncioByAppartamento = async (req, res, next) => {
 // Crea o aggiorna l'annuncio associato all'appartamento dell'admin autenticato.
 const upsertAnnuncioByAppartamento = async (req, res, next) => {
   try {
+    if (req.user?.ruolo !== 'amministratore') {
+    res.status(403).json({
+      success: false,
+      message: 'Non sei autorizzato a gestire questo annuncio',
+    });
+    return null;
+  }
+
     const appartamento = await ensureAnnuncioOwnership(req.params.appartamentoId, req, res);
     if (!appartamento) return;
 
