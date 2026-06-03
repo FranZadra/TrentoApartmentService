@@ -49,4 +49,9 @@ export const annunciService = {
   deleteById(id) {
     return api.delete(`/annunci/${id}`)
   },
+
+  // GET /api/v1/appartamenti/:id/contatto-admin — telefono dell'admin (solo utenti autenticati)
+  getContattoAdmin(appartamentoId) {
+    return api.get(`/appartamenti/${appartamentoId}/contatto-admin`)
+  },
 }

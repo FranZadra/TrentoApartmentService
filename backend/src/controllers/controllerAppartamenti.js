@@ -5,7 +5,9 @@
 
 const Appartamento = require('../models/Appartamento');
 const Annuncio = require('../models/annuncio');
+const User = require('../models/User');
 const { geocodificaIndirizzo } = require('../services/geocodingService');
+const { costruisciLinkWhatsApp } = require('../services/whatsappService');
 
 /**
  * Crea un nuovo appartamento.
@@ -272,6 +274,50 @@ async function getAppartamentiAdmin(req, res) {
   }
 }
 
+/**
+ * Restituisce i dati di contatto dell'amministratore di un appartamento.
+ * Riservato agli utenti autenticati (la rotta è protetta dal middleware JWT):
+ * serve al pulsante WhatsApp nella pagina annuncio, visibile solo a chi è registrato.
+ * Params: id (ObjectId appartamento)
+ */
+async function getContattoAdmin(req, res) {
+  try {
+    const { id } = req.params;
+
+    const appartamento = await Appartamento.findById(id);
+    if (!appartamento) {
+      return res.status(404).json({ success: false, message: 'Appartamento non trovato' });
+    }
+
+    const admin = await User.findById(appartamento.amministratoreId).select('nome cognome telefono');
+    if (!admin) {
+      return res.status(404).json({ success: false, message: 'Amministratore non trovato' });
+    }
+
+    // Messaggio precompilato che cita l'indirizzo dell'appartamento
+    const ind = appartamento.indirizzo;
+    const indirizzoBreve = ind ? `${ind.via} ${ind.numero}, ${ind.città}` : 'questo appartamento';
+    const messaggio = `Salve, sono interessato all'appartamento in ${indirizzoBreve}. È ancora disponibile?`;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        nome: admin.nome,
+        cognome: admin.cognome,
+        telefono: admin.telefono || null,
+        // Link pronto all'uso: null se l'admin non ha un numero valido
+        linkWhatsApp: costruisciLinkWhatsApp(admin.telefono, messaggio),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Errore nel recupero del contatto amministratore',
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   creaAppartamento,
   getAppartamenti,
@@ -279,4 +325,5 @@ module.exports = {
   aggiornaAppartamento,
   eliminaAppartamento,
   getAppartamentiAdmin,
+  getContattoAdmin,
 };

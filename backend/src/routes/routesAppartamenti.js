@@ -10,6 +10,7 @@ const {
   aggiornaAppartamento,
   eliminaAppartamento,
   getAppartamentiAdmin,
+  getContattoAdmin,
 } = require('../controllers/controllerAppartamenti')
 
 const { autenticaToken } = require('../middleware/auth')
@@ -24,6 +25,9 @@ router.post('/', autenticaToken, verificaBodyCreazione, creaAppartamento)
 
 // Elenco degli appartamenti collegati all'amministratore loggato.
 router.get('/admin', autenticaToken, getAppartamentiAdmin)
+
+// Contatto WhatsApp dell'amministratore: solo utenti autenticati (registrati).
+router.get('/:id/contatto-admin', autenticaToken, getContattoAdmin)
 
 // Dettaglio di un singolo appartamento.
 router.get('/:id', getAppartamentoDaId)
