@@ -110,6 +110,22 @@
 			<div class="flex-1">
 				<!-- ── TAB: Amministratore ── -->
 				<div v-if="activeTab === 'amministratore'" class="space-y-4">
+					<label class="block space-y-2">
+						<span class="text-sm font-semibold text-zinc-700">
+							Telefono <span class="text-red-500">*</span>
+						</span>
+						<input
+							v-model="form.telefono"
+							type="tel"
+							autocomplete="tel"
+							:disabled="isLoading"
+							class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:bg-zinc-100 disabled:text-zinc-500"
+							placeholder="es. +39 351 1234567"
+							required
+						/>
+						<span class="text-xs text-zinc-500">Verrà usato per il contatto WhatsApp con gli utenti interessati.</span>
+					</label>
+
 					<div class="space-y-2">
 						<span class="text-sm font-semibold text-zinc-700">Tipo account</span>
 						<div class="flex gap-3">
@@ -255,6 +271,7 @@ const form = reactive({
 	// amministratore
 	privato: true,
 	pIVA: '',
+	telefono: '',
 	// dipendente
 	ruolo: '',
 	dipartimento: '',
@@ -269,6 +286,7 @@ watch(activeTab, () => {
 	successMessage.value = ''
 	form.privato = true
 	form.pIVA = ''
+	form.telefono = ''
 	form.ruolo = ''
 	form.dipartimento = ''
 })
@@ -295,6 +313,10 @@ async function handleSubmit() {
 	}
 	if (form.password.length < 6) {
 		errorMessage.value = 'La password deve contenere almeno 6 caratteri.'
+		return
+	}
+	if (activeTab.value === 'amministratore' && !form.telefono.trim()) {
+		errorMessage.value = 'Il numero di telefono è obbligatorio.'
 		return
 	}
 	if (activeTab.value === 'amministratore' && form.privato === false) {
@@ -333,6 +355,7 @@ async function handleSubmit() {
 				...basePayload,
 				ruolo: 'amministratore',
 				privato: form.privato,
+				telefono: form.telefono.trim(),
 				...(form.privato === false && { pIVA: form.pIVA.trim() }),
 			}
 		} else if (activeTab.value === 'dipendente') {
