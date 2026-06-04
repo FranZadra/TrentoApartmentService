@@ -46,7 +46,7 @@ const guastoSchema = new mongoose.Schema(
     }]
   },
   { timestamps: true ,
-    collection: 'guasti' }
+    collection: 'Guasti' }
 );
 
 module.exports = mongoose.model('Guasto', guastoSchema);

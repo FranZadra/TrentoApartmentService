@@ -105,7 +105,7 @@ const ContrattoSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    collection: 'contrattos',
+    collection: 'Contratti',
   }
 );
 

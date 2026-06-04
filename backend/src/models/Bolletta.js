@@ -48,7 +48,7 @@ const BollettaSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    collection: 'bollette',
+    collection: 'Bollette',
   }
 );
 

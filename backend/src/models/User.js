@@ -84,6 +84,7 @@ const utenteSchema = new mongoose.Schema(
   {
     // Aggiunge automaticamente i campi "createdAt" e "updatedAt" ad ogni documento
     timestamps: true,
+    collection: 'Users', 
   }
 );
 
