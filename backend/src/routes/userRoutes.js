@@ -11,8 +11,8 @@ router.post('/register', register);
 // POST /api/v1/users/login → controlla le credenziali e restituisce il token.
 router.post('/login', login);
 
-// PUT /api/v1/users/verificaIdentita → richiede autenticazione
-router.put('/verificaIdentita', autenticaToken, verificaIdentita);
+// PUT /api/v1/users/verifica-identita → richiede autenticazione
+router.put('/verifica-identita', autenticaToken, verificaIdentita);
 
 // POST /api/v1/users/password/forgot → invia il link di recupero password via email
 router.post('/password/forgot', richiediResetPassword);

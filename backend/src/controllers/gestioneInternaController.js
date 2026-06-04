@@ -216,6 +216,7 @@ const segnalaGuasto = async (req, res) => {
 
         const errori = [];
         if (!descrizione || !descrizione.trim()) errori.push('La descrizione del guasto è obbligatoria');
+        if (!priorita || !['scarsa', 'media', 'urgente'].includes(priorita)) errori.push('La priorità deve essere valida');
 
         if (errori.length > 0) {
             return res.status(400).json({ errors: errori });

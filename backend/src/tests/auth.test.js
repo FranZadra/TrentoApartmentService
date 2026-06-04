@@ -144,7 +144,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
   });
 
   // --- VERIFICA IDENTITÀ (US3) ---
-  describe('PUT /api/v1/users/verificaIdentita', () => {
+  describe('PUT /api/v1/users/verifica-identita', () => {
     // TEST CASE N.51
     test('Verifica identità con successo per utente base -> cambia in utente verificato', async () => {
       const utenteFakeBase = {
@@ -159,7 +159,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
       jest.spyOn(User, 'findById').mockResolvedValue(utenteFakeBase);
 
       const res = await request(app)
-        .put('/api/v1/users/verificaIdentita')
+        .put('/api/v1/users/verifica-identita')
         .set('Authorization', `Bearer ${tokenUtenteBase}`);
 
       expect(res.status).toBe(200);
@@ -183,7 +183,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
       const tokenAdmin = jwt.sign({ sub: utenteFakeAdmin._id, ruolo: 'amministratore' }, JWT_SECRET);
 
       const res = await request(app)
-        .put('/api/v1/users/verificaIdentita')
+        .put('/api/v1/users/verifica-identita')
         .set('Authorization', `Bearer ${tokenAdmin}`);
 
       expect(res.status).toBe(200);
