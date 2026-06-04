@@ -1857,7 +1857,7 @@ paths:
                 $ref: '#/components/schemas/ErroreAutorizzazione'
 
   /api/v1/bollette/{bollettaId}/paga:
-    patch:
+    put:
       tags: [Bollette]
       summary: Segna una bolletta come pagata
       operationId: segnaBollettaPagata

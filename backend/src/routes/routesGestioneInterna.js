@@ -5,6 +5,7 @@ const { autenticaToken } = require('../middleware/auth');
 
 // Rotte per la gestione interna dell'inquilino/utente verificato.
 router.get('/contratti', autenticaToken, getContratti);
+
 router.get('/rifiuti/:appId', autenticaToken, getCalendarioRifiuti);
 router.put('/rifiuti/:appId', autenticaToken, aggiornaCalendarioRifiuti);
 

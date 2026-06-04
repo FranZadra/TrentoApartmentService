@@ -42,7 +42,7 @@ export async function caricaBolletta(appartamentoId, formData) {
 
 export async function segnaBollettaPagata(bollettaId) {
   try {
-    const res = await api.patch(`/bollette/${bollettaId}/paga`)
+    const res = await api.put(`/bollette/${bollettaId}/paga`)
     return { success: true, data: res.data }
   } catch (err) {
     return { success: false, error: err.response?.data?.error || 'Errore durante l\'operazione' }

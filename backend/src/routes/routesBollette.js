@@ -28,7 +28,7 @@ const upload = multer({
 // ── Rotte amministratore ──────────────────────────────────────────────────────
 // POST   /api/v1/bollette/:appartamentoId       — carica nuova bolletta (con PDF opzionale)
 // GET    /api/v1/bollette/admin/:appartamentoId — lista bollette di un appartamento
-// PATCH  /api/v1/bollette/:bollettaId/paga      — segna bolletta come pagata
+// PUT  /api/v1/bollette/:bollettaId/paga      — segna bolletta come pagata
 // DELETE /api/v1/bollette/:bollettaId           — elimina bolletta
 
 router.post(
@@ -40,7 +40,7 @@ router.post(
 
 router.get('/admin/:appartamentoId', autenticaToken, getBolletteAdmin);
 
-router.patch('/:bollettaId/paga', autenticaToken, segnaPagata);
+router.put('/:bollettaId/paga', autenticaToken, segnaPagata);
 
 router.delete('/:bollettaId', autenticaToken, eliminaBolletta);
 
