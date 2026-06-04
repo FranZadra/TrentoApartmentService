@@ -113,7 +113,7 @@ function verificaBodyCreazione(req, res, next) {
 }
 
 /**
- * Valida il body per l'aggiornamento (PATCH/PUT) di un appartamento.
+ * Valida il body per l'aggiornamento (PUT) di un appartamento.
  * Tutti i campi sono opzionali, ma se presenti devono essere validi.
  */
 function verificaBodyAggiornamento(req, res, next) {

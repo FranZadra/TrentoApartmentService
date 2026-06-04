@@ -9,7 +9,8 @@ const AnnuncioSchema = new mongoose.Schema({
   appartamentoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Appartamento' },
   // opzionalmente, se l'annuncio è per una camera specifica:
   // cameraId: { type: mongoose.Schema.Types.ObjectId, ref: 'Camera' },
-}, { timestamps: true })
+}, { timestamps: true,
+    collection: 'Annunci' })
 
 // Serve almeno un collegamento con l'appartamento per considerare valido il documento.
 AnnuncioSchema.path('appartamento').validate(function () {

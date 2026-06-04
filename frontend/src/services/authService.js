@@ -80,7 +80,7 @@ export async function verificaIdentitaUser(token) {
         Authorization: `Bearer ${token}`
       }
     }
-    const response = await apiClient.put('/users/verificaIdentita', {}, config)
+    const response = await apiClient.put('/users/verifica-identita', {}, config)
     return { success: true, data: response.data }
   } catch (error) {
     const message = error.response?.data?.messaggio || 'Errore durante la verifica identità'

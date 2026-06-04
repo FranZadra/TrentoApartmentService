@@ -1395,7 +1395,7 @@ paths:
                     type: string
                     example: Password non valida
 
-  /api/v1/users/verificaIdentita:
+  /api/v1/users/verifica-identita:
     put:
       tags: [Utenti]
       summary: Verifica identità
@@ -1857,7 +1857,7 @@ paths:
                 $ref: '#/components/schemas/ErroreAutorizzazione'
 
   /api/v1/bollette/{bollettaId}/paga:
-    patch:
+    put:
       tags: [Bollette]
       summary: Segna una bolletta come pagata
       operationId: segnaBollettaPagata

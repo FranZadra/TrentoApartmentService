@@ -82,6 +82,7 @@ const AppartamentoSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    collection: 'Appartamenti',
   }
 );
 
