@@ -39,7 +39,7 @@ const getStatistiche = async (req, res) => {
       {
         // Aggancia il contratto attivo dell'appartamento per leggerne il canone
         $lookup: {
-          from: 'contrattos',
+          from: 'Contratti',
           let: { appId: '$_id' },
           pipeline: [
             { $match: { $expr: { $eq: ['$idAppartamento', '$$appId'] }, stato: 'attivo' } },
