@@ -55,7 +55,6 @@
 				/>
 			</label>
 
-			<!-- Spazio flessibile per allinearsi con il form registrazione -->
 			<div class="flex-1" />
 
 			<!-- Azioni + link registrazione -->

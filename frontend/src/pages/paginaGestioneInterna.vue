@@ -546,7 +546,7 @@
       @close="closeGuastoForm"
     />
 
-    <!-- Modal: Lista spesa -->
+    <!-- Modal: Lista della spesa -->
     <transition name="fade">
       <div v-if="showListaSpesa" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/40" @click="showListaSpesa = false"></div>
@@ -656,7 +656,7 @@
       </div>
     </transition>
 
-    <!-- Modal: Calendario rifiuti urbani -->
+    <!-- Modal: calendario dei rifiuti urbani -->
     <transition name="fade">
       <div
         v-if="showCalendarioRifiutiModal"

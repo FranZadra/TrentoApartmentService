@@ -6,7 +6,7 @@ export default {
         primary: '#9a1528',
         'primary-dark': '#7f1020',
         tas: {
-          red: '#9a1528', // colore principale del brand TAS 
+          red: '#9a1528', // colore principale di TAS 
         }
       },
       fontFamily: {

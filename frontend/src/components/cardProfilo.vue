@@ -23,7 +23,7 @@ const auth = useAuthStore()
 const user = computed(() => auth.user)
 
 const profileImage = computed(() => {
-    // prova a usare user.foto, user.fotoProfilo o fallback
+    // Prova a usare user.foto, user.fotoProfilo o fallback
     const u = user.value
     if (!u) {
         const text = encodeURIComponent('--')

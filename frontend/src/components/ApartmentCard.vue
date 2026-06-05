@@ -106,8 +106,7 @@
 
 <script setup>
 // Componente card per mostrare un singolo appartamento.
-// Props: apt (oggetto appartamento)
-// Emissioni: view (mostra dettagli), edit (apri form modifica)
+// View (mostra dettagli), edit (apri form di modifica)
 
 defineProps({
   apt: {
@@ -144,5 +143,4 @@ defineEmits(['view', 'edit', 'annuncio', 'guasti', 'bollette', 'associa'])
 </script>
 
 <style scoped>
-/* Card styling con Tailwind; effetti hover inline */
 </style>

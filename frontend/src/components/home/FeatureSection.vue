@@ -1,5 +1,5 @@
 <template>
-	<!-- Tre riquadri che presentano le funzioni più importanti della piattaforma. -->
+	<!-- Tre riquadri che presentano le funzioni base della piattaforma. -->
   <section id="features" class="border-y border-zinc-200 bg-white">
     <div class="mx-auto max-w-[1200px] px-6 py-4 lg:px-8">
       <div class="grid gap-0 md:grid-cols-3 md:border-l md:border-r md:border-zinc-200">

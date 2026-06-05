@@ -7,7 +7,7 @@
         <div class="h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-[#9a1528]"></div>
       </div>
 
-      <!-- Errore (es. annuncio non trovato o ID non valido) -->
+      <!-- Errore (annuncio non trovato o ID non valido) -->
       <div
         v-else-if="errore"
         class="rounded-2xl border border-red-200 bg-red-50 p-8 text-center text-red-700"
@@ -21,21 +21,18 @@
         </router-link>
       </div>
 
-      <!-- Contenuto del dettaglio annuncio (TC30) -->
+      <!-- Contenuto del dettaglio annuncio -->
       <template v-else-if="annuncio">
 
-        <!-- Breadcrumb di navigazione -->
         <nav class="mb-6 flex items-center gap-2 text-sm text-zinc-500">
           <router-link :to="{ name: 'annunci' }" class="hover:text-[#9a1528]">Annunci</router-link>
           <span>/</span>
           <span class="text-zinc-900 font-medium">{{ indirizzoBreve }}</span>
         </nav>
 
-        <!-- ──────────────────────────────────────────────────────── -->
-        <!-- GALLERIA FOTOGRAFICA (TC31 + TC33)                      -->
-        <!-- ──────────────────────────────────────────────────────── -->
+        <!-- Galleria fotografica -->
         <section class="mb-10">
-          <!-- Nessuna foto: mostra placeholder (TC33) -->
+          <!-- Nessuna foto: mostra placeholder -->
           <div
             v-if="!haFoto"
             class="flex h-72 w-full flex-col items-center justify-center gap-3 rounded-2xl bg-zinc-100 text-zinc-400"
@@ -47,7 +44,7 @@
             <p class="text-sm font-medium">Nessuna foto disponibile per questo annuncio</p>
           </div>
 
-          <!-- Galleria con scorrimento orizzontale (TC31) -->
+          <!-- Galleria con scorrimento orizzontale -->
           <div v-else class="relative">
             <!-- Immagine principale: mostra quella selezionata dall'indice -->
             <div class="relative h-80 w-full overflow-hidden rounded-2xl bg-zinc-100 sm:h-96">
@@ -57,7 +54,7 @@
                 class="h-full w-full object-cover"
               />
 
-              <!-- Freccia sinistra (nascosta se è la prima foto) -->
+              <!-- Freccia sinistra -->
               <button
                 v-if="foto.length > 1 && fotoCorrente > 0"
                 @click="fotoCorrente--"
@@ -69,7 +66,7 @@
                 </svg>
               </button>
 
-              <!-- Freccia destra (nascosta se è l'ultima foto) -->
+              <!-- Freccia destra -->
               <button
                 v-if="foto.length > 1 && fotoCorrente < foto.length - 1"
                 @click="fotoCorrente++"
@@ -81,7 +78,7 @@
                 </svg>
               </button>
 
-              <!-- Indicatore posizione: "2 / 5" -->
+              <!-- Indicatore posizione -->
               <span
                 v-if="foto.length > 1"
                 class="absolute bottom-3 right-4 rounded-full bg-black/50 px-3 py-1 text-xs text-white"
@@ -90,7 +87,6 @@
               </span>
             </div>
 
-            <!-- Thumbnails cliccabili sotto la foto principale -->
             <div v-if="foto.length > 1" class="mt-3 flex gap-2 overflow-x-auto pb-1">
               <button
                 v-for="(url, i) in foto"
@@ -107,12 +103,10 @@
           </div>
         </section>
 
-        <!-- ──────────────────────────────────────────────────────── -->
-        <!-- INFORMAZIONI PRINCIPALI (TC30)                          -->
-        <!-- ──────────────────────────────────────────────────────── -->
+        <!-- Informazioni principali -->
         <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
 
-          <!-- Colonna sinistra: dettagli principali (occupa 2/3 su desktop) -->
+          <!-- Colonna sinistra: dettagli principali -->
           <div class="lg:col-span-2 space-y-8">
 
             <!-- Titolo e indirizzo completo -->
@@ -172,8 +166,8 @@
               </p>
               <hr class="my-4 border-zinc-100" />
 
-              <!-- Contatto amministratore: il numero e il pulsante WhatsApp sono
-                   visibili solo agli utenti registrati (TC voce 4). -->
+              <!-- Contatto amministratore: il numero e il pulsante per contattare l'amministratore sono
+                   visibili solo agli utenti registrati -->
               <template v-if="auth.isAuthenticated">
                 <template v-if="contattoAdmin?.linkWhatsApp">
                   <p class="text-sm text-zinc-600 leading-relaxed">
@@ -196,7 +190,7 @@
                 </p>
               </template>
 
-              <!-- Utente non autenticato: lo invitiamo ad accedere/registrarsi -->
+              <!-- Per utente non autenticato -->
               <template v-else>
                 <p class="text-sm text-zinc-600 leading-relaxed">
                   Accedi o registrati per contattare l'amministratore dell'appartamento.
@@ -219,9 +213,7 @@
           </div>
         </div>
 
-        <!-- ──────────────────────────────────────────────────────── -->
-        <!-- MAPPA POSIZIONE APPARTAMENTO (TC32)                      -->
-        <!-- ──────────────────────────────────────────────────────── -->
+        <!-- Mappa posizione appartamento -->
         <section
           v-if="haCoordinate"
           class="mt-12"
@@ -264,35 +256,34 @@ const annuncio = ref(null)  // dati dell'annuncio con appartamento popolato
 const caricamento = ref(true)
 const errore = ref(null)
 const fotoCorrente = ref(0) // indice della foto mostrata nella galleria
-// Dati di contatto dell'admin (solo se autenticati). Include linkWhatsApp già
-// pronto, costruito dal backend tramite whatsappService.
+// Dati di contatto dell'admin (solo se autenticati).
 const contattoAdmin = ref(null)
 
-// Array di foto dell'appartamento (può essere vuoto → TC33)
+// Array di foto dell'appartamento
 const foto = computed(() => annuncio.value?.appartamento?.foto ?? [])
 const haFoto = computed(() => foto.value.length > 0)
 
-// true se il DB contiene le coordinate geografiche (necessario per TC32)
+// true se il DB contiene le coordinate geografiche
 const haCoordinate = computed(() => {
   const pos = annuncio.value?.appartamento?.posizione
   return !!(pos?.latitudine && pos?.longitudine)
 })
 
-// "Via Manci 5, Trento" — usato nel titolo e nel breadcrumb
+// Indirizzo breve usato nel titolo
 const indirizzoBreve = computed(() => {
   const a = annuncio.value?.appartamento?.indirizzo
   if (!a) return ''
   return `${a.via} ${a.numero}, ${a.città}`
 })
 
-// Indirizzo completo con CAP e stato — usato sotto il titolo
+// Indirizzo completo con CAP e stato, usato sotto il titolo
 const indirizzoCompleto = computed(() => {
   const a = annuncio.value?.appartamento?.indirizzo
   if (!a) return ''
   return `${a.CAP} ${a.città} — ${a.Stato}`
 })
 
-// Data in formato leggibile: "1 mag 2026"
+// Data in formato leggibile
 const dataFormattata = computed(() => {
   if (!annuncio.value?.dataPubbl) return ''
   return new Date(annuncio.value.dataPubbl).toLocaleDateString('it-IT', {
@@ -310,8 +301,7 @@ async function caricaDettaglio() {
     const risposta = await annunciService.getById(route.params.id)
     annuncio.value = risposta.data.data
 
-    // Carichiamo il contatto dell'admin solo se l'utente è autenticato: l'endpoint
-    // è protetto e gli utenti anonimi non devono vedere il numero di telefono.
+    // Il contatto dell'admin viene caricato solo se l'utente è autenticato
     const appartamentoId = annuncio.value?.appartamento?._id || annuncio.value?.appartamentoId?._id
     if (auth.isAuthenticated && appartamentoId) {
       try {
@@ -340,7 +330,6 @@ onMounted(caricaDettaglio)
 </script>
 
 <style scoped>
-/* Chip usato nelle dotazioni della scheda dettaglio */
 .chip-dettaglio {
   @apply rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700;
 }

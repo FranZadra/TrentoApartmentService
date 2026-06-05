@@ -1,7 +1,6 @@
 import axios from 'axios'
 
-// Istanza Axios configurata per le API del backend di Zadra
-// baseURL '/api/v1' corrisponde al prefisso registrato in app.js del backend
+// baseURL '/api/v1' con versioning
 const api = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },
@@ -15,17 +14,17 @@ api.interceptors.request.use((config) => {
 })
 
 export const annunciService = {
-  // GET /api/v1/annunci — lista annunci attivi con appartamento popolato
+  // GET /api/v1/annunci — lista annunci attivi
   getAll(params = {}) {
     return api.get('/annunci', { params })
   },
 
-  // GET /api/v1/annunci/:id — dettaglio singolo annuncio
+  // GET /api/v1/annunci/:id — dettaglio di un singolo annuncio
   getById(id) {
     return api.get(`/annunci/${id}`)
   },
 
-  // GET /api/v1/annunci/search/filter — ricerca con filtri
+  // GET /api/v1/annunci/search/filter — ricerca degli annunci con filtri
   // params può contenere: numStanze, numBagni, terrazzo, classeEnergetica, mqMin, mqMax, tipoCam, prezzoMin, prezzoMax
   searchWithFilters(params = {}) {
     return api.get('/annunci/search/filter', { params })
@@ -41,7 +40,7 @@ export const annunciService = {
     return api.post(`/annunci/admin/appartamento/${appartamentoId}`, payload)
   },
 
-  // PUT /api/v1/annunci/:id — aggiornamento puntuale per ID annuncio
+  // PUT /api/v1/annunci/:id — aggiornamento per annuncio con id specifico
   updateById(id, payload) {
     return api.put(`/annunci/${id}`, payload)
   },
@@ -50,7 +49,7 @@ export const annunciService = {
     return api.delete(`/annunci/${id}`)
   },
 
-  // GET /api/v1/appartamenti/:id/contatto-admin — telefono dell'admin (solo utenti autenticati)
+  // GET /api/v1/appartamenti/:id/contatto-admin — contatto dell'admin
   getContattoAdmin(appartamentoId) {
     return api.get(`/appartamenti/${appartamentoId}/contatto-admin`)
   },

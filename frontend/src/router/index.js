@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-// Importazione lazy delle pagine: il bundle viene caricato solo quando serve
+// Importazione delle pagine
 import HomePage from '@/pages/HomePage.vue'
 import DashboardStatistiche from '@/pages/DashboardStatistiche.vue'
 import AnnunciPage from '@/pages/AnnunciPage.vue'
@@ -11,12 +11,12 @@ import PaginaAccesso from '../pages/paginaAccesso.vue'
 import PaginaProfilo from '../pages/paginaProfilo.vue'
 import ResetPassword from '@/pages/ResetPassword.vue'
 
-// AnnuncioDetail caricato in lazy load (pagina pesante con mappa e galleria)
+// AnnuncioDetail caricato in lazy load (la mappa è pesante)
 const AnnuncioDetail = () => import('@/pages/AnnuncioDetail.vue')
 const AdminApartments = () => import('../pages/AdminApartments.vue')
 
-// Guardia di navigazione: controlla che l'utente abbia un token JWT in localStorage.
-// Se non ce l'ha, lo reindirizza alla pagina di login (TC51).
+// Verifica che l'utente abbia un token JWT in localStorage.
+// Se non ce l'ha, lo reindirizza alla pagina di login.
 function richiedeAutenticazione(_to, _from, next) {
   const token = localStorage.getItem('tas_token') || localStorage.getItem('token')
   if (!token) {
@@ -26,7 +26,7 @@ function richiedeAutenticazione(_to, _from, next) {
   }
 }
 
-// Guardia per la dashboard statistica: richiede token + ruolo dipendente comunale.
+// Guardia per la dashboard statistica: richiede token + ruolo di dipendente del comune.
 function richiedeDipendenteComunale(_to, _from, next) {
   const token = localStorage.getItem('tas_token') || localStorage.getItem('token')
   const ruolo = localStorage.getItem('tas_role')
@@ -44,20 +44,20 @@ const routes = [
     component: HomePage,
   },
   {
-    // Lista degli annunci attivi + mappa interattiva (US9).
+    // Lista degli annunci attivi + mappa interattiva.
     path: '/annunci',
     name: 'annunci',
     component: AnnunciPage,
   },   
   {
-      // Pagina gestione immobili: accessibile solo agli amministratori autenticati.
+      // Pagina gestione immobili: accessibile solo agli amministratori.
       path: '/admin/appartamenti',
       name: 'admin-appartamenti',
       component: AdminApartments,
       beforeEnter: richiedeAutenticazione,
   },
   {
-    // Dettaglio singolo annuncio — :id è il MongoDB ObjectId (US9, TC30-33)
+    // Dettaglio singolo annuncio :id è il MongoDB ObjectId.
     path: '/annunci/:id',
     name: 'annuncio-detail',
     component: AnnuncioDetail,
@@ -102,7 +102,7 @@ const routes = [
 		meta: { title: 'TAS - Profilo' },
 	},
   {
-    // Dashboard statistica per dipendenti comunali (US16).
+    // Dashboard statistica per dipendenti comunali.
     path: '/dashboard-statistica',
     name: 'dashboard-statistica',
     component: DashboardStatistiche,

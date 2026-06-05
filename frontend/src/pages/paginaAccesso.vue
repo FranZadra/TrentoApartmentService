@@ -50,7 +50,7 @@
 					</div>
 				</div>
 
-				<!-- Colonna destra: form con transizione -->
+				<!-- Colonna destra: form -->
 				<div class="bg-white/95 p-6 sm:p-8 lg:p-10">
 					<transition
 						enter-active-class="transition duration-300 ease-out"
@@ -193,8 +193,7 @@ async function handleRecoverySubmit() {
 	recoveryMessage.value = 'Controlla la tua casella di posta'
 	try {
 		await requestPasswordReset(recoveryEmail.value.trim())
-		// Manteniamo il messaggio visibile anche dopo il successo per chiarezza
-		// Dopo 5 secondi chiudiamo il modal e torniamo alla vista di login
+		// Manteniamo il messaggio visibile anche dopo il successo per chiarezza, dopo 5 secondi chiudiamo il modal e torniamo al login
 		if (recoveryTimeout) clearTimeout(recoveryTimeout)
 		recoveryTimeout = setTimeout(() => {
 			recoveryTimeout = null

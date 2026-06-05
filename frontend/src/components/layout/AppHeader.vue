@@ -1,8 +1,8 @@
 <template>
-	<!-- Intestazione fissa con brand e navigazione principale. -->
+	<!-- Header per la navigazione principale. -->
 	<header class="sticky top-0 z-40 border-b border-[#7f1020] bg-[#9a1528] text-white shadow-sm">
 		<div class="mx-auto flex max-w-[1200px] items-center justify-between gap-6 px-6 py-4 lg:px-8">
-			<!-- Logo + nome brand -->
+			<!-- Logo e nome TAS -->
 			<router-link to="/" class="group flex items-center gap-3">
 				<img
 					:src="tasLogo"
@@ -16,7 +16,7 @@
 				</div>
 			</router-link>
 
-			<!-- Navigazione principale -->
+			<!-- Navigazione -->
 			<nav class="flex items-center gap-6 text-sm font-semibold text-white sm:gap-8">
 				<router-link to="/" class="text-white/90 hover:text-white">Home</router-link>
 				<router-link to="/annunci" class="text-white/90 hover:text-white">
@@ -26,7 +26,7 @@
 					Gestione interna
 				</router-link>
 
-				<!-- Link visibile solo agli amministratori -->
+				<!-- Visibile solo agli amministratori -->
 				<router-link
 					v-if="isAdmin"
 					to="/admin/appartamenti"
@@ -35,7 +35,7 @@
 					I tuoi appartamenti
 				</router-link>
 
-				<!-- Link visibile solo ai dipendenti comunali -->
+				<!-- Visibile solo ai dipendenti del comune -->
 				<router-link
 					v-if="isDipendenteComunale"
 					to="/dashboard-statistica"

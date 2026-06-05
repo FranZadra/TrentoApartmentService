@@ -57,7 +57,7 @@
           </button>
         </div>
 
-        <!-- Stato: caricamento -->
+        <!-- Stato di caricamento -->
         <div
           v-if="isLoading"
           class="rounded-3xl border border-zinc-200 bg-white px-6 py-10 text-center text-sm text-zinc-500 shadow-sm"
@@ -65,7 +65,7 @@
           Caricamento statistiche in corso...
         </div>
 
-        <!-- Stato: errore -->
+        <!-- Stato di errore -->
         <div
           v-else-if="errorMessage"
           class="w-full rounded-3xl border border-red-200 bg-red-50 px-6 py-5 text-sm text-red-700 shadow-sm"
@@ -76,7 +76,7 @@
         <!-- Dati caricati -->
         <template v-else-if="statistiche">
 
-          <!-- KPI card -->
+          <!-- Card con statistiche -->
           <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div class="flex flex-col gap-2 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
               <p class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">Appartamenti</p>
@@ -139,7 +139,7 @@
               <p class="text-xs text-zinc-500">contratti terminati negli ultimi 12 mesi</p>
             </div>
 
-            <!-- Tabella riepilogativa per CAP -->
+            <!-- Tabella riepilogo per CAP -->
             <div class="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm lg:col-span-2">
               <p class="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
                 Dettaglio per CAP
@@ -195,7 +195,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { getStatistiche } from '@/services/statisticheService'
 
-// Registrazione componenti Chart.js necessari
+// Registrazione componenti necessari
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement)
 
 const router = useRouter()
@@ -208,12 +208,10 @@ const errorMessage = ref('')
 // Filtri selezionati dall'utente
 const filtri = ref({ cap: '', tipoCamera: '', perStudenti: '' })
 
-// Lista dei CAP disponibili: arriva dal backend ed è completa (non dipende dai
-// filtri attivi), così la tendina resta selezionabile anche dopo aver filtrato.
+// Lista dei CAP disponibili
 const capDisponibili = computed(() => statistiche.value?.capDisponibili ?? [])
 
-// --- Funzioni di formattazione ---
-
+// Funzioni di formattazione dei valori numerici
 function formatPercentuale(valore) {
   if (valore == null) return '—'
   return `${(valore * 100).toFixed(1)}%`
@@ -224,7 +222,7 @@ function formatEuro(valore) {
   return `€ ${Number(valore).toFixed(2)}`
 }
 
-// --- Dati grafici ---
+// Dati grafici
 
 const chartDataCAP = computed(() => {
   const zone = statistiche.value?.distribuzionePerCAP ?? []
@@ -282,8 +280,7 @@ const opzioniCiambella = {
   },
 }
 
-// --- Caricamento dati ---
-
+// Caricamento dati
 async function caricaStatistiche() {
   isLoading.value = true
   errorMessage.value = ''

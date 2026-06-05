@@ -13,7 +13,7 @@
         </button>
       </div>
 
-      <!-- Errori di validazione restituiti dal backend (TC50) -->
+      <!-- Errori di validazione restituiti dal backend -->
       <div v-if="erroriValidazione.length > 0" class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
         <p class="mb-2 text-sm font-semibold text-red-700">Correggi i seguenti errori:</p>
         <ul class="list-inside list-disc space-y-1">
@@ -42,7 +42,7 @@
           </div>
         </div>
 
-        <!-- Caratteristiche numeriche -->
+        <!-- Caratteristiche metri quadrati, numero stanze/bagni -->
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="mb-2 block text-sm font-semibold text-gray-700">MQ Totali</label>
@@ -83,7 +83,7 @@
           </select>
         </div>
 
-        <!-- Foto/Planimetrie (TC49): lista di URL inseribili manualmente -->
+        <!-- Foto: lista di URL inseribili manualmente -->
         <div>
           <label class="mb-2 block text-sm font-semibold text-gray-700">Foto (URL)</label>
           <div v-for="(_, i) in form.foto" :key="i" class="mb-2 flex gap-2">
@@ -126,8 +126,6 @@
 
 <script setup>
 // Form per creare o modificare un appartamento.
-// Props: initial (oggetto appartamento per la modifica, null per la creazione)
-// Emissioni: saved (operazione riuscita), close (chiudi senza salvare)
 
 import { reactive, ref, watch, computed } from 'vue'
 
@@ -136,7 +134,7 @@ const emits = defineEmits(['saved', 'close'])
 
 const classi = ['A4', 'A3', 'A2', 'A1', 'B', 'C', 'D', 'E', 'F', 'G']
 
-// Errori di validazione restituiti dal backend (TC50)
+// Errori di validazione restituiti dal backend
 // Viene popolato quando il server risponde con 400 e un array di errori per campo
 const erroriValidazione = ref([])
 
@@ -189,7 +187,7 @@ function getAuthHeaders() {
 }
 
 // Estrae l'ID amministratore dal payload del token JWT.
-// Usato per impostare amministratoreId al momento della creazione dell'appartamento.
+// Usato per impostare l'ID amministratore al momento della creazione dell'appartamento.
 function getIdDalToken() {
   const token = localStorage.getItem('tas_token') || localStorage.getItem('token')
   if (!token) return ''
@@ -202,12 +200,12 @@ function getIdDalToken() {
   }
 }
 
-// Aggiunge una riga vuota alla lista foto (TC49)
+// Aggiunge una riga vuota alla lista foto
 function aggiungiFoto() {
   form.foto.push('')
 }
 
-// Rimuove una foto per indice (TC49)
+// Rimuove una foto per indice
 function rimuoviFoto(i) {
   form.foto.splice(i, 1)
 }
@@ -227,7 +225,7 @@ async function onSubmit() {
   try {
     let res
     if (isEdit.value && props.initial?._id) {
-      // Aggiornamento appartamento esistente (TC48)
+      // Aggiornamento appartamento esistente 
       res = await fetch(`${API_BASE}/appartamenti/${props.initial._id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
@@ -247,7 +245,7 @@ async function onSubmit() {
     if (res.ok) {
       emits('saved', body.data)
     } else if (res.status === 400 && body.errors) {
-      // Il backend ha restituito errori di validazione campo per campo (TC50)
+      // Il backend ha restituito errori di validazione campo per campo
       erroriValidazione.value = body.errors
     } else {
       // Errore generico (es. 401, 403, 500)

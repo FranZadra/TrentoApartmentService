@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+// baseURL '/api/v1' con versioning
 const api = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },
@@ -49,8 +50,7 @@ export async function aggiornaCalendarioRifiutiAppartamento(appId, calendarioRif
   }
 }
 
-// ---- US23: Faccende del calendario condiviso ----
-
+// Faccende del calendario condiviso
 export async function getFaccendeAppartamento(appId) {
   try {
     const response = await api.get(`/gestione-interna/faccende/${appId}`)

@@ -1,10 +1,10 @@
 <template>
-  <!-- Card cliccabile che mostra il riepilogo di un annuncio nella lista -->
+  <!-- Card che mostra le info di un annuncio -->
   <router-link
     :to="{ name: 'annuncio-detail', params: { id: annuncio._id } }"
     class="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-shadow hover:shadow-md"
   >
-    <!-- Immagine di anteprima (TC33: placeholder se non ci sono foto) -->
+    <!-- Immagine di anteprima -->
     <div class="relative h-48 w-full overflow-hidden bg-zinc-100">
       <img
         v-if="primaFoto"
@@ -24,7 +24,7 @@
         <span class="text-xs font-medium">Nessuna foto disponibile</span>
       </div>
 
-      <!-- Badge "Solo studenti" se applicabile -->
+      <!-- Badge "Solo studenti" se impostato dall'amministratore -->
       <span
         v-if="annuncio.appartamento?.studentOnly"
         class="absolute left-3 top-3 rounded-full bg-[#9a1528] px-3 py-1 text-xs font-semibold text-white"
@@ -40,12 +40,12 @@
         {{ indirizzoBreve }}
       </h3>
 
-      <!-- Descrizione troncata a 2 righe -->
+      <!-- Descrizione di 2 righe -->
       <p class="line-clamp-2 text-sm text-zinc-500 leading-relaxed">
         {{ annuncio.descrizione }}
       </p>
 
-      <!-- Caratteristiche principali dell'appartamento -->
+      <!-- Caratteristiche dell'appartamento -->
       <div class="mt-auto flex flex-wrap gap-2 pt-2">
         <span class="chip">{{ annuncio.appartamento?.numStanze }} stanze</span>
         <span class="chip">{{ annuncio.appartamento?.numBagni }} bagni</span>
@@ -71,7 +71,6 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-  // L'oggetto annuncio completo con appartamento popolato dal backend
   annuncio: {
     type: Object,
     required: true,
@@ -81,14 +80,14 @@ const props = defineProps({
 // Prima foto dell'appartamento, oppure null se l'array è vuoto
 const primaFoto = computed(() => props.annuncio.appartamento?.foto?.[0] ?? null)
 
-// Indirizzo leggibile: "Via Manci 5, Trento"
+// Indirizzo leggibile
 const indirizzoBreve = computed(() => {
   const a = props.annuncio.appartamento?.indirizzo
   if (!a) return 'Indirizzo non disponibile'
   return `${a.via} ${a.numero}, ${a.città}`
 })
 
-// Data in formato italiano: "1 mag 2026"
+// Data in formato italiano
 const dataFormattata = computed(() => {
   if (!props.annuncio.dataPubbl) return ''
   return new Date(props.annuncio.dataPubbl).toLocaleDateString('it-IT', {

@@ -9,7 +9,7 @@
 			</p>
 		</div>
 
-		<!-- Tab selector -->
+		<!-- Selettore tab -->
 		<div class="flex rounded-2xl border border-zinc-200 bg-zinc-50 p-1 gap-1">
 			<button
 				v-for="tab in tabs"
@@ -36,7 +36,7 @@
 				{{ successMessage }}
 			</div>
 
-			<!-- Nome + Cognome -->
+			<!-- Nome e cognome -->
 			<div class="grid gap-4 sm:grid-cols-2">
 				<label class="space-y-2">
 					<span class="text-sm font-semibold text-zinc-700">Nome</span>
@@ -108,7 +108,7 @@
 
 			<!-- Spazio flessibile che tiene la card stabile tra le tab -->
 			<div class="flex-1">
-				<!-- ── TAB: Amministratore ── -->
+				<!-- Tab amministratore -->
 				<div v-if="activeTab === 'amministratore'" class="space-y-4">
 					<label class="block space-y-2">
 						<span class="text-sm font-semibold text-zinc-700">
@@ -176,7 +176,7 @@
 					</transition>
 				</div>
 
-				<!-- ── TAB: Dipendente comunale ── -->
+				<!-- Tab dipendente del comune -->
 				<div v-else-if="activeTab === 'dipendente'" class="grid gap-4 sm:grid-cols-2">
 					<label class="space-y-2">
 						<span class="text-sm font-semibold text-zinc-700">Ruolo</span>

@@ -1,19 +1,18 @@
 import axios from 'axios'
 
-// Istanza axios con base URL per evitare di ripetere /api ogni volta
+// baseURL '/api/v1' con versioning
 const apiClient = axios.create({
   baseURL: '/api/v1',
   timeout: 10000,
 })
 
 /**
- * Registra un nuovo utente.
+ * Registra un nuovo utente nel sistema
  * @param {Object} userData - { nome, email, password }
  * @returns {Promise} Risposta del server con dati utente creato
  */
 export async function registerUser(userData) {
   try {
-    // Invia i dati della registrazione e restituisce una risposta uniforme al form.
     const response = await apiClient.post('/users/register', userData)
     return { success: true, data: response.data }
   } catch (error) {
@@ -38,10 +37,7 @@ export async function loginUser(credentials) {
   }
 }
 
-/**
- * Richiede il reset password per l'email fornita.
- * Restituisce un oggetto { success, data? , error? }
- */
+// Richiede il reset password per l'email fornita.
 export async function requestPasswordReset(email) {
   try {
     const response = await apiClient.post('/users/password/forgot', { email })
@@ -67,14 +63,10 @@ export async function resetPassword(token, password) {
   }
 }
 
-/**
- * Verifica l'identità dell'utente loggato.
- * Se utente base, lo cambia a utente verificato.
- * @returns {Promise}
- */
+// Verifica l'identità dell'utente loggato. Se utente base, lo cambia a utente verificato.
 export async function verificaIdentitaUser(token) {
   try {
-    // Crea un'istanza axios con il token nel header
+    // Crea un'istanza con il token nel header
     const config = {
       headers: {
         Authorization: `Bearer ${token}`
@@ -90,9 +82,6 @@ export async function verificaIdentitaUser(token) {
 
 export function logoutUser() {
   // Per il logout lato client, basta rimuovere il token e i dati utente dallo store
-  // La funzione effettiva di logout lato server dipende dall'implementazione (es. blacklist token)
-  // rimuoviamo le stesse chiavi usate dallo store
-  // Così la sessione sparisce anche dopo un refresh della pagina.
   localStorage.removeItem('tas_token')
   localStorage.removeItem('tas_user')
   localStorage.removeItem('tas_role')

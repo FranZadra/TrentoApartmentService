@@ -32,7 +32,6 @@
               {{ errorMessage }}
             </div>
 
-            <!-- Read-only view when an announcement exists and user is not editing -->
             <div v-if="annuncioEsistente && !editing" class="mb-6 rounded-2xl border border-zinc-200 bg-white p-4 text-sm text-zinc-700">
               <p class="text-sm font-semibold text-zinc-900">Stato</p>
               <p class="mb-3">{{ annuncioEsistente.stato || (annuncioEsistente.attivo ? 'Attivo' : 'Archiviato') }}</p>
@@ -40,7 +39,7 @@
               <p class="whitespace-pre-line mt-2 text-sm text-zinc-700">{{ annuncioEsistente.descrizione }}</p>
             </div>
 
-            <!-- Edit/Create form -->
+            <!-- Form modifica -->
             <form v-if="editing" @submit.prevent="onSubmit" class="space-y-6">
               <div class="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white p-4">
                 <div>
@@ -75,7 +74,6 @@
               </div>
             </form>
 
-            <!-- Footer actions when in read-only or no-annuncio state -->
             <div v-if="!editing" class="flex justify-end gap-3 border-t border-zinc-200 pt-4">
               <button type="button" @click="$emit('close')" class="rounded-full border border-zinc-300 px-5 py-2.5 font-semibold text-zinc-700 hover:bg-zinc-100">
                 Chiudi

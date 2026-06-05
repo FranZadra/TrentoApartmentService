@@ -1,4 +1,5 @@
 <template>
+  <!-- Modal di segnalazione guasto da notificare all'amministratore-->
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" @click.self="$emit('close')">
     <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
       <div class="mb-6 flex items-start justify-between gap-4">
@@ -31,6 +32,7 @@
         </ul>
       </div>
 
+      <!-- Form di segnalazione guasto -->
       <form @submit.prevent="onSubmit" class="space-y-6">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>

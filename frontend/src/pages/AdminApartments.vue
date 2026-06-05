@@ -1,7 +1,7 @@
 <template>
   <AppLayout>
     <div class="mx-auto w-full max-w-[1280px] px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
-      <!-- Intestazione sezione, simile al riferimento TAS -->
+      <!-- Intestazione sezione -->
       <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p class="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-[#9a1528]">
@@ -23,7 +23,7 @@
         </button>
       </div>
 
-      <!-- Griglia appartamenti -->
+      <!-- Griglia con tutti gli appartamenti -->
       <div v-if="loading" class="text-gray-600">Caricamento...</div>
       <div v-else-if="apartments.length === 0" class="text-gray-600">Nessun appartamento trovato. Clicca su "Nuovo appartamento" per aggiungerne uno!</div>
       <div v-else class="flex flex-col gap-6">
@@ -234,7 +234,7 @@
 
       <div class="max-h-[70vh] overflow-auto px-6 py-5 sm:px-8">
 
-        <!-- Form nuova bolletta -->
+        <!-- Form per la nuova bolletta -->
         <div class="mb-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
           <p class="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Carica nuova bolletta</p>
           <form @submit.prevent="submitNuovaBolletta" class="grid gap-4 sm:grid-cols-2">
@@ -285,7 +285,7 @@
           </form>
         </div>
 
-        <!-- Lista bollette esistenti -->
+        <!-- Lista delle bollette esistenti -->
         <div>
           <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Bollette caricate</p>
 
@@ -353,7 +353,7 @@
     </div>
   </div>
 
-  <!-- Modale associazione inquilino → contratto -->
+  <!-- Modale associazione inquilino-contratto -->
   <div v-if="showAssociaModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" @click.self="closeAssociaModal">
     <div class="relative flex w-full max-w-lg flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl ring-1 ring-black/5">
       <div class="flex items-start justify-between gap-4 px-6 pt-6 sm:px-8 sm:pt-8">
@@ -445,7 +445,7 @@ const guastiModalGuasti = ref([])
 const mostraStorico = ref(false)
 const guastiByApartment = ref({})
 
-// ── Stato modale bollette ──────────────────────────────────────────────────────
+// Stato modale bollette
 const showBolletteModal = ref(false)
 const selectedApartmentForBollette = ref(null)
 const bolletteModalLoading = ref(false)
@@ -458,7 +458,7 @@ const pdfSelezionato = ref(null)
 const showEliminaModal = ref(false)
 const bollettaDaEliminare = ref(null)
 
-// Stato modale "Associa inquilino" (voce 5)
+// Stato modale "Associa inquilino"
 const showAssociaModal = ref(false)
 const selectedApartmentForAssocia = ref(null)
 const associaForm = ref({ email: '', dataInizio: '', dataFine: '', canoneMensile: null, tipoContratto: 'Residenziale' })
@@ -721,7 +721,7 @@ function reload() {
   loadApartments()
 }
 
-// ── Funzioni modale bollette ──────────────────────────────────────────────────
+// Funzioni modale bollette
 
 function capitalizeFirst(str) {
   if (!str) return ''
@@ -737,7 +737,7 @@ function onPdfSelezionato(event) {
   pdfSelezionato.value = event.target.files[0] || null
 }
 
-// Apre il PDF della bolletta passando dal service (che allega il token JWT)
+// Apre il PDF della bolletta passando dal service
 async function apriPdf(bolletta) {
   const res = await apriPdfBolletta(bolletta._id)
   if (!res.success) bolletteErrore.value = res.error
@@ -753,8 +753,7 @@ async function openBolletteModal(apt) {
   await caricaListaBollette(apt)
 }
 
-// ── Associazione inquilino (voce 5) ─────────────────────────────────────────────
-
+// Associazione inquilino
 function openAssociaModal(apt) {
   selectedApartmentForAssocia.value = apt
   associaForm.value = { email: '', dataInizio: '', dataFine: '', canoneMensile: null, tipoContratto: 'Residenziale' }
@@ -781,7 +780,7 @@ async function submitAssocia() {
     const body = await res.json()
     if (res.ok) {
       associaSuccesso.value = body.message || 'Inquilino associato con successo'
-      // Ricarichiamo gli appartamenti per riflettere eventuali cambi (es. contatori)
+      // Ricarica appartamenti
       await reload()
     } else {
       associaErrore.value = body.message || 'Errore durante l\'associazione'

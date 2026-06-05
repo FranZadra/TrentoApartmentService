@@ -42,8 +42,6 @@
 
 <script setup>
 // Componente che mostra i dettagli di un appartamento.
-// Props: apartmentId (string)
-// Emissioni: close, updated
 
 import { ref, watch, onMounted } from 'vue'
 
@@ -112,5 +110,4 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Usa Tailwind per layout */
 </style>

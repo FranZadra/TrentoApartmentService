@@ -1,5 +1,5 @@
 <template>
-	<!-- Sezione iniziale con il messaggio principale e l'immagine di Trento. -->
+	<!-- Sezione iniziale con il messaggio principale e immagine di Trento. -->
 	<section class="relative overflow-hidden bg-white">
 		<div class="mx-auto grid max-w-[1200px] gap-10 px-6 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-20">
 			<div class="flex flex-col justify-center gap-8">
@@ -25,7 +25,7 @@
 					>
 						Scopri le funzioni
 					</a>
-					<!-- Pulsante visibile solo ai dipendenti comunali (US16) -->
+					<!-- Pulsante visibile solo ai dipendenti del comune una volta loggati al sistema -->
 					<router-link
 						v-if="isDipendenteComunale"
 						to="/dashboard-statistica"

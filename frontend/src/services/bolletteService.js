@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+// baseURL '/api/v1' con versioning
 const api = axios.create({
   baseURL: '/api/v1',
 })
@@ -13,8 +14,7 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// ── Funzioni amministratore ───────────────────────────────────────────────────
-
+// Funzioni amministratore
 export async function getBolletteAdmin(appartamentoId) {
   try {
     const res = await api.get(`/bollette/admin/${appartamentoId}`)
@@ -26,8 +26,6 @@ export async function getBolletteAdmin(appartamentoId) {
 
 export async function caricaBolletta(appartamentoId, formData) {
   try {
-    // Axios con FormData imposta automaticamente il Content-Type multipart/form-data
-    // con il boundary corretto — non va impostato manualmente
     const res = await api.post(`/bollette/${appartamentoId}`, formData)
     return { success: true, data: res.data }
   } catch (err) {
@@ -58,8 +56,7 @@ export async function eliminaBolletta(bollettaId) {
   }
 }
 
-// ── Funzioni inquilino ────────────────────────────────────────────────────────
-
+// Funzioni inquilino
 export async function getBolletteInquilino() {
   try {
     const res = await api.get('/bollette/inquilino')
@@ -69,20 +66,13 @@ export async function getBolletteInquilino() {
   }
 }
 
-// Apre il PDF di una bolletta in una nuova scheda.
-// Non basta un semplice <a href>: l'endpoint del PDF è protetto da JWT e un link
-// diretto non porta con sé l'header Authorization. Il backend risponde quindi 401
-// e il browser mostra il messaggio di errore al posto del documento.
-// Soluzione: scarichiamo il file con axios (l'interceptor allega il token), lo
-// trasformiamo in un object URL locale e lo apriamo.
+// Apre il PDF di una bolletta in una nuova scheda
 export async function apriPdfBolletta(bollettaId) {
   try {
     const res = await api.get(`/bollette/${bollettaId}/pdf`, { responseType: 'blob' })
 
     const blobUrl = URL.createObjectURL(res.data)
 
-    // Aprire con un click su <a> è più affidabile di window.open() dopo un await
-    // (i blocca-popup tendono a bloccare quest'ultimo perché non più legato al click)
     const link = document.createElement('a')
     link.href = blobUrl
     link.target = '_blank'
