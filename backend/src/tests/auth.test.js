@@ -54,7 +54,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
       expect(res.body.messaggio).toContain('Nome: campo obbligatorio mancante');
     });
 
-    // TEST CASE N.5
+    // TEST CASE N.9
     test('Registrazione Amministratore fallisce se di tipo pubblico e non viene fornita la P.IVA', async () => {
       const res = await request(app)
         .post('/api/v1/users/register')
@@ -73,7 +73,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
       expect(res.body.messaggio).toContain('Partita IVA obbligatoria per account agenzia');
     });
 
-    // TEST CASE N.7
+    // TEST CASE N.12
     test('Registrazione Dipendente Comunale fallisce se mancano dipartimento o ruolo interno', async () => {
       const res = await request(app)
         .post('/api/v1/users/register')
@@ -94,7 +94,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
   // --- LOGIN ---
   describe('POST /api/v1/users/login', () => {
 
-    // TEST CASE N.8
+    // TEST CASE N.15
     test('Login con successo restituisce un token JWT valido e i dati utente', async () => {
       const passwordHashata = await bcrypt.hash('pwd123Valid', 10);
       const utenteMocked = {
@@ -118,8 +118,8 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
       expect(res.body.utente.email).toBe('glenmyers@gmail.com');
     });
 
-    // TEST CASE N.10
-    test('Login fallisce con credenziali errate - password non corrispondente', async () => {
+    // TEST CASE N.14
+    test('Login fallisce con password errata', async () => {
       const passwordHashata = await bcrypt.fn ? null : await bcrypt.hash('veraPassword123', 10);
       const utenteMocked = {
         _id: '64d000000000000000000010',
@@ -137,7 +137,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
           password: 'passwordSbagliata'
         });
 
-      // Il sistema deve rispondere con un errore generico di autorizzazione per sicurezza
+      // Il sistema deve rispondere con un errore generico di autorizzazione per evitare di rivelare se l'email esiste o meno
       expect(res.status).toBe(401);
       expect(res.body.messaggio).toMatch("Password non valida");
     });
@@ -146,7 +146,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
   // --- VERIFICA IDENTITÀ (US3) ---
   describe('PUT /api/v1/users/verifica-identita', () => {
     // TEST CASE N.51
-    test('Verifica identità con successo per utente base -> cambia in utente verificato', async () => {
+    test('Verifica identità con successo per utente base', async () => {
       const utenteFakeBase = {
         _id: UTENTE_BASE_ID,
         nome: 'Glen',
@@ -194,9 +194,10 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
 
   // --- RECUPERO PASSWORD (US4) ---
   describe('POST /api/v1/users/password/forgot', () => {
-    // TEST CASE N.56 e 57
+    
+    // TEST CASE N.57
     test('Richiesta reset restituisce 200 con messaggio generico per privacy ', async () => {
-      // Sia che l'utente esista o meno, il controller deve mascherare l'esito
+      // Sia che l'utente esista o meno, l'esito deve essere mascherarato per motivi di sicurezza e privacy 
       jest.spyOn(User, 'findOne').mockResolvedValue(null); // Utente non trovato
 
       const res = await request(app)
@@ -204,7 +205,6 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
         .send({ email: 'inesistente@gmail.com' });
 
       expect(res.status).toBe(200);
-      // Controlla che non esponga dettagli sull'inesistenza del profilo
       expect(res.body).toHaveProperty('messaggio'); 
     });
   });

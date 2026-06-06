@@ -43,7 +43,7 @@ describe('POST /api/v1/appartamenti', () => {
    expect(res.status).toBe(401);
  });
 
- // TEST CASE N.42
+ // TEST CASE N.43
  test('crea un nuovo appartamento e restituisce 201', async () => {
    jest.spyOn(Appartamento.prototype, 'save').mockResolvedValue(appartamentoFake);
 
@@ -151,12 +151,11 @@ describe('PUT /api/v1/appartamenti/:id', () => {
 
  // TEST CASE N.47
  test('restituisce 403 se l\'appartamento non appartiene all\'admin', async () => {
-   // verificaProprietario middleware: trova l'appartamento con un altro proprietario
+   // Il middleware verificaProprietario trova l'appartamento con un altro proprietario e blocca l'accesso
    jest.spyOn(Appartamento, 'findById').mockResolvedValue({
      ...appartamentoFake,
      amministratoreId: ALTRO_ADMIN_ID,
    });
-
 
    const res = await request(app)
      .put(`/api/v1/appartamenti/${APP_ID}`)
@@ -221,8 +220,8 @@ describe('DELETE /api/v1/appartamenti/:id', () => {
    expect(res.body.success).toBe(true);
  });
 
- // TEST CASE N.98
- test('include warning se esistono annunci associati', async () => {
+ // TEST CASE N.96
+ test('eliminazione appartamento con warning se esistono annunci associati', async () => {
    jest.spyOn(Appartamento, 'findById').mockResolvedValue(appartamentoFake);
    jest.spyOn(Annuncio, 'countDocuments').mockResolvedValue(2);
    jest.spyOn(Appartamento, 'findByIdAndDelete').mockResolvedValue(appartamentoFake);
@@ -235,7 +234,7 @@ describe('DELETE /api/v1/appartamenti/:id', () => {
    expect(res.body.warnings).toMatch(/2 annunci/);
  });
 
- // TEST CASE N.99
+ // TEST CASE N.97
  test('restituisce 404 se l\'appartamento non esiste', async () => {
    jest.spyOn(Appartamento, 'findById').mockResolvedValue(appartamentoFake);
    jest.spyOn(Annuncio, 'countDocuments').mockResolvedValue(0);

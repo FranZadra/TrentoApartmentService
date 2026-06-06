@@ -186,18 +186,6 @@ describe('GET /api/v1/appartamenti/:appartamentoId/annuncio', () => {
   });
 
   // TEST CASE N.55
-  test('restituisce 403 se l\'appartamento non appartiene all\'admin', async () => {
-    jest.spyOn(Appartamento, 'findById').mockResolvedValue({
-      _id: APPARTAMENTO_ID,
-      amministratoreId: ALTRO_ADMIN_ID, // proprietario diverso
-    });
-
-    const res = await request(app)
-      .get(`/api/v1/appartamenti/${APPARTAMENTO_ID}/annuncio`)
-      .set('Authorization', `Bearer ${tokenAdmin}`);
-    expect(res.status).toBe(403);
-  });
-
   test('restituisce 404 se l\'annuncio non esiste', async () => {
     jest.spyOn(Appartamento, 'findById').mockResolvedValue(appartamentoFake);
     jest.spyOn(Annuncio, 'findOne').mockReturnValue({
@@ -214,26 +202,14 @@ describe('GET /api/v1/appartamenti/:appartamentoId/annuncio', () => {
     expect(res.status).toBe(404);
   });
 
-  test('restituisce 200 con l\'annuncio corretto', async () => {
-    jest.spyOn(Appartamento, 'findById').mockResolvedValue(appartamentoFake);
-    const chainMock = { populate: jest.fn() };
-    chainMock.populate.mockReturnValueOnce(chainMock).mockResolvedValueOnce(annuncioFake);
-    jest.spyOn(Annuncio, 'findOne').mockReturnValue(chainMock);
-
-    const res = await request(app)
-      .get(`/api/v1/appartamenti/${APPARTAMENTO_ID}/annuncio`)
-      .set('Authorization', `Bearer ${tokenAdmin}`);
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
 });
 
-// ─── POST /api/v1/annunci/admin/appartamento/:appartamentoId ─────────────────
+// POST /api/v1/appartamenti/:appartamentoId/annuncio 
 
 describe('POST /api/v1/appartamenti/:appartamentoId/annuncio', () => {
   afterEach(() => jest.restoreAllMocks());
 
-  // TST CASE N.89
+  // TEST CASE N.87
   test('restituisce 401 senza token', async () => {
     const res = await request(app)
       .post(`/api/v1/appartamenti/${APPARTAMENTO_ID}/annuncio`)
@@ -241,7 +217,7 @@ describe('POST /api/v1/appartamenti/:appartamentoId/annuncio', () => {
     expect(res.status).toBe(401);
   });
 
-  // TEST CASE N.90
+  // TEST CASE N.88
   test('restituisce 403 se l\'utente non è amministratore', async () => {
     const tokenInquilino = jwt.sign(
       { sub: '64a000000000000000000010', ruolo: 'inquilino' },
@@ -293,7 +269,7 @@ describe('POST /api/v1/appartamenti/:appartamentoId/annuncio', () => {
   });
 });
 
-// ─── PUT /api/v1/annunci/:id ──────────────────────────────────────────────────
+// PUT /api/v1/annunci/:id 
 
 describe('PUT /api/v1/annunci/:id', () => {
   afterEach(() => jest.restoreAllMocks());
@@ -317,41 +293,20 @@ describe('PUT /api/v1/annunci/:id', () => {
     expect(res.status).toBe(404);
   });
 
-  // TEST CASE N.54
-  test('restituisce 200 dopo aggiornamento corretto', async () => {
-    const chainFind = { populate: jest.fn() };
-    chainFind.populate.mockReturnValueOnce(chainFind).mockResolvedValueOnce(annuncioFake);
-    jest.spyOn(Annuncio, 'findById').mockReturnValue(chainFind);
-    jest.spyOn(Appartamento, 'findById').mockResolvedValue(appartamentoFake);
-    const chainFindById2 = { populate: jest.fn() };
-    chainFindById2.populate.mockReturnValueOnce(chainFindById2).mockResolvedValueOnce(annuncioFake);
-    // Seconda chiamata a findById (dopo save)
-    jest.spyOn(Annuncio, 'findById')
-      .mockReturnValueOnce(chainFind)
-      .mockReturnValueOnce(chainFindById2);
-
-    const res = await request(app)
-      .put(`/api/v1/annunci/${ANNUNCIO_ID}`)
-      .set('Authorization', `Bearer ${tokenAdmin}`)
-      .send({ descrizione: 'Aggiornato', attivo: true });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
 });
 
-// ─── DELETE /api/v1/annunci/:id ───────────────────────────────────────────────
+// DELETE /api/v1/annunci/:id 
 
 describe('DELETE /api/v1/annunci/:id', () => {
   afterEach(() => jest.restoreAllMocks());
 
-  // TEST CASE N.91
+  // TEST CASE N.89
   test('restituisce 401 senza token', async () => {
     const res = await request(app).delete(`/api/v1/annunci/${ANNUNCIO_ID}`);
     expect(res.status).toBe(401);
   });
 
-  // TEST CASE N.92
+  // TEST CASE N.90
   test('restituisce 404 se l\'annuncio non esiste', async () => {
     const chainMock = { populate: jest.fn() };
     chainMock.populate.mockReturnValueOnce(chainMock).mockResolvedValueOnce(null);

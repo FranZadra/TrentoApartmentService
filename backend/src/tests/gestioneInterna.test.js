@@ -31,42 +31,40 @@ describe('Suite di Test: Gestione Interna Coinquilini (US21, US23, US24)', () =>
    // --- SEGNALAZIONE GUASTI (US24) ---
    describe('POST /api/v1/gestione-interna/guasti', () => {
   
-       // TEST CASE N.66
-       test('Inserimento segnalazione guasto bloccato se manca la priorità', async () => {
-           // Mock del contratto attivo per superare il controllo di residenza
-           jest.spyOn(Contratto, 'findOne').mockResolvedValue({ _id: '64e000000000000000000005' });
-          
-           jest.spyOn(User, 'findById').mockResolvedValue({ _id: INQUILINO_ID, nome: 'Mario', cognome: 'Rossi', ruolo: 'inquilino' });
+        // TEST CASE N.66
+        test('Inserimento segnalazione guasto bloccato se manca la priorità', async () => {
 
-           const res = await request(app)
-           .post('/api/v1/gestione-interna/guasti')
-           .set('Authorization', `Bearer ${tokenInquilino}`)
-           .send({
-               idAppartamento: APP_ID,
-               descrizione: 'La caldaia non funziona',
-               categoria: 'Riscaldamento'
-               //priorita mancante
-           });
+            jest.spyOn(Contratto, 'findOne').mockResolvedValue({ _id: '64e000000000000000000005' });
+            jest.spyOn(User, 'findById').mockResolvedValue({ _id: INQUILINO_ID, nome: 'Mario', cognome: 'Rossi', ruolo: 'inquilino' });
 
-           expect(res.status).toBe(400);
-           expect(res.body.errors).toContain('La priorità deve essere valida');
+            const res = await request(app)
+            .post('/api/v1/gestione-interna/guasti')
+            .set('Authorization', `Bearer ${tokenInquilino}`)
+            .send({
+                idAppartamento: APP_ID,
+                descrizione: 'La caldaia non funziona',
+                categoria: 'Riscaldamento'
+                //priorità mancante
+            });
+
+            expect(res.status).toBe(400);
+            expect(res.body.errors).toContain('La priorità deve essere valida');
        });
 
-       // TEST CASE N.64
-       test('Inserimento segnalazione fallisce se la descrizione è vuota', async () => {
-           // Mock del contratto attivo per superare il controllo di residenza
-           jest.spyOn(Contratto, 'findOne').mockResolvedValue({ _id: '64e000000000000000000005' });
-          
-           jest.spyOn(User, 'findById').mockResolvedValue({ _id: INQUILINO_ID, nome: 'Mario', cognome: 'Rossi', ruolo: 'inquilino' });
+        // TEST CASE N.64
+        test('Inserimento segnalazione fallisce se la descrizione è vuota', async () => {
+    
+            jest.spyOn(Contratto, 'findOne').mockResolvedValue({ _id: '64e000000000000000000005' });
+            jest.spyOn(User, 'findById').mockResolvedValue({ _id: INQUILINO_ID, nome: 'Mario', cognome: 'Rossi', ruolo: 'inquilino' });
 
            const res = await request(app)
-           .post('/api/v1/gestione-interna/guasti')
-           .set('Authorization', `Bearer ${tokenInquilino}`)
-           .send({
-               idAppartamento: APP_ID,
-               descrizione: '',
-               categoria: 'Idraulica',
-               priorita: 'alta'
+            .post('/api/v1/gestione-interna/guasti')
+            .set('Authorization', `Bearer ${tokenInquilino}`)
+            .send({
+                idAppartamento: APP_ID,
+                descrizione: '',
+                categoria: 'Idraulica',
+                priorita: 'alta'
            });
 
            expect(res.status).toBe(400);
@@ -77,7 +75,7 @@ describe('Suite di Test: Gestione Interna Coinquilini (US21, US23, US24)', () =>
    // --- LISTA DELLA SPESA (US21) ---
    describe('PUT /api/v1/gestione-interna/spesa/:contrattoId', () => {
 
-   // TEST CASE N.82
+   // TEST CASE N.80
        test('Aggiornamento lista della spesa fallisce se un articolo ha quantità <= 0', async () => {
            jest.spyOn(Contratto, 'findById').mockResolvedValue(contrattoFake);
 
@@ -96,7 +94,7 @@ describe('Suite di Test: Gestione Interna Coinquilini (US21, US23, US24)', () =>
    //GESTIONE FACCENDE e CALENDARIO
    describe('POST /api/v1/gestione-interna/faccende/:appId', () => {
 
-       // TEST CASE N.85
+       // TEST CASE N.83
        test('Inserimento con successo di una nuova faccenda condivisa', async () => {
            const contrattoFake = {
            _id: '64e000000000000000000005',
@@ -105,9 +103,7 @@ describe('Suite di Test: Gestione Interna Coinquilini (US21, US23, US24)', () =>
            }
            };
 
-           // Simula il caricamento iniziale del contratto dell'inquilino loggato
            jest.spyOn(Contratto, 'findOne').mockResolvedValue(contrattoFake);
-           // Simula l'operazione atomica updateOne con $push implementata nel controller per non rompere le validazioni legacy
            jest.spyOn(Contratto, 'updateOne').mockResolvedValue({ modifiedCount: 1 });
 
            jest.spyOn(User, 'findById').mockResolvedValue({ _id: INQUILINO_ID, nome: 'Mario', cognome: 'Rossi', ruolo: 'inquilino' });
@@ -129,7 +125,7 @@ describe('Suite di Test: Gestione Interna Coinquilini (US21, US23, US24)', () =>
            );
        });
 
-       // TEST CASE N.88
+       // TEST CASE N.86
        test('Tentativo eliminazione faccenda altrui restituisce 403', async () => {
            const faccendaDiUnAltro = {
                _id: new mongoose.Types.ObjectId(),
