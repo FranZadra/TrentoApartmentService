@@ -447,17 +447,20 @@ La modifica e l'eliminazione richiedono inoltre che l'utente autenticato sia il 
 | 403 | Appartamento senza `amministratoreId` | `"Appartamento senza amministratore assegnato — operazione non consentita."` |
 | 404 | Appartamento non trovato | `"Appartamento non trovato"` |
 
-## Appartamenti Collection [/api/v1/appartamenti{?page,limit,perStudenti,città}]
+## Appartamenti Collection [/api/v1/appartamenti{?page,limit,perStudenti,città,proprietario}]
 
-### Lista appartamenti pubblica [GET]
+### Lista appartamenti [GET]
 
-Restituisce la lista paginata di tutti gli appartamenti. Non richiede autenticazione.
+Restituisce la lista paginata degli appartamenti. Accessibile senza autenticazione.
+Con `proprietario=me` e un token JWT valido restituisce solo gli appartamenti dell'amministratore
+autenticato (l'`amministratoreId` è ricavato dal token, non va passato come parametro).
 
 + Parameters
     + page: 1 (number, optional) - Numero di pagina (default: 1)
     + limit: 10 (number, optional) - Elementi per pagina (default: 10)
     + perStudenti (boolean, optional) - Filtra appartamenti adatti agli studenti
     + città (string, optional) - Filtra per città (case-insensitive, ricerca parziale)
+    + proprietario (string, optional) - Se valorizzato a `me`, restituisce solo gli appartamenti dell'amministratore autenticato (richiede token JWT)
 
 + Response 200 (application/json)
 
@@ -504,6 +507,13 @@ Restituisce la lista paginata di tutti gli appartamenti. Non richiede autenticaz
                 "totalItems": 48,
                 "itemsPerPage": 10
             }
+        }
+
++ Response 401 (application/json)
+
+        {
+            "success": false,
+            "message": "Utente non autenticato"
         }
 
 + Response 500 (application/json)
@@ -628,20 +638,15 @@ La `posizione` (lat/lon) viene calcolata automaticamente dall'indirizzo tramite 
             "message": "Token non valido"
         }
 
-## Appartamenti Admin [/api/v1/appartamenti/admin{?page,limit}]
-
-### Lista appartamenti dell'amministratore [GET]
-
-Restituisce la lista paginata degli appartamenti gestiti dall'utente autenticato.
-L'`amministratoreId` viene estratto dal token JWT; non è necessario passarlo come parametro.
-Richiede autenticazione JWT.
-
-**Nota implementativa:** questa route (`/admin`) è definita nel router prima di `/:id` per evitare che
-la stringa `"admin"` sia interpretata come un ObjectId.
+## Annuncio Appartamento [/api/v1/appartamenti/{appartamentoId}/annuncio]
 
 + Parameters
-    + page: 1 (number, optional) - Numero di pagina (default: 1)
-    + limit: 10 (number, optional) - Elementi per pagina (default: 10)
+    + appartamentoId (string, required) - MongoDB ObjectId dell'appartamento
+
+### Annuncio di un appartamento [GET]
+
+Restituisce l'annuncio collegato all'appartamento dell'amministratore autenticato.
+Il ruolo e la proprietà sono verificati dal token JWT.
 
 + Request
 
@@ -653,34 +658,11 @@ la stringa `"admin"` sia interpretata come un ObjectId.
 
         {
             "success": true,
-            "message": "Appartamenti dell'amministratore recuperati",
-            "data": [
-                {
-                    "_id": "665f1a2b3c4d5e6f7a8b9c0d",
-                    "indirizzo": {
-                        "via": "Via Roma",
-                        "numero": 10,
-                        "città": "Trento",
-                        "CAP": "38122",
-                        "Stato": "Italia"
-                    },
-                    "mqTot": 90,
-                    "perStudenti": false,
-                    "numStanze": 3,
-                    "numBagni": 2,
-                    "foto": [],
-                    "terrazzo": true,
-                    "lavatrice": false,
-                    "classeEnergetica": "B",
-                    "amministratoreId": "665f1a2b3c4d5e6f7a8b9c01",
-                    "camere": []
-                }
-            ],
-            "pagination": {
-                "currentPage": 1,
-                "totalPages": 2,
-                "totalItems": 12,
-                "itemsPerPage": 10
+            "data": {
+                "_id": "665f1a2b3c4d5e6f7a8b9c40",
+                "appartamentoId": "665f1a2b3c4d5e6f7a8b9c0d",
+                "descrizione": "Luminoso trilocale in centro",
+                "attivo": true
             }
         }
 
@@ -695,14 +677,59 @@ la stringa `"admin"` sia interpretata come un ObjectId.
 
         {
             "success": false,
-            "message": "Token non valido"
+            "message": "Non sei autorizzato a gestire questo appartamento"
         }
 
-+ Response 500 (application/json)
++ Response 404 (application/json)
 
         {
             "success": false,
-            "message": "Errore interno del server"
+            "message": "Annuncio non trovato"
+        }
+
+### Crea o aggiorna l'annuncio [POST]
+
+Crea o aggiorna (upsert) l'annuncio dell'appartamento dell'amministratore autenticato.
+Richiede ruolo `amministratore`; la proprietà è verificata dal token JWT.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
+    + Body
+
+            {
+                "descrizione": "Luminoso trilocale in centro",
+                "attivo": true
+            }
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "message": "Annuncio salvato",
+            "data": {
+                "_id": "665f1a2b3c4d5e6f7a8b9c40",
+                "appartamentoId": "665f1a2b3c4d5e6f7a8b9c0d",
+                "descrizione": "Luminoso trilocale in centro",
+                "attivo": true
+            }
+        }
+
++ Response 401 (application/json)
+
+        {
+            "success": false,
+            "message": "Token non fornito. Usa Authorization: Bearer <token>"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "success": false,
+            "message": "Solo gli amministratori possono gestire l'annuncio"
         }
 
 ## Appartamento [/api/v1/appartamenti/{id}]
@@ -1490,6 +1517,50 @@ Richiede autenticazione JWT e un contratto attivo sull'appartamento.
             "error": "Appartamento non trovato"
         }
 
+## Guasti — Presa in Carico [/api/v1/gestione-interna/guasti/{guastoId}/carico]
+
++ Parameters
+    + guastoId (string, required) - MongoDB ObjectId del guasto
+
+### Prendi in carico un guasto [PUT]
+
+L'amministratore proprietario dell'appartamento prende in carico il guasto.
+Richiede ruolo `amministratore`; la proprietà è verificata dal token JWT.
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer <jwt_token>
+
++ Response 200 (application/json)
+
+        {
+            "data": {
+                "_id": "665f1a2b3c4d5e6f7a8b9c20",
+                "idAppartamento": "665f1a2b3c4d5e6f7a8b9c0d",
+                "stato": "in carico"
+            }
+        }
+
++ Response 401 (application/json)
+
+        {
+            "error": "Utente non autenticato"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Non autorizzato"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Guasto non trovato"
+        }
+
 ---
 
 # Group Bollette
@@ -1553,14 +1624,16 @@ Il PDF, se allegato, deve essere in formato `application/pdf` (max 10 MB).
             "message": "Non sei l'amministratore proprietario"
         }
 
-## Bollette Admin [/api/v1/bollette/admin/{appartamentoId}]
+## Bollette Appartamento [/api/v1/appartamenti/{appId}/bollette]
 
 + Parameters
-    + appartamentoId (string, required) - MongoDB ObjectId dell'appartamento
+    + appId (string, required) - MongoDB ObjectId dell'appartamento
 
-### Lista bollette di un appartamento (vista amministratore) [GET]
+### Lista bollette di un appartamento [GET]
 
-Restituisce l'elenco completo delle bollette di un appartamento. Riservato all'amministratore proprietario.
+Restituisce le bollette dell'appartamento. Accessibile all'amministratore proprietario e
+all'inquilino con contratto attivo o in chiusura; il ruolo e l'autorizzazione sono determinati
+dal token JWT. Include i dati aggregati per i grafici dei consumi.
 
 + Request
 
@@ -1583,44 +1656,6 @@ Restituisce l'elenco completo delle bollette di un appartamento. Riservato all'a
                     "pagata": false,
                     "pdfNomeFile": "bolletta-gennaio.pdf"
                 }
-            ]
-        }
-
-+ Response 403 (application/json)
-
-        {
-            "success": false,
-            "message": "Accesso non autorizzato"
-        }
-
-## Bollette Inquilino [/api/v1/bollette/inquilino]
-
-### Lista bollette dell'inquilino loggato [GET]
-
-Restituisce le bollette dell'appartamento in cui l'inquilino ha un contratto attivo o in chiusura,
-più i dati aggregati per i grafici dei consumi.
-
-+ Request
-
-    + Headers
-
-            Authorization: Bearer <jwt_token>
-
-+ Response 200 (application/json)
-
-        {
-            "success": true,
-            "data": [
-                {
-                    "_id": "665f1a2b3c4d5e6f7a8b9c30",
-                    "idAppartamento": "665f1a2b3c4d5e6f7a8b9c0d",
-                    "utenza": "elettricità",
-                    "periodoInizio": "2026-01-01",
-                    "periodoFine": "2026-03-31",
-                    "importo": 85.5,
-                    "pagata": false,
-                    "pdfNomeFile": null
-                }
             ],
             "grafici": {
                 "labels": ["Gen 2026", "Feb 2026", "Mar 2026"],
@@ -1630,11 +1665,16 @@ più i dati aggregati per i grafici dei consumi.
             }
         }
 
++ Response 401 (application/json)
+
+        {
+            "error": "Utente non autenticato"
+        }
+
 + Response 403 (application/json)
 
         {
-            "success": false,
-            "message": "Solo gli inquilini possono accedere"
+            "error": "Non autorizzato"
         }
 
 ## Segna Bolletta Pagata [/api/v1/bollette/{bollettaId}/paga]
