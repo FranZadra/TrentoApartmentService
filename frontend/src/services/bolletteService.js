@@ -17,7 +17,7 @@ api.interceptors.request.use((config) => {
 // Funzioni amministratore
 export async function getBolletteAdmin(appartamentoId) {
   try {
-    const res = await api.get(`/bollette/admin/${appartamentoId}`)
+    const res = await api.get(`/appartamenti/${appartamentoId}/bollette`)
     return { success: true, data: res.data }
   } catch (err) {
     return { success: false, error: err.response?.data?.error || 'Errore nel recupero delle bollette' }
@@ -57,9 +57,9 @@ export async function eliminaBolletta(bollettaId) {
 }
 
 // Funzioni inquilino
-export async function getBolletteInquilino() {
+export async function getBolletteInquilino(appartamentoId) {
   try {
-    const res = await api.get('/bollette/inquilino')
+    const res = await api.get(`/appartamenti/${appartamentoId}/bollette`)
     return { success: true, data: res.data }
   } catch (err) {
     return { success: false, error: err.response?.data?.error || 'Errore nel recupero delle bollette' }

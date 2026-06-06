@@ -85,6 +85,18 @@ async function getAppartamenti(req, res) {
     const skip = (page - 1) * limit;
 
     const filters = {};
+
+    if (req.query.proprietario === 'me') {
+      const amministratoreId = req.user?.id || req.user?._id || req.user?.sub;
+      if (!amministratoreId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Utente non autenticato',
+        });
+      }
+      filters.amministratoreId = amministratoreId;
+    }
+
     if (req.query.perStudenti !== undefined) {
       filters.perStudenti = req.query.perStudenti === 'true';
     }
@@ -225,51 +237,6 @@ async function eliminaAppartamento(req, res) {
     res.status(500).json({
       success: false,
       message: 'Errore nell\'eliminazione dell\'appartamento',
-      error: error.message,
-    });
-  }
-}
-
-/**
- * Recupera tutti gli appartamenti gestiti dall'amministratore autenticato.
- * L'ID viene estratto dal JWT già verificato dal middleware auth.
- * Query: page, limit (come getAllApartments)
- */
-async function getAppartamentiAdmin(req, res) {
-  try {
-    const amministratoreId = req.user?.id || req.user?._id || req.user?.sub; // A seconda di come è strutturato il token JWT, potrebbe essere in req.user.id o req.user.sub
-
-    if (!amministratoreId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Utente non autenticato',
-      });
-    }
-
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const skip = (page - 1) * limit;
-
-    const total = await Appartamento.countDocuments({ amministratoreId });
-    const appartamenti = await Appartamento.find({ amministratoreId })
-      .skip(skip)
-      .limit(limit);
-
-    res.status(200).json({
-      success: true,
-      message: 'Appartamenti dell\'amministratore recuperati',
-      data: appartamenti,
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(total / limit),
-        totalItems: total,
-        itemsPerPage: limit,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Errore nel recupero degli appartamenti dell\'amministratore',
       error: error.message,
     });
   }
@@ -426,7 +393,6 @@ module.exports = {
   getAppartamentoDaId,
   aggiornaAppartamento,
   eliminaAppartamento,
-  getAppartamentiAdmin,
   getContattoAdmin,
   associaInquilino,
 };

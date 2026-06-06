@@ -629,9 +629,15 @@ paths:
   /api/v1/appartamenti:
     get:
       tags: [Appartamenti]
-      summary: Lista appartamenti pubblica
-      description: Restituisce la lista paginata di tutti gli appartamenti. Non richiede autenticazione.
+      summary: Lista appartamenti
+      description: |
+        Restituisce la lista paginata degli appartamenti. Accessibile senza autenticazione.
+        Con `proprietario=me` e un token JWT valido restituisce solo gli appartamenti
+        dell'amministratore autenticato (l'`amministratoreId` è ricavato dal token).
       operationId: getAppartamenti
+      security:
+        - {}
+        - bearerAuth: []
       parameters:
         - name: page
           in: query
@@ -655,6 +661,12 @@ paths:
           schema:
             type: string
           description: Filtra per città (case-insensitive, ricerca parziale)
+        - name: proprietario
+          in: query
+          schema:
+            type: string
+            enum: [me]
+          description: Se valorizzato a `me`, restituisce solo gli appartamenti dell'amministratore autenticato (richiede token JWT)
       responses:
         "200":
           description: Lista paginata degli appartamenti
@@ -675,6 +687,12 @@ paths:
                       $ref: '#/components/schemas/Appartamento'
                   pagination:
                     $ref: '#/components/schemas/Paginazione'
+        "401":
+          description: Richiesto `proprietario=me` senza token JWT valido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
         "500":
           description: Errore interno del server
           content:
@@ -780,31 +798,84 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErroreAutorizzazione'
 
-  /api/v1/appartamenti/admin:
+  /api/v1/appartamenti/{appartamentoId}/annuncio:
     get:
-      tags: [Appartamenti]
-      summary: Lista appartamenti dell'amministratore
+      tags: [Annunci]
+      summary: Annuncio di un appartamento (vista amministratore)
       description: |
-        Restituisce la lista paginata degli appartamenti gestiti dall'utente autenticato.
-        L'`amministratoreId` viene estratto dal token JWT.
-        **Nota:** questa route è definita prima di `/{id}` per evitare che la stringa `"admin"` sia interpretata come ObjectId.
-      operationId: getAppartamentiAdmin
+        Restituisce l'annuncio collegato all'appartamento dell'amministratore autenticato.
+        L'autorizzazione (ruolo e proprietà) è verificata dal token JWT.
+      operationId: getAnnuncioByAppartamento
       security:
         - bearerAuth: []
       parameters:
-        - name: page
-          in: query
+        - name: appartamentoId
+          in: path
+          required: true
           schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 10
+            type: string
+          description: MongoDB ObjectId dell'appartamento
       responses:
         "200":
-          description: Lista paginata degli appartamenti dell'amministratore
+          description: Annuncio dell'appartamento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Annuncio'
+        "401":
+          description: Token JWT assente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "403":
+          description: L'appartamento non appartiene all'amministratore autenticato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+        "404":
+          description: Annuncio non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+    post:
+      tags: [Annunci]
+      summary: Crea o aggiorna l'annuncio di un appartamento
+      description: |
+        Crea o aggiorna (upsert) l'annuncio collegato all'appartamento dell'amministratore autenticato.
+        Richiede ruolo `amministratore`; la proprietà è verificata dal token JWT.
+      operationId: upsertAnnuncioByAppartamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appartamentoId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId dell'appartamento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                descrizione:
+                  type: string
+                attivo:
+                  type: boolean
+      responses:
+        "200":
+          description: Annuncio salvato
           content:
             application/json:
               schema:
@@ -815,31 +886,21 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: Appartamenti dell'amministratore recuperati
+                    example: Annuncio salvato
                   data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Appartamento'
-                  pagination:
-                    $ref: '#/components/schemas/Paginazione'
+                    $ref: '#/components/schemas/Annuncio'
         "401":
-          description: Token JWT assente o utente non identificabile
+          description: Token JWT assente
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErroreAutenticazione'
         "403":
-          description: Token non valido
+          description: Solo l'amministratore proprietario può gestire l'annuncio
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErroreAutorizzazione'
-        "500":
-          description: Errore interno del server
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErroreGenerico'
 
   /api/v1/appartamenti/{id}:
     get:
@@ -1717,6 +1778,61 @@ paths:
                       type: string
                       example: Appartamento non trovato        
 
+  /api/v1/gestione-interna/guasti/{guastoId}/carico:
+    put:
+      tags: [Gestione Interna]
+      summary: Prendi in carico un guasto (amministratore)
+      description: |
+        L'amministratore proprietario dell'appartamento prende in carico il guasto.
+        Richiede ruolo `amministratore`; la proprietà è verificata dal token JWT.
+      operationId: prendiInCaricoGuastoAdmin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: guastoId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId del guasto
+      responses:
+        "200":
+          description: Guasto preso in carico
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Guasto'
+        "401":
+          description: Token assente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Solo l'amministratore proprietario può prendere in carico il guasto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "404":
+          description: Guasto non trovato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
   # /api/v1/gestione-interna/spesa/{contrattoId}:
   #  put:
 
@@ -1788,52 +1904,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErroreAutorizzazione'
 
-  /api/v1/bollette/admin/{appartamentoId}:
+  /api/v1/appartamenti/{appId}/bollette:
     get:
       tags: [Bollette]
-      summary: Lista bollette di un appartamento (vista amministratore)
-      operationId: getBolletteAdmin
+      summary: Lista bollette di un appartamento
+      description: |
+        Restituisce le bollette dell'appartamento. Accessibile dall'amministratore proprietario
+        e dall'inquilino con contratto attivo o in chiusura; il ruolo e l'autorizzazione sono
+        determinati dal token JWT. Include i dati aggregati per i grafici dei consumi.
+      operationId: getBolletteAppartamento
       security:
         - bearerAuth: []
       parameters:
-        - name: appartamentoId
+        - name: appId
           in: path
           required: true
           schema:
             type: string
+          description: MongoDB ObjectId dell'appartamento
       responses:
         "200":
-          description: Elenco bollette
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Bolletta'
-        "403":
-          description: Accesso non autorizzato
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErroreAutorizzazione'
-
-  /api/v1/bollette/inquilino:
-    get:
-      tags: [Bollette]
-      summary: Lista bollette dell'inquilino loggato (con dati per i grafici)
-      description: Restituisce le bollette dell'appartamento in cui l'inquilino ha un contratto attivo o in chiusura, piu' i dati aggregati per i grafici dei consumi.
-      operationId: getBolletteInquilino
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: Elenco bollette e grafici
+          description: Elenco bollette e dati per i grafici
           content:
             application/json:
               schema:
@@ -1849,8 +1940,14 @@ paths:
                   grafici:
                     type: object
                     description: Dataset pronto per i grafici (labels e datasets per utenza)
+        "401":
+          description: Token JWT assente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
         "403":
-          description: Solo gli inquilini possono accedere
+          description: Non autorizzato (non proprietario o senza contratto attivo per l'appartamento)
           content:
             application/json:
               schema:

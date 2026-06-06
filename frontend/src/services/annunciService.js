@@ -32,12 +32,12 @@ export const annunciService = {
 
   // GET /api/v1/annunci/admin/appartamento/:appartamentoId — annuncio dell'appartamento dell'admin
   getByApartmentId(appartamentoId) {
-    return api.get(`/annunci/admin/appartamento/${appartamentoId}`)
+    return api.get(`/appartamenti/${appartamentoId}/annuncio`)
   },
 
   // POST /api/v1/annunci/admin/appartamento/:appartamentoId — crea o aggiorna l'annuncio dell'appartamento
   upsertByApartmentId(appartamentoId, payload) {
-    return api.post(`/annunci/admin/appartamento/${appartamentoId}`, payload)
+    return api.post(`/appartamenti/${appartamentoId}/annuncio`, payload)
   },
 
   // PUT /api/v1/annunci/:id — aggiornamento per annuncio con id specifico

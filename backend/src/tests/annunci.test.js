@@ -177,11 +177,11 @@ describe('GET /api/v1/annunci/:id', () => {
 
 // ─── GET /api/v1/annunci/admin/appartamento/:appartamentoId ──────────────────
 
-describe('GET /api/v1/annunci/admin/appartamento/:appartamentoId', () => {
+describe('GET /api/v1/appartamenti/:appartamentoId/annuncio', () => {
   afterEach(() => jest.restoreAllMocks());
 
   test('restituisce 401 senza token', async () => {
-    const res = await request(app).get(`/api/v1/annunci/admin/appartamento/${APPARTAMENTO_ID}`);
+    const res = await request(app).get(`/api/v1/appartamenti/${APPARTAMENTO_ID}/annuncio`);
     expect(res.status).toBe(401);
   });
 
@@ -193,7 +193,7 @@ describe('GET /api/v1/annunci/admin/appartamento/:appartamentoId', () => {
     });
 
     const res = await request(app)
-      .get(`/api/v1/annunci/admin/appartamento/${APPARTAMENTO_ID}`)
+      .get(`/api/v1/appartamenti/${APPARTAMENTO_ID}/annuncio`)
       .set('Authorization', `Bearer ${tokenAdmin}`);
     expect(res.status).toBe(403);
   });
@@ -209,7 +209,7 @@ describe('GET /api/v1/annunci/admin/appartamento/:appartamentoId', () => {
     jest.spyOn(Annuncio, 'findOne').mockReturnValue(chainMock);
 
     const res = await request(app)
-      .get(`/api/v1/annunci/admin/appartamento/${APPARTAMENTO_ID}`)
+      .get(`/api/v1/appartamenti/${APPARTAMENTO_ID}/annuncio`)
       .set('Authorization', `Bearer ${tokenAdmin}`);
     expect(res.status).toBe(404);
   });
@@ -221,7 +221,7 @@ describe('GET /api/v1/annunci/admin/appartamento/:appartamentoId', () => {
     jest.spyOn(Annuncio, 'findOne').mockReturnValue(chainMock);
 
     const res = await request(app)
-      .get(`/api/v1/annunci/admin/appartamento/${APPARTAMENTO_ID}`)
+      .get(`/api/v1/appartamenti/${APPARTAMENTO_ID}/annuncio`)
       .set('Authorization', `Bearer ${tokenAdmin}`);
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -230,13 +230,13 @@ describe('GET /api/v1/annunci/admin/appartamento/:appartamentoId', () => {
 
 // ─── POST /api/v1/annunci/admin/appartamento/:appartamentoId ─────────────────
 
-describe('POST /api/v1/annunci/admin/appartamento/:appartamentoId', () => {
+describe('POST /api/v1/appartamenti/:appartamentoId/annuncio', () => {
   afterEach(() => jest.restoreAllMocks());
 
   // TST CASE N.89
   test('restituisce 401 senza token', async () => {
     const res = await request(app)
-      .post(`/api/v1/annunci/admin/appartamento/${APPARTAMENTO_ID}`)
+      .post(`/api/v1/appartamenti/${APPARTAMENTO_ID}/annuncio`)
       .send({ descrizione: 'Test', attivo: true });
     expect(res.status).toBe(401);
   });
@@ -250,7 +250,7 @@ describe('POST /api/v1/annunci/admin/appartamento/:appartamentoId', () => {
     );
 
     const res = await request(app)
-      .post(`/api/v1/annunci/admin/appartamento/${APPARTAMENTO_ID}`)
+      .post(`/api/v1/appartamenti/${APPARTAMENTO_ID}/annuncio`)
       .set('Authorization', `Bearer ${tokenInquilino}`)
       .send({ descrizione: 'Test', attivo: true });
 
@@ -266,7 +266,7 @@ describe('POST /api/v1/annunci/admin/appartamento/:appartamentoId', () => {
     jest.spyOn(Annuncio, 'findById').mockReturnValue(chainMock);
 
     const res = await request(app)
-      .post(`/api/v1/annunci/admin/appartamento/${APPARTAMENTO_ID}`)
+      .post(`/api/v1/appartamenti/${APPARTAMENTO_ID}/annuncio`)
       .set('Authorization', `Bearer ${tokenAdmin}`)
       .send({ descrizione: 'Nuovo annuncio', attivo: true });
 
@@ -284,7 +284,7 @@ describe('POST /api/v1/annunci/admin/appartamento/:appartamentoId', () => {
     jest.spyOn(Annuncio, 'findById').mockReturnValue(chainMock);
 
     const res = await request(app)
-      .post(`/api/v1/annunci/admin/appartamento/${APPARTAMENTO_ID}`)
+      .post(`/api/v1/appartamenti/${APPARTAMENTO_ID}/annuncio`)
       .set('Authorization', `Bearer ${tokenAdmin}`)
       .send({ descrizione: 'Aggiornato', attivo: false });
 

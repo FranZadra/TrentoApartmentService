@@ -9,26 +9,31 @@ const {
   getAppartamentoDaId,
   aggiornaAppartamento,
   eliminaAppartamento,
-  getAppartamentiAdmin,
   getContattoAdmin,
   associaInquilino,
 } = require('../controllers/controllerAppartamenti')
 
-const { autenticaToken } = require('../middleware/auth')
+const { getBolletteAppartamento } = require('../controllers/bolletteController')
+
+const { getAnnuncioByAppartamento, upsertAnnuncioByAppartamento } = require('../controllers/annunciController')
+
+const { autenticaToken, autenticaTokenOpzionale } = require('../middleware/auth')
 const { verificaBodyCreazione, verificaBodyAggiornamento } = require('../middleware/verificaBody')
 const { verificaProprietario } = require('../middleware/verificaPropr')
 
 // Lista pubblica degli appartamenti con paginazione.
-router.get('/', getAppartamenti)
+router.get('/', autenticaTokenOpzionale, getAppartamenti)
 
 // Crea un nuovo appartamento solo se l'utente è autenticato.
 router.post('/', autenticaToken, verificaBodyCreazione, creaAppartamento)
 
-// Elenco degli appartamenti collegati all'amministratore loggato.
-router.get('/admin', autenticaToken, getAppartamentiAdmin)
-
 // Contatto WhatsApp dell'amministratore: solo utenti autenticati (registrati).
 router.get('/:id/contatto-admin', autenticaToken, getContattoAdmin)
+
+router.get('/:appId/bollette', autenticaToken, getBolletteAppartamento)
+
+router.get('/:appartamentoId/annuncio', autenticaToken, getAnnuncioByAppartamento)
+router.post('/:appartamentoId/annuncio', autenticaToken, upsertAnnuncioByAppartamento)
 
 // Dettaglio di un singolo appartamento.
 router.get('/:id', getAppartamentoDaId)

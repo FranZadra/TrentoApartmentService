@@ -10,8 +10,6 @@ const {
   getAnnunciAttivi,
   getAnnuncioById,
   searchAnnunciWithFilters,
-  getAnnuncioByAppartamento,
-  upsertAnnuncioByAppartamento,
   updateAnnuncioById,
 } = require('../controllers/annunciController');
 const { autenticaToken } = require('../middleware/auth');
@@ -26,14 +24,6 @@ router.get('/', getAnnunciAttivi);
 // Query parameters: numStanze, numBagni, terrazzo, classeEnergetica, mqMin, mqMax, prezzoMin, prezzoMax, tipoCam
 // Nota: questa rotta DEVE venire PRIMA di /:id per evitare che "search" sia interpretato come ID
 router.get('/search/filter', searchAnnunciWithFilters);
-
-// GET /api/v1/annunci/admin/appartamento/:appartamentoId
-// Recupera l'annuncio associato a un appartamento dell'amministratore autenticato.
-router.get('/admin/appartamento/:appartamentoId', autenticaToken, getAnnuncioByAppartamento);
-
-// POST /api/v1/annunci/admin/appartamento/:appartamentoId
-// Crea o aggiorna l'annuncio collegato all'appartamento dell'amministratore autenticato.
-router.post('/admin/appartamento/:appartamentoId', autenticaToken, upsertAnnuncioByAppartamento);
 
 // GET /api/v1/annunci/:id
 // Dettaglio di un singolo annuncio

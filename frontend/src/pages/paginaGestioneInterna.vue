@@ -968,8 +968,10 @@ function formatoDataBreve(dateValue) {
 }
 
 async function caricaBollette() {
+  const appId = getAppartamentoId(appartamentoAttivo.value)
+  if (!appId) return
   bolletteLoading.value = true
-  const res = await getBolletteInquilino()
+  const res = await getBolletteInquilino(appId)
   if (res.success) {
     bollette.value = res.data?.data || []
     graficiBollette.value = res.data?.grafici || null

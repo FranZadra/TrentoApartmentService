@@ -146,17 +146,17 @@ describe('POST /api/v1/bollette/:appartamentoId', () => {
 // ─── GET /api/v1/bollette/admin/:appartamentoId ───────────────────────────────
 
 
-describe('GET /api/v1/bollette/admin/:appartamentoId', () => {
+describe('GET /api/v1/appartamenti/:appId/bollette', () => {
  afterEach(() => jest.restoreAllMocks());
 
 
  test('restituisce 401 senza token', async () => {
-   const res = await request(app).get(`/api/v1/bollette/admin/${APP_ID}`);
+   const res = await request(app).get(`/api/v1/appartamenti/${APP_ID}/bollette`);
    expect(res.status).toBe(401);
  });
 
 
- test('restituisce 200 con la lista delle bollette', async () => {
+ test('admin: restituisce 200 con la lista delle bollette', async () => {
    jest.spyOn(User, 'findById').mockResolvedValue(adminFake);
    jest.spyOn(Appartamento, 'findOne').mockResolvedValue(appartamentoFake);
    jest.spyOn(Bolletta, 'find').mockReturnValue({
@@ -166,13 +166,62 @@ describe('GET /api/v1/bollette/admin/:appartamentoId', () => {
 
 
    const res = await request(app)
-     .get(`/api/v1/bollette/admin/${APP_ID}`)
+     .get(`/api/v1/appartamenti/${APP_ID}/bollette`)
      .set('Authorization', `Bearer ${tokenAdmin}`);
 
 
    expect(res.status).toBe(200);
    expect(res.body.success).toBe(true);
    expect(Array.isArray(res.body.data)).toBe(true);
+ });
+
+
+ test('admin: restituisce 403 se non possiede l\'appartamento', async () => {
+   jest.spyOn(User, 'findById').mockResolvedValue(adminFake);
+   jest.spyOn(Appartamento, 'findOne').mockResolvedValue(null);
+
+
+   const res = await request(app)
+     .get(`/api/v1/appartamenti/${APP_ID}/bollette`)
+     .set('Authorization', `Bearer ${tokenAdmin}`);
+
+
+   expect(res.status).toBe(403);
+ });
+
+
+ test('inquilino: restituisce bollette e dati grafici', async () => {
+   jest.spyOn(User, 'findById').mockResolvedValue(inquilinoFake);
+   jest.spyOn(Contratto, 'findOne').mockResolvedValue(contrattoFake);
+   jest.spyOn(Bolletta, 'find').mockReturnValue({
+     select: jest.fn().mockReturnThis(),
+     sort: jest.fn().mockResolvedValue([bollettaFake]),
+   });
+
+
+   const res = await request(app)
+     .get(`/api/v1/appartamenti/${APP_ID}/bollette`)
+     .set('Authorization', `Bearer ${tokenInquilino}`);
+
+
+   expect(res.status).toBe(200);
+   expect(res.body.success).toBe(true);
+   expect(Array.isArray(res.body.data)).toBe(true);
+   expect(res.body.grafici).toBeDefined();
+ });
+
+
+ test('inquilino: restituisce 403 senza contratto attivo per l\'appartamento', async () => {
+   jest.spyOn(User, 'findById').mockResolvedValue(inquilinoFake);
+   jest.spyOn(Contratto, 'findOne').mockResolvedValue(null);
+
+
+   const res = await request(app)
+     .get(`/api/v1/appartamenti/${APP_ID}/bollette`)
+     .set('Authorization', `Bearer ${tokenInquilino}`);
+
+
+   expect(res.status).toBe(403);
  });
 });
 
@@ -262,71 +311,6 @@ describe('DELETE /api/v1/bollette/:bollettaId', () => {
    expect(res.status).toBe(200);
    expect(res.body.success).toBe(true);
    expect(res.body.message).toMatch(/eliminata/i);
- });
-});
-
-
-// ─── GET /api/v1/bollette/inquilino ──────────────────────────────────────────
-
-
-describe('GET /api/v1/bollette/inquilino', () => {
- afterEach(() => jest.restoreAllMocks());
-
-
- test('restituisce 401 senza token', async () => {
-   const res = await request(app).get('/api/v1/bollette/inquilino');
-   expect(res.status).toBe(401);
- });
-
-
- // TEST CASE N.95
- test('restituisce 403 per utente non inquilino', async () => {
-   jest.spyOn(User, 'findById').mockResolvedValue(adminFake);
-
-
-   const res = await request(app)
-     .get('/api/v1/bollette/inquilino')
-     .set('Authorization', `Bearer ${tokenInquilino}`);
-
-
-   expect(res.status).toBe(403);
- });
-
-
- test('restituisce array vuoto se nessun contratto attivo', async () => {
-   jest.spyOn(User, 'findById').mockResolvedValue(inquilinoFake);
-   jest.spyOn(Contratto, 'findOne').mockResolvedValue(null);
-
-
-   const res = await request(app)
-     .get('/api/v1/bollette/inquilino')
-     .set('Authorization', `Bearer ${tokenInquilino}`);
-
-
-   expect(res.status).toBe(200);
-   expect(res.body.data).toEqual([]);
- });
-
-
- // TEST CASE N.79
- test('restituisce bollette e dati grafici', async () => {
-   jest.spyOn(User, 'findById').mockResolvedValue(inquilinoFake);
-   jest.spyOn(Contratto, 'findOne').mockResolvedValue(contrattoFake);
-   jest.spyOn(Bolletta, 'find').mockReturnValue({
-     select: jest.fn().mockReturnThis(),
-     sort: jest.fn().mockResolvedValue([bollettaFake]),
-   });
-
-
-   const res = await request(app)
-     .get('/api/v1/bollette/inquilino')
-     .set('Authorization', `Bearer ${tokenInquilino}`);
-
-
-   expect(res.status).toBe(200);
-   expect(res.body.success).toBe(true);
-   expect(Array.isArray(res.body.data)).toBe(true);
-   expect(res.body.grafici).toBeDefined();
  });
 });
 

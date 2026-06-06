@@ -46,6 +46,25 @@ function autenticaToken(req, res, next) {
   }
 }
 
+function autenticaTokenOpzionale(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const secret = process.env.JWT_SECRET || 'your-secret-key';
+    req.user = jwt.verify(token, secret);
+  } catch (error) {
+    req.user = undefined;
+  }
+
+  return next();
+}
+
 module.exports = {
   autenticaToken,
+  autenticaTokenOpzionale,
 };

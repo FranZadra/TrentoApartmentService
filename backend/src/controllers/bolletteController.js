@@ -98,30 +98,44 @@ const caricaBolletta = async (req, res) => {
 
 // ── US27: lista bollette di un appartamento (vista amministratore) ─────────────
 
-const getBolletteAdmin = async (req, res) => {
+const getBolletteAppartamento = async (req, res) => {
   try {
-    const adminId = estraiUserId(req);
-    if (!adminId) return res.status(401).json({ error: 'Utente non autenticato' });
+    const userId = estraiUserId(req);
+    if (!userId) return res.status(401).json({ error: 'Utente non autenticato' });
 
-    const admin = await User.findById(adminId);
-    if (!admin || admin.ruolo !== 'amministratore') {
+    const utente = await User.findById(userId);
+    if (!utente) return res.status(404).json({ error: 'Utente non trovato' });
+
+    const { appId } = req.params;
+
+    if (utente.ruolo === 'amministratore') {
+      const appartamento = await verificaAdminAppartamento(appId, userId);
+      if (!appartamento) {
+        return res.status(403).json({ error: 'Non sei autorizzato a gestire questo appartamento' });
+      }
+    } else if (isRuoloInquilino(utente)) {
+      const contratto = await Contratto.findOne({
+        ...filtroContrattoInquilino(userId),
+        idAppartamento: appId,
+        stato: { $in: ['attivo', 'in chiusura'] },
+      });
+      if (!contratto) {
+        return res.status(403).json({ error: 'Non hai un contratto attivo per questo appartamento' });
+      }
+    } else {
       return res.status(403).json({ error: 'Accesso non autorizzato' });
     }
 
-    const { appartamentoId } = req.params;
-    const appartamento = await verificaAdminAppartamento(appartamentoId, adminId);
-    if (!appartamento) {
-      return res.status(403).json({ error: 'Non sei autorizzato a gestire questo appartamento' });
-    }
-
     // Esclude il campo pdfData dal risultato per non inviare buffer pesanti
-    const bollette = await Bolletta.find({ idAppartamento: appartamentoId })
+    const bollette = await Bolletta.find({ idAppartamento: appId })
       .select('-pdfData')
       .sort({ periodoFine: -1 });
 
-    return res.status(200).json({ success: true, data: bollette });
+    const grafici = costruisciDatiGrafici(bollette);
+
+    return res.status(200).json({ success: true, data: bollette, grafici });
   } catch (error) {
-    console.error('Errore getBolletteAdmin:', error);
+    console.error('Errore getBolletteAppartamento:', error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -195,40 +209,6 @@ const eliminaBolletta = async (req, res) => {
 //
 // Restituisce le bollette dell'appartamento in cui l'inquilino ha un contratto
 // attivo o in chiusura. Include anche i dati aggregati per i grafici dei consumi.
-
-const getBolletteInquilino = async (req, res) => {
-  try {
-    const inquilinoId = estraiUserId(req);
-    if (!inquilinoId) return res.status(401).json({ error: 'Utente non autenticato' });
-
-    const inquilino = await User.findById(inquilinoId);
-    if (!inquilino || !isRuoloInquilino(inquilino)) {
-      return res.status(403).json({ error: 'Solo gli inquilini possono accedere a questa sezione' });
-    }
-
-    // Recupera il contratto attivo o in chiusura dell'inquilino
-    const contratto = await Contratto.findOne({
-      ...filtroContrattoInquilino(inquilinoId),
-      stato: { $in: ['attivo', 'in chiusura'] },
-    });
-
-    if (!contratto) {
-      return res.status(200).json({ success: true, data: [], grafici: [] });
-    }
-
-    const bollette = await Bolletta.find({ idAppartamento: contratto.idAppartamento })
-      .select('-pdfData')
-      .sort({ periodoFine: -1 });
-
-    // Dati aggregati per i grafici: importo per periodo raggruppato per utenza
-    const grafici = costruisciDatiGrafici(bollette);
-
-    return res.status(200).json({ success: true, data: bollette, grafici });
-  } catch (error) {
-    console.error('Errore getBolletteInquilino:', error);
-    return res.status(500).json({ error: error.message });
-  }
-};
 
 // Trasforma la lista bollette in una struttura pronta per vue-chartjs:
 // { labels: [...mesi], datasets: [{ label: 'luce', data: [...importi] }, ...] }
@@ -333,9 +313,8 @@ const scaricaPdf = async (req, res) => {
 
 module.exports = {
   caricaBolletta,
-  getBolletteAdmin,
+  getBolletteAppartamento,
   segnaPagata,
   eliminaBolletta,
-  getBolletteInquilino,
   scaricaPdf,
 };

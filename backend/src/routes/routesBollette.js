@@ -9,10 +9,8 @@ const router = express.Router();
 
 const {
   caricaBolletta,
-  getBolletteAdmin,
   segnaPagata,
   eliminaBolletta,
-  getBolletteInquilino,
   scaricaPdf,
 } = require('../controllers/bolletteController');
 
@@ -38,16 +36,12 @@ router.post(
   caricaBolletta
 );
 
-router.get('/admin/:appartamentoId', autenticaToken, getBolletteAdmin);
-
 router.put('/:bollettaId/paga', autenticaToken, segnaPagata);
 
 router.delete('/:bollettaId', autenticaToken, eliminaBolletta);
 
 // ── Rotte inquilino ───────────────────────────────────────────────────────────
 // GET /api/v1/bollette/inquilino  — lista bollette del proprio appartamento + dati grafici
-
-router.get('/inquilino', autenticaToken, getBolletteInquilino);
 
 // ── Download PDF (admin e inquilino) ─────────────────────────────────────────
 // GET /api/v1/bollette/:bollettaId/pdf

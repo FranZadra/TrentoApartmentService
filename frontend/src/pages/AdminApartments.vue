@@ -537,7 +537,7 @@ function getGuastiAttiviCount(apt) {
 async function loadApartments() {
   loading.value = true
   try {
-    const res = await fetch(`${API_BASE}/appartamenti/admin?page=1&limit=100`, {
+    const res = await fetch(`${API_BASE}/appartamenti?proprietario=me&page=1&limit=100`, {
       headers: getAuthHeaders(),
     })
     const body = await res.json()

@@ -78,11 +78,11 @@ describe('POST /api/v1/appartamenti', () => {
 });
 
 //GET /api/v1/appartamenti/admin
-describe('GET /api/v1/appartamenti/admin', () => {
+describe('GET /api/v1/appartamenti?proprietario=me', () => {
  afterEach(() => jest.restoreAllMocks());
 
  test('restituisce 401 senza token', async () => {
-   const res = await request(app).get('/api/v1/appartamenti/admin');
+   const res = await request(app).get('/api/v1/appartamenti?proprietario=me');
    expect(res.status).toBe(401);
  });
 
@@ -94,7 +94,7 @@ describe('GET /api/v1/appartamenti/admin', () => {
    });
 
    const res = await request(app)
-     .get('/api/v1/appartamenti/admin')
+     .get('/api/v1/appartamenti?proprietario=me')
      .set('Authorization', `Bearer ${tokenAdmin}`);
 
    expect(res.status).toBe(200);
@@ -111,7 +111,7 @@ describe('GET /api/v1/appartamenti/admin', () => {
    jest.spyOn(Appartamento, 'countDocuments').mockResolvedValue(0);
 
    await request(app)
-     .get('/api/v1/appartamenti/admin')
+     .get('/api/v1/appartamenti?proprietario=me')
      .set('Authorization', `Bearer ${tokenAdmin}`);
 
    expect(findSpy).toHaveBeenCalledWith(expect.objectContaining({ amministratoreId: ADMIN_ID }));
