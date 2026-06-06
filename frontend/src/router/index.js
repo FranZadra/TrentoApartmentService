@@ -51,7 +51,7 @@ const routes = [
   },   
   {
       // Pagina gestione immobili: accessibile solo agli amministratori.
-      path: '/admin/appartamenti',
+      path: '/i-miei-appartamenti',
       name: 'admin-appartamenti',
       component: AdminApartments,
       beforeEnter: richiedeAutenticazione,

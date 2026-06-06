@@ -29,7 +29,7 @@
 				<!-- Visibile solo agli amministratori -->
 				<router-link
 					v-if="isAdmin"
-					to="/admin/appartamenti"
+					to="/i-miei-appartamenti"
 					class="text-white/90 hover:text-white"
 				>
 					I tuoi appartamenti
