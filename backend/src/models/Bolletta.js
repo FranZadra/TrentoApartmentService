@@ -1,9 +1,4 @@
-// src/models/Bolletta.js — Modello Bolletta
-//
-// Relazioni:
-//   - Una Bolletta appartiene a un Appartamento (idAppartamento)
-//   - L'amministratore viene ricavato tramite Appartamento.amministratoreId
-//   - Gli inquilini autorizzati vengono ricavati tramite Contratto attivo sull'appartamento
+// Model per le bollette
 
 const mongoose = require('mongoose');
 
@@ -36,7 +31,7 @@ const BollettaSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // PDF salvato direttamente nel documento come Buffer (opzione B: storage MongoDB)
+    // PDF salvato direttamente nel documento come Buffer
     pdfData: {
       type: Buffer,
       default: null,

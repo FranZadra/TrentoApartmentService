@@ -1,14 +1,11 @@
-// src/controllers/statisticheController.js — Statistiche aggregate per dipendenti comunali
-//
-// Espone dati aggregati e anonimizzati sul mercato degli affitti a Trento (RNF10).
-// Nessun dato personale viene restituito (no nomi, email o ID inquilini).
+// Controller per le statistiche visibili dal dipendente comunale
 
 const Appartamento = require('../models/Appartamento');
 const Contratto = require('../models/Contratto');
 
 const getStatistiche = async (req, res) => {
   try {
-    // Verifica ruolo: solo il dipendente comunale può accedere (ruolo già nel JWT)
+    // Verifica del ruolo: solo il dipendente comunale può accedere
     if (req.user?.ruolo !== 'dipendente comune') {
       return res.status(403).json({
         success: false,
@@ -16,7 +13,6 @@ const getStatistiche = async (req, res) => {
       });
     }
 
-    // Filtri opzionali passati via query string
     const { cap, tipoCamera, perStudenti } = req.query;
 
     // Filtro base sugli appartamenti
@@ -24,20 +20,16 @@ const getStatistiche = async (req, res) => {
     if (cap) matchAppartamento['indirizzo.CAP'] = cap;
     if (perStudenti !== undefined) matchAppartamento.perStudenti = perStudenti === 'true';
 
-    // Filtro sulle camere (applicato dopo $unwind)
     const matchCamera = {};
     if (tipoCamera && ['SINGOLA', 'DOPPIA'].includes(tipoCamera)) {
       matchCamera['camere.tipo'] = tipoCamera;
     }
 
-    // --- Aggregazione A: statistiche per CAP (prezzo €/m²) ---
-    // Le singole camere non vengono mai popolate nell'app, quindi il prezzo al m²
-    // lo ricaviamo a livello di appartamento: canone mensile del contratto attivo
-    // diviso i metri quadri totali dichiarati (mqTot).
+    // 1. Statistiche per CAP (prezzo €/m²)
     const pipelinePerCAP = [
       { $match: matchAppartamento },
       {
-        // Aggancia il contratto attivo dell'appartamento per leggerne il canone
+        // Aggancia il contratto attivo dell'appartamento per leggerne il prezzo
         $lookup: {
           from: 'Contratti',
           let: { appId: '$_id' },
@@ -52,8 +44,7 @@ const getStatistiche = async (req, res) => {
         $group: {
           _id: '$indirizzo.CAP',
           numAppartamenti: { $sum: 1 },
-          // Somma e conteggio dei €/m²: consideriamo solo gli appartamenti che hanno
-          // un contratto attivo (quindi un canone) e una metratura valida.
+          // Somma e conteggio dei €/m²: consideriamo solo gli appartamenti che hanno un contratto attivo e una metratura valida.
           prezzoSommaMq: {
             $sum: {
               $cond: [
@@ -89,7 +80,7 @@ const getStatistiche = async (req, res) => {
       { $sort: { cap: 1 } },
     ];
 
-    // --- Aggregazione B: distribuzione per tipo camera ---
+    // 2. Distribuzione per tipo camera
     const pipelinePerTipo = [
       { $match: matchAppartamento },
       { $unwind: '$camere' },
@@ -111,13 +102,12 @@ const getStatistiche = async (req, res) => {
       },
     ];
 
-    // --- Aggregazione C: totale appartamenti (senza unwind) ---
+    // 3. Totale appartamenti
     const pipelineTotaleAppartamenti = [
       { $match: matchAppartamento },
       { $count: 'totale' },
     ];
 
-    // Esecuzione parallela delle tre aggregazioni sugli appartamenti
     const [perCAP, perTipo, [totaleResult]] = await Promise.all([
       Appartamento.aggregate(pipelinePerCAP),
       Appartamento.aggregate(pipelinePerTipo),
@@ -126,8 +116,7 @@ const getStatistiche = async (req, res) => {
 
     const totaleAppartamenti = totaleResult?.totale ?? 0;
 
-    // Prezzo medio globale: media ponderata sui singoli appartamenti (somma dei
-    // €/m² diviso il numero di appartamenti con prezzo), non media-di-medie per CAP.
+    // 4. Prezzo medio globale: media ponderata sui singoli appartamenti
     let sommaPrezziMq = 0;
     let conteggioPrezziMq = 0;
     for (const zona of perCAP) {
@@ -140,16 +129,13 @@ const getStatistiche = async (req, res) => {
         ? parseFloat((sommaPrezziMq / conteggioPrezziMq).toFixed(2))
         : 0;
 
-    // Il tasso di occupazione è in attesa di ridefinizione (le camere non sono
-    // popolate): lo lasciamo a 0 finché non si decide se calcolarlo per
-    // appartamento o per stanza. Vedi nota US16.
+
     const tassoOccupazione = 0;
 
-    // --- Query contratti: conteggio per stato + turnover ultimo anno ---
     const unAnnoFa = new Date();
     unAnnoFa.setFullYear(unAnnoFa.getFullYear() - 1);
 
-    // Filtro contratti: se è attivo un filtro per CAP, si limita agli appartamenti filtrati
+    // Filtro contratti per CAP
     let idAppartamentiFiltrati = null;
     if (cap || perStudenti !== undefined) {
       const appartamentiFiltrati = await Appartamento.find(matchAppartamento, '_id');
@@ -172,7 +158,6 @@ const getStatistiche = async (req, res) => {
       }),
     ]);
 
-    // Mappa i risultati dell'aggregazione contratti in un oggetto leggibile
     const contratti = { attivi: 0, terminati: 0, inChiusura: 0 };
     for (const row of contrattiPerStato) {
       if (row._id === 'attivo') contratti.attivi = row.count;
@@ -180,12 +165,9 @@ const getStatistiche = async (req, res) => {
       else if (row._id === 'in chiusura') contratti.inChiusura = row.count;
     }
 
-    // Lista completa dei CAP presenti, indipendente dai filtri: serve a popolare
-    // la tendina di selezione CAP, che altrimenti si svuoterebbe dopo un filtro.
+    // Lista dei CAP presenti
     const capDisponibili = (await Appartamento.distinct('indirizzo.CAP')).sort();
 
-    // Prepara la distribuzione per CAP per la risposta: arrotonda il prezzo e
-    // scarta i campi di servizio (somma/conteggio) usati solo per i calcoli.
     const distribuzionePerCAP = perCAP.map((zona) => ({
       cap: zona.cap,
       numAppartamenti: zona.numAppartamenti,

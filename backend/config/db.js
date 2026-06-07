@@ -2,7 +2,6 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
- // In ambiente di sviluppo, se MONGODB_URI non è impostato, si salta la connessione al DB (utile per test e sviluppo locale senza DB)
  if (!process.env.MONGODB_URI) {
    console.warn('MONGODB_URI non impostato — salto la connessione al DB (dev mode)');
    return Promise.resolve();

@@ -1,5 +1,4 @@
-// src/app.js — Configurazione Express
-// Qui si registrano i middleware globali e le route
+// Configurazione middleware e routes principali dell'app
 
 const express = require('express');
 const errorHandler = require('./middleware/errorHandler');
@@ -12,11 +11,10 @@ const routesBollette = require('./routes/routesBollette');
 
 const app = express();
 
-// Middleware globali
+// Middleware globale
 app.use(express.json()); // Permette di leggere il body JSON nelle richieste
 
-// Route
-// Tutte le route degli annunci saranno precedute da /api/v1/annunci
+// Routes
 app.use('/api/v1/annunci', annunciRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/appartamenti', routesAppartamenti);
@@ -29,7 +27,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server funzionante' });
 });
 
-// Gestione errori (deve stare dopo le route)
+// Gestione errori
 app.use(errorHandler);
 
 module.exports = app;

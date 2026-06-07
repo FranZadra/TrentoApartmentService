@@ -1,14 +1,9 @@
-// Logica delle API per gli annunci
-// Ogni funzione:
-//   1. Riceve la richiesta (req)
-//   2. Interagisce con il database
-//   3. Manda la risposta (res) in formato JSON
-
+// Controller per la gestione degli annunci
 
 const Annuncio = require('../models/annuncio');
 const Appartamento = require('../models/Appartamento');
 
-// Normalizza un annuncio popolando correttamente i dati dell'appartamento
+// Popola correttamente i dati dell'appartamento
 const normalizeAnnuncioAppartamento = (annuncio) => {
  const obj = annuncio.toObject ? annuncio.toObject() : { ...annuncio };
 
@@ -82,8 +77,8 @@ const checkProprietario = async (appartamentoId, req, res) => {
  return appartamento;
 };
 
-// GET /api/v1/annunci
-// Ritorna tutti gli annunci con stato "attivo", valorizzando i dati dell'appartamento di ciascun annuncio
+// GET degli annunci
+// Ritorna tutti gli annunci con stato "attivo", mostrando i dati dell'appartamento di ciascun annuncio
 const getAnnunciAttivi = async (req, res, next) => {
  try {
    const annunci = await Annuncio
@@ -106,8 +101,8 @@ const getAnnunciAttivi = async (req, res, next) => {
  }
 };
 
-// GET /api/v1/annunci/:id
-// Ritorna il dettaglio di un singolo annuncio
+// GET degli annunci da ID
+// Ritorna il dettaglio di un annuncio
 const getAnnuncioById = async (req, res, next) => {
  try {
    const annuncio = await Annuncio
@@ -115,7 +110,7 @@ const getAnnuncioById = async (req, res, next) => {
      .populate('appartamento')
      .populate('appartamentoId');
 
-   // Se l'annuncio non esiste, restituisce 404
+   // Se non esiste, restituisce 404
    if (!annuncio) {
      return res.status(404).json({
        success: false,
@@ -132,11 +127,10 @@ const getAnnuncioById = async (req, res, next) => {
  }
 };
 
-// GET /api/v1/annunci/search/filter
+// GET degli annunci con i filtri di ricerca
 // Ricerca annunci con filtri
 const searchAnnunciWithFilters = async (req, res, next) => {
  try {
-   // Costruzione filtro Appartamento
    const filtroAppartamento = {};
 
    if (req.query.numStanze) {
@@ -158,7 +152,7 @@ const searchAnnunciWithFilters = async (req, res, next) => {
      if (req.query.mqMax) filtroAppartamento.mqTot.$lte = Number(req.query.mqMax);
    }
 
-   // Filtro sulle camere per garantire che almeno una camera soddisfi tutti i criteri
+   // Filtro sulle camere
    if (req.query.prezzoMin || req.query.prezzoMax || req.query.tipoCam) {
      const filtroCamera = {};
      if (req.query.tipoCam) {
@@ -172,11 +166,11 @@ const searchAnnunciWithFilters = async (req, res, next) => {
      filtroAppartamento.camere = { $elemMatch: filtroCamera };
    }
 
-   // Ricerca degli appartamenti che soddisfano i criteri
+   // Ricerca degli appartamenti che soddisfano i filtri
    const appartamentiFiltrati = await Appartamento.find(filtroAppartamento);
    const idAppartamenti = appartamentiFiltrati.map(a => a._id);
 
-   // Ricerca degli annunci attivi che referenziano gli appartamenti
+   // Ricerca degli annunci attivi legati ad appartamenti
    const annunci = await Annuncio
      .find({
        stato: 'Attivo',
@@ -201,8 +195,7 @@ const searchAnnunciWithFilters = async (req, res, next) => {
  }
 };
 
-// GET /api/v1/annunci/admin/appartamento/:appartamentoId
-// Recupera l'annuncio associato a un appartamento dell'admin autenticato
+// GET dell'annuncio associato a un appartamento dell'admin autenticato
 const getAnnuncioByAppartamento = async (req, res, next) => {
  try {
    const appartamento = await checkProprietario(req.params.appartamentoId, req, res);
@@ -233,8 +226,7 @@ const getAnnuncioByAppartamento = async (req, res, next) => {
  }
 };
 
-// POST /api/v1/annunci/admin/appartamento/:appartamentoId
-// Crea o aggiorna l'annuncio associato all'appartamento dell'admin autenticato
+// POST dell'annuncio associato a un appartamento dell'admin autenticato
 const upsertAnnuncioByAppartamento = async (req, res, next) => {
  try {
    if (req.user?.ruolo !== 'amministratore') {
@@ -286,8 +278,7 @@ const upsertAnnuncioByAppartamento = async (req, res, next) => {
  }
 };
 
-// PUT /api/v1/annunci/:id
-// Aggiorna un annuncio esistente dell'amministratore autenticato
+// PUT dell'annuncio tramite ID
 const updateAnnuncioById = async (req, res, next) => {
  try {
    const annuncioEsistente = await Annuncio.findById(req.params.id)
@@ -329,8 +320,7 @@ const updateAnnuncioById = async (req, res, next) => {
  }
 };
 
-// DELETE /api/v1/annunci/:id
-// Elimina un annuncio esistente, verificando che appartenga all'admin autenticato.
+// DELETE annuncio esistente tramite ID
 const deleteAnnuncioById = async (req, res, next) => {
  try {
    const annuncioEsistente = await Annuncio.findById(req.params.id)

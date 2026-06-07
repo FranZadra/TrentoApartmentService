@@ -1,3 +1,5 @@
+// Model per gli annunci
+
 const mongoose = require('mongoose')
 
 // Schema del modello annuncio
@@ -16,7 +18,6 @@ AnnuncioSchema.path('appartamento').validate(function () {
  return Boolean(this.appartamento || this.appartamentoId)
 }, 'appartamento o appartamentoId è obbligatorio')
 
-// Se uno dei due campi manca, viene copiato dall'altro prima del salvataggio.
 AnnuncioSchema.pre('validate', function () {
  if (!this.appartamento && this.appartamentoId) {
    this.appartamento = this.appartamentoId

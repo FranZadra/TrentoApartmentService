@@ -1,21 +1,20 @@
+// Model per gli utenti
+
 const mongoose = require('mongoose');
 
-// Schema che descrive la struttura di un documento nella collezione "users" su MongoDB
+// Schema che descrive la struttura di un User
 const utenteSchema = new mongoose.Schema(
   {
-    // Nome dell'utente - campo obbligatorio, spazi iniziali/finali rimossi automaticamente
     nome: {
       type: String,
       required: [true, 'Il nome è obbligatorio'],
       trim: true,
     },
-    // Cognome dell'utente - campo obbligatorio, spazi iniziali/finali rimossi automaticamente
     cognome: {
       type: String,
       required: [true, 'Il cognome è obbligatorio'],
       trim: true,
     },
-    // Email - obbligatoria, univoca (nessun duplicato nel DB), salvata sempre in minuscolo
     email: {
       type: String,
       required: [true, "L'email è obbligatoria"],
@@ -24,7 +23,7 @@ const utenteSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Password - obbligatoria; nel DB viene salvato SOLO l'hash bcrypt, mai la password in chiaro
+    // Password obbligatoria
     password: {
       type: String,
       required: [true, 'La password è obbligatoria'],
@@ -39,13 +38,6 @@ const utenteSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-
-    /*foto profuilo - opzionale, URL dell'immagine
-    fotoProfilo: {
-      type: String,
-      required: false,
-      default: null,
-    },*/
     telefono: {
       type: String,
       required: false,
@@ -53,7 +45,7 @@ const utenteSchema = new mongoose.Schema(
     },
 
     // Ruolo dell'utente nell'applicazione
-    // 'inquilino'    = cerca appartamenti
+    // 'inquilino' = cerca appartamenti
     // 'proprietario' = pubblica annunci
     ruolo: {
       type: String,
@@ -65,7 +57,7 @@ const utenteSchema = new mongoose.Schema(
       type: Boolean,
       required: function() { return this.ruolo === 'amministratore'; },
     },
-    // Per agenzie: partita IVA obbligatoria (11 cifre)
+    // Per agenzie: partita IVA obbligatoria
     pIVA: {
       type: String,
       required: function() { return this.ruolo === 'amministratore' && this.privato === false; },
@@ -82,11 +74,9 @@ const utenteSchema = new mongoose.Schema(
     },
   },
   {
-    // Aggiunge automaticamente i campi "createdAt" e "updatedAt" ad ogni documento
     timestamps: true,
     collection: 'Users', 
   }
 );
 
-// Esporta il modello "User" collegato allo schema; Mongoose userà la collezione "users" (plurale automatico)
 module.exports = mongoose.model('User', utenteSchema);

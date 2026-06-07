@@ -1,7 +1,4 @@
-// src/controllers/controllerAppartamenti.js — Controller CRUD Appartamento
-//
-// Gestisce tutte le operazioni su Appartamento: creazione, lettura, aggiornamento, eliminazione.
-// Si interfaccia con il model Mongoose e genera risposte REST.
+// Controller per la gestione degli appartamenti
 
 const Appartamento = require('../models/Appartamento');
 const Annuncio = require('../models/annuncio');
@@ -10,22 +7,7 @@ const Contratto = require('../models/Contratto');
 const { geocodificaIndirizzo } = require('../services/geocodingService');
 const { costruisciLinkWhatsApp } = require('../services/whatsappService');
 
-/**
- * Crea un nuovo appartamento.
- * Body atteso:
- *   {
- *     indirizzo: { via, numero, città, CAP, Stato },
- *     mqTot: Number,
- *     perStudenti: Boolean,
- *     numStanze: Number,
- *     numBagni: Number,
- *     foto: [String],
- *     terrazzo: Boolean,
- *     lavatrice: Boolean,
- *     classeEnergetica: String,
- *     amministratoreId: String
- *   }
- */
+// Crea un nuovo appartamento
 async function creaAppartamento(req, res) {
   try {
     const data = req.body;
@@ -38,8 +20,7 @@ async function creaAppartamento(req, res) {
       });
     }
 
-    // Geocodifichiamo l'indirizzo così l'appartamento compare subito sulla mappa.
-    // Se il client invia già una posizione la rispettiamo; altrimenti la calcoliamo.
+    // Geocodifica indirizzo
     const posizione = data.posizione || (await geocodificaIndirizzo(data.indirizzo));
 
     const appartamento = new Appartamento({
@@ -73,11 +54,7 @@ async function creaAppartamento(req, res) {
 }
 
 
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- */
+// GET per gli appartamenti
 async function getAppartamenti(req, res) {
   try {
     const page = parseInt(req.query.page, 10) || 1;
@@ -129,10 +106,7 @@ async function getAppartamenti(req, res) {
   }
 }
 
-/**
- * Recupera un appartamento specifico per ID.
- * Params: id (MongoDB ObjectId)
- */
+// GET appartamento tramite ID
 async function getAppartamentoDaId(req, res) {
   try {
     const { id } = req.params;
@@ -160,18 +134,13 @@ async function getAppartamentoDaId(req, res) {
   }
 }
 
-/**
- * Aggiorna un appartamento.
- * Params: id (MongoDB ObjectId)
- * Body: campi da aggiornare (tutti opzionali)
- */
+// PUT per aggiornare l'appartamento
 async function aggiornaAppartamento(req, res) {
   try {
     const { id } = req.params;
     const updates = req.body;
 
-    // Se l'indirizzo viene modificato ricalcoliamo le coordinate, così il marker
-    // resta allineato. Salvo che il client non passi esplicitamente una posizione.
+    // Aggiornamento indirizzo per aggiornare anche la mappa
     if (updates.indirizzo && updates.posizione === undefined) {
       const posizione = await geocodificaIndirizzo(updates.indirizzo);
       if (posizione) updates.posizione = posizione;
@@ -204,16 +173,12 @@ async function aggiornaAppartamento(req, res) {
   }
 }
 
-/**
- * Elimina un appartamento.
- * Params: id (MongoDB ObjectId)
- * Nota: Se l'appartamento ha annunci associati, è consigliabile eliminare/archiviare gli annunci prima.
- */
+// DELETE di un appartamento
 async function eliminaAppartamento(req, res) {
   try {
     const { id } = req.params;
 
-    // Verifica se ci sono annunci associati (opzionale, a seconda della policy)
+    // Verifica se ci sono annunci associati
     const annunciAssociati = await Annuncio.countDocuments({
       $or: [{ appartamento: id }, { appartamentoId: id }],
     });
@@ -242,12 +207,7 @@ async function eliminaAppartamento(req, res) {
   }
 }
 
-/**
- * Restituisce i dati di contatto dell'amministratore di un appartamento.
- * Riservato agli utenti autenticati (la rotta è protetta dal middleware JWT):
- * serve al pulsante WhatsApp nella pagina annuncio, visibile solo a chi è registrato.
- * Params: id (ObjectId appartamento)
- */
+// GET delle informazioni di contatto dell'amministratore
 async function getContattoAdmin(req, res) {
   try {
     const { id } = req.params;
@@ -262,7 +222,6 @@ async function getContattoAdmin(req, res) {
       return res.status(404).json({ success: false, message: 'Amministratore non trovato' });
     }
 
-    // Messaggio precompilato che cita l'indirizzo dell'appartamento
     const ind = appartamento.indirizzo;
     const indirizzoBreve = ind ? `${ind.via} ${ind.numero}, ${ind.città}` : 'questo appartamento';
     const messaggio = `Salve, sono interessato all'appartamento in ${indirizzoBreve}. È ancora disponibile?`;
@@ -273,7 +232,6 @@ async function getContattoAdmin(req, res) {
         nome: admin.nome,
         cognome: admin.cognome,
         telefono: admin.telefono || null,
-        // Link pronto all'uso: null se l'admin non ha un numero valido
         linkWhatsApp: costruisciLinkWhatsApp(admin.telefono, messaggio),
       },
     });
@@ -286,20 +244,8 @@ async function getContattoAdmin(req, res) {
   }
 }
 
-/**
- * Associa un utente (verificato o inquilino) a un appartamento creando o
- * aggiornando un contratto. È il legame amministratore→inquilino della US.
- *
- * Regole:
- *  - solo l'amministratore proprietario dell'appartamento può farlo;
- *  - l'utente va indicato tramite email e non deve avere contratti attivi;
- *  - se l'appartamento ha già un contratto attivo, l'utente viene aggiunto come
- *    coinquilino a quel contratto; altrimenti se ne crea uno nuovo (servono in
- *    questo caso le date, il canone e il tipo di contratto).
- *
- * Params: appartamentoId
- * Body: { email, dataInizio, dataFine, canoneMensile, tipoContratto }
- */
+// Associazione inquilino-appartamento con creazione/aggiornamento contratto.
+// Viene fatto dall'amministratore dell'appartamento in questione
 async function associaInquilino(req, res) {
   try {
     const adminId = req.user?.sub || req.user?.id || req.user?._id;
@@ -318,7 +264,7 @@ async function associaInquilino(req, res) {
       return res.status(400).json({ success: false, message: 'Email dell\'utente obbligatoria' });
     }
 
-    // L'utente da associare dev'essere già registrato e verificato
+    // L'utente da associare dev'essere registrato e verificato
     const utente = await User.findOne({ email: email.toLowerCase().trim() });
     if (!utente) {
       return res.status(404).json({ success: false, message: 'Nessun utente registrato con questa email' });
@@ -327,7 +273,7 @@ async function associaInquilino(req, res) {
       return res.status(400).json({ success: false, message: 'L\'utente deve essere verificato per poter essere associato a un contratto' });
     }
 
-    // Non deve avere altri contratti in corso (attivo o in chiusura)
+    // Non deve avere altri contratti in corso
     const contrattoInCorso = await Contratto.findOne({
       $or: [{ idInquilini: utente._id }, { idInquilino: utente._id }],
       stato: { $in: ['attivo', 'in chiusura'] },
@@ -336,8 +282,7 @@ async function associaInquilino(req, res) {
       return res.status(409).json({ success: false, message: 'L\'utente ha già un contratto attivo' });
     }
 
-    // Se l'appartamento ha già un contratto attivo, aggiungiamo l'utente come
-    // coinquilino; in caso contrario creiamo un nuovo contratto.
+    // Se l'appartamento ha già un contratto attivo, aggiungiamo l'utente come inquilino, altrimenti creiamo un nuovo contratto.
     let contratto = await Contratto.findOne({
       idAppartamento: appartamentoId,
       stato: { $in: ['attivo', 'in chiusura'] },

@@ -1,18 +1,8 @@
-// src/middleware/verificaPropr.js — Verifica proprietario Appartamento
-//
-// Controlla che l'utente loggato sia il proprietario (amministratore) dell'appartamento
-// che sta tentando di visualizzare, modificare o eliminare.
+// Middleware per la verifica della proprietà su un appartamento
 
 const Appartamento = require('../models/Appartamento');
 
-/**
- * Middleware per verificare la proprietà su un appartamento.
- * Assume che:
- * - req.user.id (o req.user._id) contiene l'ID dell'utente autenticato (da req.user del JWT)
- * - req.params.id contiene l'ID dell'appartamento
- * 
- * Se l'utente non è il proprietario, ritorna 403 Forbidden.
- */
+// Verifica proprietàdi un appartamento
 async function verificaProprietario(req, res, next) {
   try {
     const { id } = req.params;
@@ -24,8 +14,7 @@ async function verificaProprietario(req, res, next) {
       });
     }
 
-    // Estrai l'ID utente dal token (il middleware auth.js ha già caricato req.user)
-    // Il JWT contiene l'ID come 'sub' (standard), ma fallback anche a 'id' e '_id'
+    // Estrai l'ID utente dal token
     const utenteId = req.user.id || req.user._id || req.user.sub;
 
     if (!utenteId) {
@@ -35,7 +24,7 @@ async function verificaProprietario(req, res, next) {
       });
     }
 
-    // Recupera l'appartamento dal database
+    // Recupera l'appartamento dal DB
     const appartamento = await Appartamento.findById(id);
 
     if (!appartamento) {
@@ -45,7 +34,7 @@ async function verificaProprietario(req, res, next) {
       });
     }
 
-    // Verifica che l'appartamento abbia un amministratore assegnato
+    // Verifica che l'appartamento abbia un amministratore
     if (!appartamento.amministratoreId) {
       return res.status(403).json({
         success: false,
@@ -64,7 +53,7 @@ async function verificaProprietario(req, res, next) {
       });
     }
 
-    // Se il controllo passa, carica l'appartamento in req, così il controller può accedervi
+    // Carica l'appartamento in req, così il controller può accedervi
     req.appartamento = appartamento;
     next();
   } catch (error) {

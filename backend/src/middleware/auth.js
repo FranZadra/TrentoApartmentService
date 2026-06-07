@@ -1,15 +1,8 @@
-// src/middleware/auth.js — Autenticazione JWT
-//
-// Verifica la validità del token JWT e estrae l'utente dalla richiesta.
-// Attende il token nel header Authorization: "Bearer <token>"
+// Middleware per autenticazione JWT
 
 const jwt = require('jsonwebtoken');
 
-/**
- * Middleware di autenticazione JWT.
- * Se il token non è valido, ritorna 401 Unauthorized.
- * Se valido, carica l'utente in req.user.
- */
+// Verifica la validità del token
 function autenticaToken(req, res, next) {
   // Estrai il token dall'header Authorization
   const authHeader = req.headers['authorization'];

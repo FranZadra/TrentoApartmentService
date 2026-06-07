@@ -1,28 +1,21 @@
-// src/controllers/bolletteController.js — Gestione bollette
-//
-// US27: caricamento bollette da parte dell'amministratore
-// US20: visualizzazione bollette da parte dell'inquilino
+// Controller per la gestione delle bollette
 
 const Bolletta = require('../models/Bolletta');
 const Appartamento = require('../models/Appartamento');
 const Contratto = require('../models/Contratto');
 const User = require('../models/User');
 
-// Ricava l'ID utente dal payload JWT (il token usa 'sub' come campo principale)
+// Estrae l'ID utente dal JWT
 function estraiUserId(req) {
   return req.user?.sub || req.user?.id || req.user?._id;
 }
 
-// Quando a un utente viene assegnato un contratto diventa 'utente verificato';
-// alcuni record/flussi più vecchi usano ancora 'inquilino'. Per individuare un
-// inquilino dobbiamo accettare entrambi i ruoli.
+
 function isRuoloInquilino(utente) {
   return utente?.ruolo === 'utente verificato' || utente?.ruolo === 'inquilino';
 }
 
-// Il model Contratto usa 'idInquilini' (array), ma in DB sopravvivono contratti
-// col vecchio campo 'idInquilino' (singolare). Cerchiamo l'inquilino su entrambi,
-// coerentemente con quanto fa il controller della gestione interna.
+
 function filtroContrattoInquilino(userId) {
   return { $or: [{ idInquilini: userId }, { idInquilino: userId }] };
 }
@@ -36,8 +29,7 @@ async function verificaAdminAppartamento(appartamentoId, adminId) {
   return appartamento;
 }
 
-// ── US27: carica una nuova bolletta con PDF allegato ──────────────────────────
-
+// Caricamento bolletta
 const caricaBolletta = async (req, res) => {
   try {
     const adminId = estraiUserId(req);
@@ -60,7 +52,7 @@ const caricaBolletta = async (req, res) => {
       return res.status(400).json({ error: 'Campi obbligatori mancanti: utenza, periodoInizio, periodoFine, importo' });
     }
 
-    // Il file PDF è opzionale ma, se presente, deve essere un PDF
+    // Il file è opzionale (e in caso deve essere PDF)
     let pdfData = null;
     let pdfNomeFile = null;
     if (req.file) {
@@ -81,7 +73,6 @@ const caricaBolletta = async (req, res) => {
       pdfNomeFile,
     });
 
-    // Restituisce la bolletta senza il buffer PDF (troppo pesante nella risposta JSON)
     const risposta = bolletta.toObject();
     delete risposta.pdfData;
 
@@ -96,8 +87,7 @@ const caricaBolletta = async (req, res) => {
   }
 };
 
-// ── US27: lista bollette di un appartamento (vista amministratore) ─────────────
-
+// Lista delle bollette inerenti a un appartamento
 const getBolletteAppartamento = async (req, res) => {
   try {
     const userId = estraiUserId(req);
@@ -126,7 +116,6 @@ const getBolletteAppartamento = async (req, res) => {
       return res.status(403).json({ error: 'Accesso non autorizzato' });
     }
 
-    // Esclude il campo pdfData dal risultato per non inviare buffer pesanti
     const bollette = await Bolletta.find({ idAppartamento: appId })
       .select('-pdfData')
       .sort({ periodoFine: -1 });
@@ -140,8 +129,7 @@ const getBolletteAppartamento = async (req, res) => {
   }
 };
 
-// ── US27: segna una bolletta come pagata (aggiornaStatoB) ──────────────────────
-
+// Segna una bolletta come pagata
 const segnaPagata = async (req, res) => {
   try {
     const adminId = estraiUserId(req);
@@ -156,7 +144,6 @@ const segnaPagata = async (req, res) => {
     const bolletta = await Bolletta.findById(bollettaId);
     if (!bolletta) return res.status(404).json({ error: 'Bolletta non trovata' });
 
-    // Verifica che l'appartamento della bolletta appartenga all'admin loggato
     const appartamento = await verificaAdminAppartamento(bolletta.idAppartamento, adminId);
     if (!appartamento) {
       return res.status(403).json({ error: 'Non sei autorizzato a modificare questa bolletta' });
@@ -175,8 +162,7 @@ const segnaPagata = async (req, res) => {
   }
 };
 
-// ── US27: elimina una bolletta ─────────────────────────────────────────────────
-
+// Eliminaziona bolletta
 const eliminaBolletta = async (req, res) => {
   try {
     const adminId = estraiUserId(req);
@@ -205,22 +191,14 @@ const eliminaBolletta = async (req, res) => {
   }
 };
 
-// ── US20: lista bollette per l'inquilino loggato ───────────────────────────────
-//
-// Restituisce le bollette dell'appartamento in cui l'inquilino ha un contratto
-// attivo o in chiusura. Include anche i dati aggregati per i grafici dei consumi.
-
-// Trasforma la lista bollette in una struttura pronta per vue-chartjs:
-// { labels: [...mesi], datasets: [{ label: 'luce', data: [...importi] }, ...] }
+// Lista delle bollette per l'inquilino
 function costruisciDatiGrafici(bollette) {
   if (!bollette.length) return { labels: [], datasets: [] };
 
-  // Ordina per data di fine periodo crescente (le più vecchie prima, per il grafico)
   const ordinate = [...bollette].sort(
     (a, b) => new Date(a.periodoFine) - new Date(b.periodoFine)
   );
 
-  // Raccoglie tutte le etichette di periodo univoche (formato: "MM/YYYY")
   const labelsSet = new Set();
   ordinate.forEach((b) => {
     const d = new Date(b.periodoFine);
@@ -228,7 +206,6 @@ function costruisciDatiGrafici(bollette) {
   });
   const labels = [...labelsSet];
 
-  // Per ogni tipo di utenza costruisce un dataset con i valori per ogni periodo
   const utenze = ['luce', 'gas', 'acqua', 'elettricità'];
   const colori = { luce: '#f59e0b', gas: '#3b82f6', acqua: '#06b6d4', elettricità: '#8b5cf6' };
 
@@ -246,7 +223,7 @@ function costruisciDatiGrafici(bollette) {
         });
         return voce ? voce.importo : null;
       });
-      // Esclude il dataset se non ci sono valori per questa utenza
+
       const haValori = data.some((v) => v !== null);
       if (!haValori) return null;
       return {
@@ -264,10 +241,7 @@ function costruisciDatiGrafici(bollette) {
   return { labels, datasets };
 }
 
-// ── Download PDF ───────────────────────────────────────────────────────────────
-//
-// Accessibile sia dall'amministratore proprietario sia dall'inquilino con contratto attivo.
-
+// Download del PDF della bolletta
 const scaricaPdf = async (req, res) => {
   try {
     const userId = estraiUserId(req);
@@ -284,7 +258,7 @@ const scaricaPdf = async (req, res) => {
       return res.status(404).json({ error: 'Nessun PDF allegato a questa bolletta' });
     }
 
-    // Verifica autorizzazione: admin proprietario o inquilino con contratto attivo/in chiusura
+    // Verifica autorizzazione: amministratore o inquilino con contratto attivo/in chiusura
     const isAdmin = utente.ruolo === 'amministratore';
 
     if (isAdmin) {

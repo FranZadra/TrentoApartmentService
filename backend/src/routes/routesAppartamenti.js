@@ -1,7 +1,7 @@
+// Routes per la gestione degli appartamenti
+
 const express = require('express')
 const router = express.Router()
-
-// Rotte dedicate agli appartamenti: elenco pubblico, area amministratore e operazioni CRUD.
 
 const {
   creaAppartamento,
@@ -21,30 +21,39 @@ const { autenticaToken, autenticaTokenOpzionale } = require('../middleware/auth'
 const { verificaBodyCreazione, verificaBodyAggiornamento } = require('../middleware/verificaBody')
 const { verificaProprietario } = require('../middleware/verificaPropr')
 
-// Lista pubblica degli appartamenti con paginazione.
+// GET appartamenti
+// Lista pubblica degli appartamenti
 router.get('/', autenticaTokenOpzionale, getAppartamenti)
 
+// POST appartamento
 // Crea un nuovo appartamento solo se l'utente è autenticato.
 router.post('/', autenticaToken, verificaBodyCreazione, creaAppartamento)
 
-// Contatto WhatsApp dell'amministratore: solo utenti autenticati (registrati).
+// GET contatto admin
+// Contatto WhatsApp dell'amministratore: solo utenti autenticati
 router.get('/:id/contatto-admin', autenticaToken, getContattoAdmin)
 
+// GET bollette appartamento
 router.get('/:appId/bollette', autenticaToken, getBolletteAppartamento)
 
+// GET e POST annuncio associato all'appartamento
 router.get('/:appartamentoId/annuncio', autenticaToken, getAnnuncioByAppartamento)
 router.post('/:appartamentoId/annuncio', autenticaToken, upsertAnnuncioByAppartamento)
 
+// GET appartamento da ID
 // Dettaglio di un singolo appartamento.
 router.get('/:id', getAppartamentoDaId)
 
-// Aggiorna un appartamento solo se appartiene all'utente autenticato.
+// PUT appartamento
+// Aggiorna un appartamento solo se appartiene all'utente autenticato
 router.put('/:id', autenticaToken, verificaProprietario, verificaBodyAggiornamento, aggiornaAppartamento)
 
-// Associa un inquilino (via email) all'appartamento creando/aggiornando un contratto.
+// POST associa inquilino
+// Associa un inquilino all'appartamento creando/aggiornando un contratto.
 router.post('/:appartamentoId/associa-inquilino', autenticaToken, associaInquilino)
 
-// Elimina un appartamento solo se appartiene all'utente autenticato.
+// DELETE appartamento
+// Elimina un appartamento
 router.delete('/:id', autenticaToken, verificaProprietario, eliminaAppartamento)
 
 module.exports = router;

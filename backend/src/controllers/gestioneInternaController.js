@@ -1,3 +1,5 @@
+// Controller per la gestione interna dell'appartamento
+
 const mongoose = require('mongoose');
 const Contratto = require('../models/Contratto');
 const Guasto = require('../models/Guasto');
@@ -58,9 +60,11 @@ const normalizzaCalendarioRifiuti = (calendarioRifiuti) => {
     }));
 };
 
+
+// GET dei contratti
 const getContratti = async (req, res) => {
     try {
-        const userId = req.user?.sub || req.user?.id || req.user?._id; // Supporta sia sub che id a seconda di come è strutturato il token
+        const userId = req.user?.sub || req.user?.id || req.user?._id; 
 
         if (!userId) {
             return res.status(401).json({ error: 'Utente non autenticato' });
@@ -78,7 +82,6 @@ const getContratti = async (req, res) => {
         // Recupera tutti i contratti dell'utente loggato
         const contratti = await Contratto.find(buildContrattoInquilinoFilter(userId)).populate('idAppartamento').lean();
 
-        // Restituisce i contratti così come sono, lasciando al frontend la separazione attivi/passati
         return res.status(200).json({ contratti: contratti.map(normalizzaContratto) });
     } catch (error) {
         console.error('Errore getContratti:', error)
@@ -86,6 +89,8 @@ const getContratti = async (req, res) => {
     }
 };
 
+
+// GET del calendario rifiuti
 const getCalendarioRifiuti = async (req, res) => {
     try {
         const userId = req.user?.sub || req.user?.id || req.user?._id;
@@ -126,6 +131,8 @@ const getCalendarioRifiuti = async (req, res) => {
     }
 };
 
+
+// PUT del calendario rifiuti
 const aggiornaCalendarioRifiuti = async (req, res) => {
     try {
         const userId = req.user?.sub || req.user?.id || req.user?._id;
@@ -164,12 +171,6 @@ const aggiornaCalendarioRifiuti = async (req, res) => {
             return res.status(403).json({ error: 'Non autorizzato per questo appartamento' });
         }
 
-        // Aggiorniamo SOLO il campo calendarioRifiuti con un update mirato.
-        // NB: non usiamo contratto.save() perché save() rivalida l'INTERO documento;
-        // diversi contratti nel DB usano il campo legacy "idInquilino" (singolare) e
-        // non hanno "idInquilini"/"tipoContratto" valorizzati, quindi save() fallirebbe
-        // con un ValidationError (causa del bug di salvataggio). Con $set tocchiamo
-        // esclusivamente i rifiuti, senza rivalidare i campi legacy.
         const calendarioNormalizzato = normalizzaCalendarioRifiuti(calendarioRifiuti);
         await Contratto.updateOne({ _id: contratto._id }, { $set: { calendarioRifiuti: calendarioNormalizzato } });
 
@@ -180,6 +181,7 @@ const aggiornaCalendarioRifiuti = async (req, res) => {
     }
 };
 
+// Segnalazione guasto
 const segnalaGuasto = async (req, res) => {
     try {
         const userId = req.user?.sub || req.user?.id || req.user?._id;
@@ -244,6 +246,7 @@ const segnalaGuasto = async (req, res) => {
     }
 }
 
+// GET dei guasti di un appartamento
 const getGuastiAppartamento = async (req, res) => {
     try {
         const userId = req.user?.sub || req.user?.id || req.user?._id;
@@ -305,7 +308,7 @@ const prendiInCaricoGuastoAdmin = async (req, res) => {
         const appartamento = await Appartamento.findOne({ _id: guasto.idAppartamento, amministratoreId: userId });
         if (!appartamento) return res.status(403).json({ error: 'Non autorizzato a modificare questa segnalazione' });
 
-        // Aggiorna stato e dataPresoInCarico
+        // Aggiorna stato e data di presa in carico
         guasto.stato = 'preso in carico';
         guasto.dataPresoInCarico = Date.now();
         await guasto.save();
@@ -328,7 +331,6 @@ const risolviGuasto = async (req, res) => {
         const guasto = await Guasto.findById(guastoId);
         if (!guasto) return res.status(404).json({ error: 'Segnalazione non trovata' });
 
-        // Verifica che l'utente abbia un contratto attivo per quell'appartamento
         const contratto = await Contratto.findOne(
             buildContrattoInquilinoFilter(userId, {
                 idAppartamento: guasto.idAppartamento,
@@ -342,7 +344,7 @@ const risolviGuasto = async (req, res) => {
             return res.status(400).json({ error: 'La segnalazione non può essere risolta in questo stato' });
         }
 
-        // Aggiorna stato e dataSistemazione
+        // Aggiorna stato e data di sistemazione
         guasto.stato = 'sistemato';
         guasto.dataSistemazione = new Date();
         await guasto.save();
@@ -354,6 +356,7 @@ const risolviGuasto = async (req, res) => {
     }
 }
 
+// PUT della lista della spesa
 const aggiornaListaSpesa = async (req, res) => {
     try{
         const userId = req.user?.sub || req.user?.id || req.user?._id;
@@ -372,7 +375,7 @@ const aggiornaListaSpesa = async (req, res) => {
         const { listaSpesa } = req.body;
         if(!Array.isArray(listaSpesa)) return res.status(400).json({error: 'La lista della spesa deve essere un array'});
 
-        // Validazione base degli oggetti nella lista della spesa
+        // Controlla gli oggetti nella lista della spesa
         for(const item of listaSpesa){
             if(typeof item.nome !== 'string' || item.nome.trim() === ''){
                 return res.status(400).json({error: 'Ogni elemento deve avere un nome valido'});
@@ -398,11 +401,7 @@ const aggiornaListaSpesa = async (req, res) => {
     }
 }
 
-// ---- US23: Faccende del calendario condiviso ----
-
-// Helper: verifica autenticazione + ruolo inquilino (stretto) + contratto attivo
-// dell'inquilino per l'appartamento indicato. Ritorna { errore, status } in caso di
-// problema, altrimenti { contratto, userId } (userId come stringa per i confronti).
+// Faccende nel calendario condiviso
 const caricaContrattoInquilino = async (req) => {
     const userId = req.user?.sub || req.user?.id || req.user?._id;
     if (!userId) return { errore: 'Utente non autenticato', status: 401 };
@@ -422,12 +421,13 @@ const caricaContrattoInquilino = async (req) => {
     return { contratto, userId: String(userId) };
 };
 
+// GET della faccende
 const getFaccende = async (req, res) => {
     try {
         const { errore, status, contratto, userId } = await caricaContrattoInquilino(req);
         if (errore) return res.status(status).json({ error: errore });
 
-        // Mostra tutte le faccende condivise + le private del solo richiedente.
+        // Mostra le faccende condivise + le private del'user.
         const faccende = (contratto.faccende || [])
             .filter((f) => f.visibilita === 'condivisa' || String(f.idCreatore) === userId)
             .map((f) => ({ ...f.toObject(), isMia: String(f.idCreatore) === userId }));
@@ -439,6 +439,7 @@ const getFaccende = async (req, res) => {
     }
 };
 
+// POST di una nuova faccenda
 const aggiungiFaccenda = async (req, res) => {
     try {
         const { errore, status, contratto, userId } = await caricaContrattoInquilino(req);
@@ -450,8 +451,6 @@ const aggiungiFaccenda = async (req, res) => {
         const visibilita = req.body?.visibilita === 'condivisa' ? 'condivisa' : 'privata';
         const descrizione = typeof req.body?.descrizione === 'string' ? req.body.descrizione.trim() : '';
 
-        // Generiamo manualmente l'_id e usiamo $push per non rivalidare l'intero contratto
-        // (stesso motivo per cui i rifiuti usano updateOne: vedi aggiornaCalendarioRifiuti).
         const nuovaFaccenda = {
             _id: new mongoose.Types.ObjectId(),
             titolo,
@@ -470,6 +469,7 @@ const aggiungiFaccenda = async (req, res) => {
     }
 };
 
+// PUT di una faccenda esistente
 const aggiornaFaccenda = async (req, res) => {
     try {
         const { errore, status, contratto, userId } = await caricaContrattoInquilino(req);
@@ -484,18 +484,16 @@ const aggiornaFaccenda = async (req, res) => {
         if (!faccenda) return res.status(404).json({ error: 'Faccenda non trovata' });
 
         const isCreatore = String(faccenda.idCreatore) === userId;
-        // Una faccenda privata è gestibile solo dal suo creatore.
+        // Una faccenda privata è aggiornabile solo dall'user che l'ha creata.
         if (faccenda.visibilita === 'privata' && !isCreatore) {
             return res.status(403).json({ error: 'Non puoi modificare questa faccenda' });
         }
 
         const set = {};
-        // "completato" può essere aggiornato da qualsiasi inquilino sulle faccende condivise
-        // e dal creatore su quelle private (già garantito dal controllo sopra).
+
         if (typeof req.body?.completato === 'boolean') {
             set['faccende.$[f].completato'] = req.body.completato;
         }
-        // Titolo/descrizione/visibilità sono modificabili solo dal creatore.
         if (isCreatore) {
             if (typeof req.body?.titolo === 'string' && req.body.titolo.trim()) {
                 set['faccende.$[f].titolo'] = req.body.titolo.trim();
@@ -512,7 +510,6 @@ const aggiornaFaccenda = async (req, res) => {
             return res.status(400).json({ error: 'Nessun campo valido da aggiornare' });
         }
 
-        // Update mirato con arrayFilters: aggiorna solo la faccenda indicata.
         await Contratto.updateOne(
             { _id: contratto._id },
             { $set: set },
@@ -526,6 +523,7 @@ const aggiornaFaccenda = async (req, res) => {
     }
 };
 
+// DELETE di una faccenda
 const eliminaFaccenda = async (req, res) => {
     try {
         const { errore, status, contratto, userId } = await caricaContrattoInquilino(req);

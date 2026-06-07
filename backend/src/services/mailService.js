@@ -1,3 +1,5 @@
+// Service per l'invio di email tramite Resend per il recupero password.
+
 const RESEND_API_URL = 'https://api.resend.com/emails';
 const resendApiKey = process.env.RESEND_API_KEY;
 const resendFrom = process.env.RESEND_FROM;

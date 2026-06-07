@@ -1,3 +1,5 @@
+// Controller per autenticazione
+
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -29,7 +31,7 @@ const register = async (req, res) => {
     dipartimento,
   } = req.body;
 
-  // --- Validazione campi comuni obbligatori ---
+  // Validazione campi comuni obbligatori
   if (!nome || nome.trim() === '') {
     return res.status(400).json({ messaggio: 'Nome: campo obbligatorio mancante' });
   }
@@ -43,28 +45,27 @@ const register = async (req, res) => {
     return res.status(400).json({ messaggio: 'Password: campo obbligatorio mancante' });
   }
 
-  // --- Validazione formato email ---
+  // Validazione formato email
   if (!REGEX_EMAIL.test(email)) {
     return res.status(400).json({ messaggio: 'Email: formato non valido' });
   }
 
-  // --- Validazione ruolo ---
+  // Validazione ruolo
   const ruoloNormalizzato = ruolo || 'utente';
   if (!RUOLI_VALIDI.includes(ruoloNormalizzato)) {
     return res.status(400).json({ messaggio: `Ruolo non valido: ${ruoloNormalizzato}` });
   }
 
-  // --- Validazioni specifiche per ruolo ---
+  // Validazioni specifiche per ruolo
   if (ruoloNormalizzato === 'amministratore') {
-    // privato deve essere esplicitamente boolean
     if (typeof privato !== 'boolean') {
       return res.status(400).json({ messaggio: 'Tipo account (privato/agenzia) obbligatorio per amministratori' });
     }
-    // Il telefono è richiesto: serve a mettere in contatto gli utenti via WhatsApp
+    // Il telefono è richiesto per il contatto con Whatsapp
     if (!telefono || telefono.trim() === '') {
       return res.status(400).json({ messaggio: 'Numero di telefono obbligatorio per amministratori' });
     }
-    // Se è un'agenzia, la partita IVA è obbligatoria e deve essere 11 cifre
+    // Se è un'agenzia, la partita IVA è obbligatoria
     if (privato === false) {
       if (!pIVA || pIVA.trim() === '') {
         return res.status(400).json({ messaggio: 'Partita IVA obbligatoria per account agenzia' });
@@ -84,18 +85,16 @@ const register = async (req, res) => {
     }
   }
 
-  // --- Email già registrata ---
+  // Email già registrata
   const utenteEsistente = await User.findOne({ email: email.toLowerCase() });
   if (utenteEsistente) {
     return res.status(409).json({ messaggio: 'Email già in uso' });
   }
 
-  // --- Hashing password ---
+  // Hashing password con bcrypt
   const passwordHashata = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
-  // --- Costruzione documento utente ---
-  // I campi specifici per ruolo vengono aggiunti solo se pertinenti,
-  // così il documento MongoDB rimane pulito
+  // Costruzione del documento utente
   const datiUtente = {
     nome: nome.trim(),
     cognome: cognome.trim(),
@@ -120,7 +119,7 @@ const register = async (req, res) => {
   const nuovoUtente = new User(datiUtente);
   await nuovoUtente.save();
 
-  // --- Generazione JWT ---
+  // Generazione JWT token
   const token = jwt.sign(
     {
       sub: nuovoUtente._id.toString(),
@@ -131,7 +130,6 @@ const register = async (req, res) => {
     { expiresIn: JWT_EXPIRES_IN }
   );
 
-  // --- Risposta 201 ---
   return res.status(201).json({
     messaggio: 'Utente registrato con successo',
     token,
@@ -148,7 +146,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   const { email, password } = req.body;
 
-  // --- Validazione campi obbligatori ---
+  // Validazione campi obbligatori
   if (!email) {
     return res.status(400).json({ messaggio: 'Email: campo obbligatorio mancante' });
   }
@@ -156,24 +154,24 @@ const login = async (req, res) => {
     return res.status(400).json({ messaggio: 'Password: campo obbligatorio mancante' });
   }
 
-  // --- Validazione formato email ---
+  // Validazione formato email
   if (!REGEX_EMAIL.test(email)) {
     return res.status(400).json({ messaggio: 'Email: formato non valido' });
   }
 
-  // --- Ricerca utente per email ---
+  // Ricerca utente per email
   const utente = await User.findOne({ email: email.toLowerCase() });
   if (!utente) {
     return res.status(401).json({ messaggio: 'Utente non trovato' });
   }
 
-  // --- Verifica password ---
+  // Verifica password
   const passwordValida = await bcrypt.compare(password, utente.password);
   if (!passwordValida) {
     return res.status(401).json({ messaggio: 'Password non valida' });
   }
 
-  // --- Generazione JWT ---
+  // Generazione JWT token
   const token = jwt.sign(
     {
       sub: utente._id.toString(),
@@ -184,7 +182,6 @@ const login = async (req, res) => {
     { expiresIn: JWT_EXPIRES_IN }
   );
 
-  // --- Risposta 200 ---
   return res.status(200).json({
     messaggio: 'Login effettuato con successo',
     token,
@@ -211,7 +208,6 @@ const richiediResetPassword = async (req, res) => {
 
   const utente = await User.findOne({ email: email.toLowerCase().trim() });
 
-  // Non riveliamo se l'email esiste o meno: la risposta resta sempre generica.
   if (!utente) {
     return res.status(200).json({
       messaggio: 'Se l’email è presente nel sistema, riceverai un messaggio con le istruzioni per il reset.',
@@ -229,9 +225,7 @@ const richiediResetPassword = async (req, res) => {
   const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const resetLink = `${frontendBaseUrl.replace(/\/$/, '')}/reset-password?token=${rawToken}`;
 
-  // In produzione non ritorniamo mai il token: inviamo la mail (se
-  // configurata) e rispondiamo sempre con un messaggio neutro per evitare
-  // di rivelare l'esistenza di account.
+  // Invia email con link di reset password
   try {
     await sendPasswordResetEmail({
       to: utente.email,
@@ -240,7 +234,6 @@ const richiediResetPassword = async (req, res) => {
       expiresAt,
     });
   } catch (e) {
-    // Non bloccare l'operazione per errori di invio; loggare lato server è sufficiente
     console.warn('Invio email reset fallito:', e && e.message ? e.message : e)
   }
 
@@ -287,23 +280,21 @@ const resetPassword = async (req, res) => {
 
 const verificaIdentita = async (req, res) => {
   try {
-    // Ottieni l'ID dell'utente dal token JWT (caricato dal middleware autenticaToken)
+    //ID dell'utente dal token JWT
     const userId = req.user.sub;
 
-    // Trova l'utente nel database
+    // Trova l'utente nel DB
     const utente = await User.findById(userId);
     if (!utente) {
       return res.status(404).json({ messaggio: 'Utente non trovato' });
     }
 
     // Se l'utente è "utente base", lo aggiorna a "utente verificato"
-    // Per altri ruoli (inquilino, amministratore, dipendente comune), non fa nulla
     if (utente.ruolo === 'utente base') {
       utente.ruolo = 'utente verificato';
       await utente.save();
     }
 
-    // Ritorna l'utente aggiornato
     return res.status(200).json({
       messaggio: 'Verifica identità effettuata con successo',
       utente: {

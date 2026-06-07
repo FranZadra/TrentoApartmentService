@@ -1,23 +1,24 @@
+// Routes per la gestione degli utenti
+
 const express = require('express');
 const router = express.Router();
 const { register, login, verificaIdentita, richiediResetPassword, resetPassword } = require('../controllers/authController');
 const { autenticaToken } = require('../middleware/auth');
 
-// Le rotte utente servono per creare un account e per entrare nella piattaforma.
 
-// POST /api/v1/users/register → gestita dalla funzione "register" nel controller
+// POST registrazione nuovo utente
 router.post('/register', register);
 
-// POST /api/v1/users/login → controlla le credenziali e restituisce il token.
+// POST login utente (restituisce JWT)
 router.post('/login', login);
 
-// PUT /api/v1/users/verifica-identita → richiede autenticazione
+// PUT verifica identità utente (richiede JWT valido)
 router.put('/verifica-identita', autenticaToken, verificaIdentita);
 
-// POST /api/v1/users/password/forgot → invia il link di recupero password via email
+// POST richiesta reset password
 router.post('/password/forgot', richiediResetPassword);
 
-// POST /api/v1/users/password/reset → completa il reset con il token ricevuto via email
+// POST reset password
 router.post('/password/reset', resetPassword);
 
 module.exports = router;

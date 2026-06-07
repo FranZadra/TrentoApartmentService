@@ -1,6 +1,8 @@
+// Model per i guasti
+
 const mongoose = require('mongoose');
 
-// Schema che descrive la struttura di un documento nella collezione "guasti" su MongoDB
+// Schema che descrive la struttura di un guasto
 const guastoSchema = new mongoose.Schema(
   {
     idAppartamento: {
