@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   server: {
-    // Es. /api/v1/annunci → http://localhost:3000/api/v1/annunci
+    // Es. /api/v2/annunci → http://localhost:3000/api/v2/annunci
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

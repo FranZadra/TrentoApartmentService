@@ -1,4 +1,5 @@
-// tests/auth.test.js
+// Test delle API di autenticazione e verifica identità (usersRoutes)
+
 const request = require('supertest');
 const app = require('../app');
 const jwt = require('jsonwebtoken');
@@ -6,6 +7,7 @@ const bcrypt = require('bcrypt');
 
 const User = require('../models/User');
 
+// Variabili di test
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const UTENTE_BASE_ID = '64d000000000000000000001';
 
@@ -15,17 +17,16 @@ const tokenUtenteBase = jwt.sign(
   { expiresIn: '1h' }
 );
 
-describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => {
+describe('Suite di test autenticazione e verifica identità', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  // --- REGISTRAZIONE (Esempi significativi da Excel) ---
-  describe('POST /api/v1/users/register', () => {
+  describe('POST /api/v2/users/register', () => {
     // TEST CASE N.1
     test('Registrazione fallisce se l\'indirizzo email è malformato', async () => {
       const res = await request(app)
-        .post('/api/v1/users/register')
+        .post('/api/v2/users/register')
         .send({
           nome: 'Glen',
           cognome: 'Myers',
@@ -41,9 +42,9 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
     // TEST CASE N.3
     test('Registrazione fallisce con campo nome vuoto ', async () => {
       const res = await request(app)
-        .post('/api/v1/users/register')
+        .post('/api/v2/users/register')
         .send({
-          nome: '   ', // stringa vuota dopo trim
+          nome: '   ',
           cognome: 'Myers',
           email: 'glenmyers@gmail.com',
           password: 'pwd123',
@@ -57,7 +58,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
     // TEST CASE N.9
     test('Registrazione Amministratore fallisce se di tipo pubblico e non viene fornita la P.IVA', async () => {
       const res = await request(app)
-        .post('/api/v1/users/register')
+        .post('/api/v2/users/register')
         .send({
           nome: 'Claudio',
           cognome: 'Rossi',
@@ -76,7 +77,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
     // TEST CASE N.12
     test('Registrazione Dipendente Comunale fallisce se mancano dipartimento o ruolo interno', async () => {
       const res = await request(app)
-        .post('/api/v1/users/register')
+        .post('/api/v2/users/register')
         .send({
           nome: 'Laura',
           cognome: 'Bianchi',
@@ -91,9 +92,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
     });
   });
 
-  // --- LOGIN ---
-  describe('POST /api/v1/users/login', () => {
-
+  describe('POST /api/v2/users/login', () => {
     // TEST CASE N.15
     test('Login con successo restituisce un token JWT valido e i dati utente', async () => {
       const passwordHashata = await bcrypt.hash('pwd123Valid', 10);
@@ -107,7 +106,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
       jest.spyOn(User, 'findOne').mockResolvedValue(utenteMocked);
 
       const res = await request(app)
-        .post('/api/v1/users/login')
+        .post('/api/v2/users/login')
         .send({
           email: 'glenmyers@gmail.com',
           password: 'pwd123Valid'
@@ -131,7 +130,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
       jest.spyOn(User, 'findOne').mockResolvedValue(utenteMocked);
 
       const res = await request(app)
-        .post('/api/v1/users/login')
+        .post('/api/v2/users/login')
         .send({
           email: 'glenmyers@gmail.com',
           password: 'passwordSbagliata'
@@ -143,8 +142,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
     });
   });
 
-  // --- VERIFICA IDENTITÀ (US3) ---
-  describe('PUT /api/v1/users/verifica-identita', () => {
+  describe('PUT /api/v2/users/verifica-identita', () => {
     // TEST CASE N.51
     test('Verifica identità con successo per utente base', async () => {
       const utenteFakeBase = {
@@ -159,7 +157,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
       jest.spyOn(User, 'findById').mockResolvedValue(utenteFakeBase);
 
       const res = await request(app)
-        .put('/api/v1/users/verifica-identita')
+        .put('/api/v2/users/verifica-identita')
         .set('Authorization', `Bearer ${tokenUtenteBase}`);
 
       expect(res.status).toBe(200);
@@ -183,7 +181,7 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
       const tokenAdmin = jwt.sign({ sub: utenteFakeAdmin._id, ruolo: 'amministratore' }, JWT_SECRET);
 
       const res = await request(app)
-        .put('/api/v1/users/verifica-identita')
+        .put('/api/v2/users/verifica-identita')
         .set('Authorization', `Bearer ${tokenAdmin}`);
 
       expect(res.status).toBe(200);
@@ -192,16 +190,14 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
     });
   });
 
-  // --- RECUPERO PASSWORD (US4) ---
-  describe('POST /api/v1/users/password/forgot', () => {
-    
+  describe('POST /api/v2/users/password/forgot', () => {  
     // TEST CASE N.57
     test('Richiesta reset restituisce 200 con messaggio generico per privacy ', async () => {
       // Sia che l'utente esista o meno, l'esito deve essere mascherarato per motivi di sicurezza e privacy 
       jest.spyOn(User, 'findOne').mockResolvedValue(null); // Utente non trovato
 
       const res = await request(app)
-        .post('/api/v1/users/password/forgot')
+        .post('/api/v2/users/password/forgot')
         .send({ email: 'inesistente@gmail.com' });
 
       expect(res.status).toBe(200);
@@ -209,11 +205,11 @@ describe('Suite di Test: Autenticazione & Verifica Identità (US3, US4)', () => 
     });
   });
 
-  describe('POST /api/v1/users/password/reset', () => {
+  describe('POST /api/v2/users/password/reset', () => {
     // TEST CASE N.59
     test('Tentativo reset password fallisce se la password è inferiore a 6 caratteri', async () => {
       const res = await request(app)
-        .post('/api/v1/users/password/reset')
+        .post('/api/v2/users/password/reset')
         .send({
           token: 'rawTokenEsempio123',
           password: '123' // Troppo corta

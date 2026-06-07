@@ -1,8 +1,8 @@
 import axios from 'axios'
 
-// baseURL '/api/v1' con versioning
+// baseURL '/api/v2' con versioning
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: '/api/v2',
 })
 
 // Token JWT in ogni richiesta

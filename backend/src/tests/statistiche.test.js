@@ -14,7 +14,7 @@ const tokenDipendente = jwt.sign(
 JWT_SECRET
 );
 
-describe('Suite di Test: Dashboard Statistiche Comunali (US16)', () => {
+describe('Suite di test dashboard statistiche', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -27,7 +27,7 @@ describe('Suite di Test: Dashboard Statistiche Comunali (US16)', () => {
     );
 
     const res = await request(app)
-      .get('/api/v1/statistiche')
+      .get('/api/v2/statistiche')
       .set('Authorization', `Bearer ${tokenInquilinoErrato}`);
 
     expect(res.status).toBe(403);
@@ -58,7 +58,7 @@ describe('Suite di Test: Dashboard Statistiche Comunali (US16)', () => {
     jest.spyOn(Appartamento, 'distinct').mockResolvedValue(['38122', '38123']);
 
     const res = await request(app)
-      .get('/api/v1/statistiche')
+      .get('/api/v2/statistiche')
       .set('Authorization', `Bearer ${tokenDipendente}`);
 
     expect(res.status).toBe(200);
@@ -92,7 +92,7 @@ describe('Suite di Test: Dashboard Statistiche Comunali (US16)', () => {
     jest.spyOn(Appartamento, 'distinct').mockResolvedValue(['38123']);
 
     const res = await request(app)
-      .get('/api/v1/statistiche?cap=38123')
+      .get('/api/v2/statistiche?cap=38123')
       .set('Authorization', `Bearer ${tokenDipendente}`);
 
     expect(res.status).toBe(200);

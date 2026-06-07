@@ -184,7 +184,7 @@ Endpoint per verificare che il server sia operativo. Non richiede autenticazione
 Endpoint per la consultazione degli annunci pubblicati.
 Tutti gli endpoint di questo gruppo sono **pubblici** (nessuna autenticazione richiesta).
 
-## Annunci Collection [/api/v1/annunci]
+## Annunci Collection [/api/v2/annunci]
 
 ### Lista annunci attivi [GET]
 
@@ -278,7 +278,7 @@ Risultato ordinato per data di pubblicazione decrescente.
             "message": "Errore interno del server"
         }
 
-## Ricerca Annunci con Filtri [/api/v1/annunci/search/filter{?numStanze,numBagni,terrazzo,classeEnergetica,mqMin,mqMax,prezzoMin,prezzoMax,tipoCam}]
+## Ricerca Annunci con Filtri [/api/v2/annunci/search/filter{?numStanze,numBagni,terrazzo,classeEnergetica,mqMin,mqMax,prezzoMin,prezzoMax,tipoCam}]
 
 ### Ricerca annunci filtrata [GET]
 
@@ -354,7 +354,7 @@ una camera dell'appartamento deve soddisfare **tutti** i criteri indicati contem
             "message": "Errore interno del server"
         }
 
-## Annuncio [/api/v1/annunci/{id}]
+## Annuncio [/api/v2/annunci/{id}]
 
 + Parameters
     + id (string, required) - MongoDB ObjectId dell'annuncio
@@ -447,7 +447,7 @@ La modifica e l'eliminazione richiedono inoltre che l'utente autenticato sia il 
 | 403 | Appartamento senza `amministratoreId` | `"Appartamento senza amministratore assegnato — operazione non consentita."` |
 | 404 | Appartamento non trovato | `"Appartamento non trovato"` |
 
-## Appartamenti Collection [/api/v1/appartamenti{?page,limit,perStudenti,città,proprietario}]
+## Appartamenti Collection [/api/v2/appartamenti{?page,limit,perStudenti,città,proprietario}]
 
 ### Lista appartamenti [GET]
 
@@ -638,7 +638,7 @@ La `posizione` (lat/lon) viene calcolata automaticamente dall'indirizzo tramite 
             "message": "Token non valido"
         }
 
-## Annuncio Appartamento [/api/v1/appartamenti/{appartamentoId}/annuncio]
+## Annuncio Appartamento [/api/v2/appartamenti/{appartamentoId}/annuncio]
 
 + Parameters
     + appartamentoId (string, required) - MongoDB ObjectId dell'appartamento
@@ -732,7 +732,7 @@ Richiede ruolo `amministratore`; la proprietà è verificata dal token JWT.
             "message": "Solo gli amministratori possono gestire l'annuncio"
         }
 
-## Appartamento [/api/v1/appartamenti/{id}]
+## Appartamento [/api/v2/appartamenti/{id}]
 
 + Parameters
     + id (string, required) - MongoDB ObjectId dell'appartamento
@@ -956,7 +956,7 @@ il campo `warnings` con il conteggio degli annunci orfani (non vengono eliminati
             "message": "Errore interno del server"
         }
 
-## Contatto Admin [/api/v1/appartamenti/{id}/contatto-admin]
+## Contatto Admin [/api/v2/appartamenti/{id}/contatto-admin]
 
 + Parameters
     + id (string, required) - ID dell'appartamento
@@ -1005,7 +1005,7 @@ Riservato agli utenti autenticati: alimenta il pulsante "Contatta su WhatsApp" n
             "message": "Errore interno del server"
         }
 
-## Associa Inquilino [/api/v1/appartamenti/{appartamentoId}/associa-inquilino]
+## Associa Inquilino [/api/v2/appartamenti/{appartamentoId}/associa-inquilino]
 
 + Parameters
     + appartamentoId (string, required) - MongoDB ObjectId dell'appartamento
@@ -1101,7 +1101,7 @@ Al momento della registrazione e del login viene rilasciato un **token JWT** val
 
 Il payload JWT contiene: `sub` (ID utente), `email`, `ruolo`.
 
-## Registrazione [/api/v1/users/register]
+## Registrazione [/api/v2/users/register]
 
 ### Registra un nuovo utente [POST]
 
@@ -1202,7 +1202,7 @@ Crea un nuovo account nel sistema e restituisce il token JWT.
             "messaggio": "Email già in uso"
         }
 
-## Login [/api/v1/users/login]
+## Login [/api/v2/users/login]
 
 ### Accedi [POST]
 
@@ -1245,7 +1245,7 @@ Restituisce un token JWT valido per 7 giorni.
             "messaggio": "Password non valida"
         }
 
-## Verifica Identità [/api/v1/users/verificaIdentita]
+## Verifica Identità [/api/v2/users/verificaIdentita]
 
 ### Verifica identità [PUT]
 
@@ -1285,7 +1285,7 @@ Per gli altri ruoli (inquilino, amministratore, dipendente comune) non produce e
             "messaggio": "Utente non trovato"
         }
 
-## Reset Password — Richiesta [/api/v1/users/password/forgot]
+## Reset Password — Richiesta [/api/v2/users/password/forgot]
 
 ### Richiedi reset password [POST]
 
@@ -1312,7 +1312,7 @@ rivelare se l'indirizzo email è registrato nel sistema.
             "messaggio": "Email campo obbligatorio mancante"
         }
 
-## Reset Password — Completamento [/api/v1/users/password/reset]
+## Reset Password — Completamento [/api/v2/users/password/reset]
 
 ### Completa reset password [POST]
 
@@ -1345,7 +1345,7 @@ Imposta la nuova password usando il token ricevuto via email.
 
 Endpoint per la gestione di contratti e guasti, riservati agli utenti autenticati con contratto attivo.
 
-## Contratti [/api/v1/gestione-interna/contratti]
+## Contratti [/api/v2/gestione-interna/contratti]
 
 ### Contratti dell'utente loggato [GET]
 
@@ -1408,7 +1408,7 @@ Accessibile solo agli utenti con ruolo `inquilino` o `utente verificato`.
             "error": "Utente non trovato"
         }
 
-## Guasti — Segnalazione [/api/v1/gestione-interna/guasti]
+## Guasti — Segnalazione [/api/v2/gestione-interna/guasti]
 
 ### Segnala un guasto [POST]
 
@@ -1465,7 +1465,7 @@ Richiede autenticazione JWT e ruolo `inquilino` con contratto attivo sull'appart
             "error": "Non hai un contratto attivo per questo appartamento"
         }
 
-## Guasti — Per Appartamento [/api/v1/gestione-interna/guasti/{appId}]
+## Guasti — Per Appartamento [/api/v2/gestione-interna/guasti/{appId}]
 
 + Parameters
     + appId (string, required) - MongoDB ObjectId dell'appartamento
@@ -1517,7 +1517,7 @@ Richiede autenticazione JWT e un contratto attivo sull'appartamento.
             "error": "Appartamento non trovato"
         }
 
-## Guasti — Presa in Carico [/api/v1/gestione-interna/guasti/{guastoId}/carico]
+## Guasti — Presa in Carico [/api/v2/gestione-interna/guasti/{guastoId}/carico]
 
 + Parameters
     + guastoId (string, required) - MongoDB ObjectId del guasto
@@ -1568,7 +1568,7 @@ Richiede ruolo `amministratore`; la proprietà è verificata dal token JWT.
 Endpoint per il caricamento e la consultazione delle bollette, accessibili all'amministratore
 proprietario e all'inquilino con contratto attivo.
 
-## Bollette per Appartamento [/api/v1/bollette/{appartamentoId}]
+## Bollette per Appartamento [/api/v2/bollette/{appartamentoId}]
 
 + Parameters
     + appartamentoId (string, required) - MongoDB ObjectId dell'appartamento
@@ -1624,7 +1624,7 @@ Il PDF, se allegato, deve essere in formato `application/pdf` (max 10 MB).
             "message": "Non sei l'amministratore proprietario"
         }
 
-## Bollette Appartamento [/api/v1/appartamenti/{appId}/bollette]
+## Bollette Appartamento [/api/v2/appartamenti/{appId}/bollette]
 
 + Parameters
     + appId (string, required) - MongoDB ObjectId dell'appartamento
@@ -1677,7 +1677,7 @@ dal token JWT. Include i dati aggregati per i grafici dei consumi.
             "error": "Non autorizzato"
         }
 
-## Segna Bolletta Pagata [/api/v1/bollette/{bollettaId}/paga]
+## Segna Bolletta Pagata [/api/v2/bollette/{bollettaId}/paga]
 
 + Parameters
     + bollettaId (string, required) - MongoDB ObjectId della bolletta
@@ -1713,7 +1713,7 @@ dal token JWT. Include i dati aggregati per i grafici dei consumi.
             "message": "Bolletta non trovata"
         }
 
-## Bolletta [/api/v1/bollette/{bollettaId}]
+## Bolletta [/api/v2/bollette/{bollettaId}]
 
 + Parameters
     + bollettaId (string, required) - MongoDB ObjectId della bolletta
@@ -1740,7 +1740,7 @@ dal token JWT. Include i dati aggregati per i grafici dei consumi.
             "message": "Bolletta non trovata"
         }
 
-## PDF Bolletta [/api/v1/bollette/{bollettaId}/pdf]
+## PDF Bolletta [/api/v2/bollette/{bollettaId}/pdf]
 
 + Parameters
     + bollettaId (string, required) - MongoDB ObjectId della bolletta
@@ -1781,7 +1781,7 @@ L'endpoint è protetto: il client deve inviare il token JWT nell'header Authoriz
 
 Dashboard TAS Data — dati aggregati e anonimizzati per dipendenti comunali (US16).
 
-## Dashboard Statistica [/api/v1/statistiche{?cap,tipoCamera,perStudenti}]
+## Dashboard Statistica [/api/v2/statistiche{?cap,tipoCamera,perStudenti}]
 
 ### Dati statistici aggregati [GET]
 

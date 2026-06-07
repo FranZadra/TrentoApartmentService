@@ -466,7 +466,7 @@ const associaErrore = ref('')
 const associaSuccesso = ref('')
 const associaInvioInCorso = ref(false)
 
-const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v2'
 
 watch([showDetails, showForm, showAnnuncioForm, showGuastiModal, showBolletteModal, showAssociaModal], (stati) => {
   document.body.style.overflow = stati.some(Boolean) ? 'hidden' : ''
