@@ -6,11 +6,7 @@ const apiClient = axios.create({
   timeout: 10000,
 })
 
-/**
- * Registra un nuovo utente nel sistema
- * @param {Object} userData - { nome, email, password }
- * @returns {Promise} Risposta del server con dati utente creato
- */
+// Registra un nuovo utente nel sistema
 export async function registerUser(userData) {
   try {
     const response = await apiClient.post('/users/register', userData)
@@ -21,11 +17,7 @@ export async function registerUser(userData) {
   }
 }
 
-/**
- * Effettua il login di un utente.
- * @param {Object} credentials - { email, password }
- * @returns {Promise}
- */
+// Login utente
 export async function loginUser(credentials) {
   try {
     // Controlla le credenziali e ritorna il token insieme ai dati utente.
@@ -48,11 +40,7 @@ export async function requestPasswordReset(email) {
   }
 }
 
-/**
- * Completa il reset della password con il token ricevuto via email.
- * @param {string} token
- * @param {string} password
- */
+// Reset password con token ottenuto via mail
 export async function resetPassword(token, password) {
   try {
     const response = await apiClient.post('/users/password/reset', { token, password })

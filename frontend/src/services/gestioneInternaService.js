@@ -49,7 +49,7 @@ export async function aggiornaCalendarioRifiutiAppartamento(appId, calendarioRif
  }
 }
 
-// ---- US23: Faccende del calendario condiviso ----
+// Faccende del calendario condiviso per appartamento
 export async function getFaccendeAppartamento(appId) {
  try {
    const response = await api.get(`/gestione-interna/faccende/${appId}`)

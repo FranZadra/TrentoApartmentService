@@ -166,8 +166,7 @@
               </p>
               <hr class="my-4 border-zinc-100" />
 
-              <!-- Contatto amministratore: il numero e il pulsante per contattare l'amministratore sono
-                   visibili solo agli utenti registrati -->
+              <!-- Contatto amministratore solo per utenti registrati -->
               <template v-if="auth.isAuthenticated">
                 <template v-if="contattoAdmin?.linkWhatsApp">
                   <p class="text-sm text-zinc-600 leading-relaxed">
@@ -255,7 +254,7 @@ const auth = useAuthStore()
 const annuncio = ref(null)  // dati dell'annuncio con appartamento popolato
 const caricamento = ref(true)
 const errore = ref(null)
-const fotoCorrente = ref(0) // indice della foto mostrata nella galleria
+const fotoCorrente = ref(0)
 // Dati di contatto dell'admin (solo se autenticati).
 const contattoAdmin = ref(null)
 
@@ -308,7 +307,6 @@ async function caricaDettaglio() {
         const c = await annunciService.getContattoAdmin(appartamentoId)
         contattoAdmin.value = c.data.data
       } catch {
-        // Se il contatto non è recuperabile non blocchiamo la pagina dell'annuncio
         contattoAdmin.value = null
       }
     }

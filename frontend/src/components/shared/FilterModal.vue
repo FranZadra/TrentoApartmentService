@@ -248,7 +248,6 @@ const filtri = ref({
 })
 
 // Quando la modale si apre, popola i filtri con quelli attuali.
-// I campi assenti in filtriAttuali rimangono al loro valore iniziale (null, '', false)
 watch(
   () => props.isOpen,
   (newVal) => {

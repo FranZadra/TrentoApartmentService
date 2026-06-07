@@ -189,11 +189,9 @@ async function handleRecoverySubmit() {
 	}
 
 	isRecoveryLoading.value = true
-	// Mostra subito messaggio per l'utente mentre la richiesta è in corso
 	recoveryMessage.value = 'Controlla la tua casella di posta'
 	try {
 		await requestPasswordReset(recoveryEmail.value.trim())
-		// Manteniamo il messaggio visibile anche dopo il successo per chiarezza, dopo 5 secondi chiudiamo il modal e torniamo al login
 		if (recoveryTimeout) clearTimeout(recoveryTimeout)
 		recoveryTimeout = setTimeout(() => {
 			recoveryTimeout = null

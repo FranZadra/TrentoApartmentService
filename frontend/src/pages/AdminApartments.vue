@@ -722,7 +722,6 @@ function reload() {
 }
 
 // Funzioni modale bollette
-
 function capitalizeFirst(str) {
   if (!str) return ''
   return str.charAt(0).toUpperCase() + str.slice(1)
@@ -875,7 +874,7 @@ function onGlobalEdit(e) {
 }
 
 onMounted(() => {
-  // Carica solo gli appartamenti dell'admin loggato (filtrati per userId)
+  // Carica solo gli appartamenti dell'admin loggato
   loadApartments()
   window.addEventListener('admin:editApartment', onGlobalEdit)
 })
@@ -887,8 +886,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Layout interamente gestito con Tailwind. */
-
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.5s ease;

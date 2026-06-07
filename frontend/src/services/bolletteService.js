@@ -5,7 +5,7 @@ const api = axios.create({
   baseURL: '/api/v1',
 })
 
-// Inietta il token JWT in ogni richiesta
+// Token JWT in ogni richiesta
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('tas_token')
   if (token) {
@@ -81,7 +81,6 @@ export async function apriPdfBolletta(bollettaId) {
     link.click()
     link.remove()
 
-    // Liberiamo la memoria una volta che la scheda ha avuto il tempo di caricare il blob
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
 
     return { success: true }

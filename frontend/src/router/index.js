@@ -11,12 +11,11 @@ import PaginaAccesso from '../pages/paginaAccesso.vue'
 import PaginaProfilo from '../pages/paginaProfilo.vue'
 import ResetPassword from '@/pages/ResetPassword.vue'
 
-// AnnuncioDetail caricato in lazy load (la mappa è pesante)
+// Dettaglio annuncio caricato in lazy load
 const AnnuncioDetail = () => import('@/pages/AnnuncioDetail.vue')
 const AdminApartments = () => import('../pages/AdminApartments.vue')
 
-// Verifica che l'utente abbia un token JWT in localStorage.
-// Se non ce l'ha, lo reindirizza alla pagina di login.
+// Verifica che l'utente abbia un token JWT in localStorage, se non ce l'ha, lo reindirizza alla pagina di login.
 function richiedeAutenticazione(_to, _from, next) {
   const token = localStorage.getItem('tas_token') || localStorage.getItem('token')
   if (!token) {
@@ -26,7 +25,7 @@ function richiedeAutenticazione(_to, _from, next) {
   }
 }
 
-// Guardia per la dashboard statistica: richiede token + ruolo di dipendente del comune.
+// Dashboard statistica richiede token + ruolo di dipendente del comune.
 function richiedeDipendenteComunale(_to, _from, next) {
   const token = localStorage.getItem('tas_token') || localStorage.getItem('token')
   const ruolo = localStorage.getItem('tas_role')
@@ -38,32 +37,31 @@ function richiedeDipendenteComunale(_to, _from, next) {
 }
 const routes = [
   {
-    // Pagina iniziale con presentazione del servizio.
+    // Pagina iniziale
     path: '/',
     name: 'home',
     component: HomePage,
   },
   {
-    // Lista degli annunci attivi + mappa interattiva.
+    // Lista degli annunci attivi con mappa interattiva
     path: '/annunci',
     name: 'annunci',
     component: AnnunciPage,
   },   
   {
-      // Pagina gestione immobili: accessibile solo agli amministratori.
+      // Pagina gestione immobili: accessibile solo agli amministratori
       path: '/i-miei-appartamenti',
       name: 'admin-appartamenti',
       component: AdminApartments,
       beforeEnter: richiedeAutenticazione,
   },
   {
-    // Dettaglio singolo annuncio :id è il MongoDB ObjectId.
+    // Dettaglio singolo annuncio
     path: '/annunci/:id',
     name: 'annuncio-detail',
     component: AnnuncioDetail,
   },
   {
-    // Pagine di servizio mostrate in modo coerente con il resto del sito.
     path: '/mansioni',
     name: 'mansioni',
     component: MansioniPage,
@@ -81,7 +79,7 @@ const routes = [
     component: GuastiPage,
   },
 	{
-    // Pagina di accesso e registrazione, con alias per il vecchio percorso.
+    // Pagina di accesso e registrazione
 		path: '/accesso',
 		name: 'accesso',
 		component: PaginaAccesso,
@@ -95,14 +93,14 @@ const routes = [
     meta: { title: 'TAS - Reset password' },
   },
 	{
-    // Profilo utente con informazioni salvate lato client.
+    // Profilo utente
 		path: '/profilo',
 		name: 'profilo',
 		component: PaginaProfilo,
 		meta: { title: 'TAS - Profilo' },
 	},
   {
-    // Dashboard statistica per dipendenti comunali.
+    // Dashboard statistica per dipendenti comunali
     path: '/dashboard-statistica',
     name: 'dashboard-statistica',
     component: DashboardStatistiche,
@@ -114,7 +112,6 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  // Torna sempre in cima alla pagina quando si naviga
   scrollBehavior() {
     return { top: 0 }
   },

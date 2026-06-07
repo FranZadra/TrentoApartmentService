@@ -153,12 +153,10 @@ async function caricaAnnunci() {
   }
 }
 
-// Apre la modale filtri
 function apriModaleFiltri() {
   modaleFiltriAperta.value = true
 }
 
-// Chiude la modale filtri
 function chiudiModaleFiltri() {
   modaleFiltriAperta.value = false
 }

@@ -40,7 +40,7 @@
         {{ indirizzoBreve }}
       </h3>
 
-      <!-- Descrizione di 2 righe -->
+      <!-- Descrizione annuncio -->
       <p class="line-clamp-2 text-sm text-zinc-500 leading-relaxed">
         {{ annuncio.descrizione }}
       </p>
@@ -99,7 +99,6 @@ const dataFormattata = computed(() => {
 </script>
 
 <style scoped>
-/* Chip: etichetta piccola per le caratteristiche dell'appartamento */
 .chip {
   @apply rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600;
 }

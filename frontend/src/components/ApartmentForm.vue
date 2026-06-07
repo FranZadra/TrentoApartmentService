@@ -135,10 +135,9 @@ const emits = defineEmits(['saved', 'close'])
 const classi = ['A4', 'A3', 'A2', 'A1', 'B', 'C', 'D', 'E', 'F', 'G']
 
 // Errori di validazione restituiti dal backend
-// Viene popolato quando il server risponde con 400 e un array di errori per campo
 const erroriValidazione = ref([])
 
-// Struttura iniziale del form (tutti i campi del modello Appartamento)
+// Struttura iniziale del form
 const defaultForm = () => ({
   indirizzo: { città: '', via: '', numero: null, CAP: '', Stato: 'Italia' },
   mqTot: null,
@@ -187,7 +186,6 @@ function getAuthHeaders() {
 }
 
 // Estrae l'ID amministratore dal payload del token JWT.
-// Usato per impostare l'ID amministratore al momento della creazione dell'appartamento.
 function getIdDalToken() {
   const token = localStorage.getItem('tas_token') || localStorage.getItem('token')
   if (!token) return ''
@@ -200,7 +198,6 @@ function getIdDalToken() {
   }
 }
 
-// Aggiunge una riga vuota alla lista foto
 function aggiungiFoto() {
   form.foto.push('')
 }

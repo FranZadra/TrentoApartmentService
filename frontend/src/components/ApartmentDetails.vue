@@ -95,7 +95,6 @@ async function onDelete() {
 }
 
 function onEdit() {
-  // Emetti evento globale per chiedere al parent di aprire il form con i dati
   emits('close')
   window.dispatchEvent(new CustomEvent('admin:editApartment', { detail: apt.value }))
 }
