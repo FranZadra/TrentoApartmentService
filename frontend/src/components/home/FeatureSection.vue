@@ -1,5 +1,5 @@
 <template>
-	<!-- Tre riquadri che presentano le funzioni più importanti della piattaforma. -->
+	<!-- Tre riquadri che presentano le funzioni base della piattaforma. -->
   <section id="features" class="border-y border-zinc-200 bg-white">
     <div class="mx-auto max-w-[1200px] px-6 py-4 lg:px-8">
       <div class="grid gap-0 md:grid-cols-3 md:border-l md:border-r md:border-zinc-200">
@@ -21,10 +21,6 @@
             </div>
           </div>
 
-          <router-link to="/annunci" class="group inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#9a1528]">
-            Vai alla ricerca
-            <span class="transition-transform group-hover:translate-x-1">→</span>
-          </router-link>
         </article>
 
         <article class="flex min-h-[18rem] flex-col justify-between border-b border-zinc-200 p-8 md:border-b-0 md:border-r md:last:border-r-0">
@@ -45,10 +41,7 @@
             </div>
           </div>
 
-          <router-link to="/mansioni" class="group inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#9a1528]">
-            Organizza i task
-            <span class="transition-transform group-hover:translate-x-1">→</span>
-          </router-link>
+
         </article>
 
         <article class="flex min-h-[18rem] flex-col justify-between p-8">
@@ -67,11 +60,7 @@
               </p>
             </div>
           </div>
-
-          <router-link to="/guasti" class="group inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#9a1528]">
-            Segnala un guasto
-            <span class="transition-transform group-hover:translate-x-1">→</span>
-          </router-link>
+          
         </article>
       </div>
     </div>

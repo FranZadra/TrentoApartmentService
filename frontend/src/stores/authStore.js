@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-// Store Pinia per la gestione dell'autenticazione utente
+// Store per la gestione dell'autenticazione utente
 export const useAuthStore = defineStore('auth', () => {
   // I dati vengono letti subito da localStorage per mantenere la sessione dopo il refresh.
   const storedUser = localStorage.getItem('tas_user')
@@ -11,7 +11,7 @@ export const useAuthStore = defineStore('auth', () => {
   // true se l'utente ha un token valido in localStorage
   const isAuthenticated = computed(() => !!token.value)
 
-  // Iniziali nome+cognome per avatar (es. "MG")
+  // Iniziali nome+cognome per avatar profilo
   const initials = computed(() => {
     if (!user.value) return ''
     return `${user.value.nome?.[0] ?? ''}${user.value.cognome?.[0] ?? ''}`.toUpperCase()
@@ -33,7 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
-    // Pulisce tutto in una volta e riporta l'app allo stato iniziale.
+    // Logout, pulizia e ritorno allo stato iniziale.
     user.value = null
     token.value = null
     localStorage.removeItem('tas_token')
@@ -41,5 +41,14 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('tas_user')
   }
 
-  return { user, token, isAuthenticated, initials, login, logout }
+  function updateUserRole(newRole) {
+    if (user.value) {
+      user.value.ruolo = newRole
+      localStorage.setItem('tas_user', JSON.stringify(user.value))
+      localStorage.setItem('tas_role', newRole)
+    }
+  }
+
+  return { user, token, isAuthenticated, initials, login, logout, updateUserRole }
 })
+

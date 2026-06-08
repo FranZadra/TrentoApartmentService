@@ -61,16 +61,43 @@
       <div class="flex flex-row gap-2 border-t border-zinc-200 bg-zinc-50 px-5 py-5 md:flex-col md:border-l md:border-t-0 md:min-w-[170px] md:justify-center">
         <button
           @click="$emit('view')"
-          class="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+          class="rounded-full border border-[#9a1528] px-4 py-2 text-sm font-semibold text-[#9a1528] transition hover:bg-zinc-100"
         >
           Dettagli
         </button>
         <button
-          @click="$emit('edit')"
-          class="rounded-full px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#7f1020]"
-          style="background-color: #9a1528"
+          v-if="showAnnuncioAction"
+          @click="$emit('annuncio')"
+          class="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
         >
-          Modifica
+          Annuncio
+        </button>
+        <button
+          v-if="showGuastiAction"
+          @click="$emit('guasti')"
+          class="relative rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+        >
+          {{ guastiActionLabel }}
+            <span
+            v-if="guastiCount > 0"
+            class="absolute -right-2 -top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#9a1528] text-[10px] font-bold leading-none text-white shadow-sm"
+            >
+            {{ guastiCount > 9 ? '9+' : guastiCount }}
+          </span>
+        </button>
+        <button
+          v-if="showBolletteAction"
+          @click="$emit('bollette')"
+          class="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+        >
+          Bollette
+        </button>
+        <button
+          v-if="showAssociaAction"
+          @click="$emit('associa')"
+          class="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+        >
+          Associa inquilino
         </button>
       </div>
     </div>
@@ -79,19 +106,41 @@
 
 <script setup>
 // Componente card per mostrare un singolo appartamento.
-// Props: apt (oggetto appartamento)
-// Emissioni: view (mostra dettagli), edit (apri form modifica)
+// View (mostra dettagli), edit (apri form di modifica)
 
 defineProps({
   apt: {
     type: Object,
     required: true,
   },
+  showAnnuncioAction: {
+    type: Boolean,
+    default: false,
+  },
+  showGuastiAction: {
+    type: Boolean,
+    default: false,
+  },
+  guastiActionLabel: {
+    type: String,
+    default: 'Segnalazioni',
+  },
+  guastiCount: {
+    type: Number,
+    default: 0,
+  },
+  showBolletteAction: {
+    type: Boolean,
+    default: false,
+  },
+  showAssociaAction: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-defineEmits(['view', 'edit'])
+defineEmits(['view', 'edit', 'annuncio', 'guasti', 'bollette', 'associa'])
 </script>
 
 <style scoped>
-/* Card styling con Tailwind; effetti hover inline */
 </style>

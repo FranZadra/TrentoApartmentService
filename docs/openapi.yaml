@@ -1,0 +1,2170 @@
+openapi: 3.0.3
+
+info:
+  title: Trento Apartment Service API
+  description: |
+    API REST per la piattaforma di ricerca e gestione di appartamenti e annunci a Trento.
+
+    Gli endpoint protetti richiedono un token JWT nell'header `Authorization: Bearer <token>`.
+    Il token viene rilasciato al login o alla registrazione e ha una durata di 7 giorni (configurabile via `JWT_EXPIRES_IN`).
+
+    **Ruoli utente disponibili:**
+    - `utente base` *(default)* — cerca annunci
+    - `utente verificato` — cerca annunci (account verificato)
+    - `amministratore` — gestisce appartamenti e annunci; può essere privato o agenzia (con partita IVA)
+    - `dipendente comune` — operatore del comune; accede alla dashboard statistica TAS Data
+    - `inquilino` — inquilino con contratto attivo
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Server di sviluppo locale
+
+security: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT ottenuto al login o alla registrazione. Payload contiene `sub` (ID utente), `email`, `ruolo`.
+
+  schemas:
+
+    Indirizzo:
+      type: object
+      required: [via, numero, città, CAP, Stato]
+      properties:
+        via:
+          type: string
+          example: Via Roma
+        numero:
+          type: integer
+          example: 10
+        città:
+          type: string
+          example: Trento
+        CAP:
+          type: string
+          example: "38122"
+        Stato:
+          type: string
+          example: Italia
+
+    Posizione:
+      type: object
+      properties:
+        latitudine:
+          type: number
+          format: double
+          example: 46.0748
+        longitudine:
+          type: number
+          format: double
+          example: 11.1217
+
+    Camera:
+      type: object
+      required: [prezzo, mq, tipo]
+      properties:
+        prezzo:
+          type: number
+          example: 350
+          description: Prezzo mensile in euro
+        mq:
+          type: number
+          example: 14
+          description: Superficie della camera in metri quadri
+        tipo:
+          type: string
+          enum: [SINGOLA, DOPPIA]
+          example: SINGOLA
+        numFinestre:
+          type: integer
+          default: 1
+          example: 2
+        disponibile:
+          type: boolean
+          default: true
+          example: true
+
+    Appartamento:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 665f1a2b3c4d5e6f7a8b9c0d
+        indirizzo:
+          $ref: '#/components/schemas/Indirizzo'
+        mqTot:
+          type: number
+          example: 90
+          description: Superficie totale in metri quadri (opzionale)
+        perStudenti:
+          type: boolean
+          default: false
+          example: false
+        numStanze:
+          type: integer
+          example: 3
+        numBagni:
+          type: integer
+          example: 2
+        foto:
+          type: array
+          items:
+            type: string
+            format: uri
+          example: []
+        terrazzo:
+          type: boolean
+          default: false
+          example: true
+        lavatrice:
+          type: boolean
+          default: false
+          example: false
+        classeEnergetica:
+          type: string
+          enum: [A4, A3, A2, A1, B, C, D, E, F, G]
+          example: B
+        posizione:
+          $ref: '#/components/schemas/Posizione'
+        amministratoreId:
+          type: string
+          example: 665f1a2b3c4d5e6f7a8b9c01
+          description: ID MongoDB dell'amministratore proprietario
+        camere:
+          type: array
+          items:
+            $ref: '#/components/schemas/Camera'
+
+    Annuncio:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: annuncio_1
+        stato:
+          type: string
+          enum: [Creato, Attivo, Archiviato]
+          example: Attivo
+        descrizione:
+          type: string
+          example: Appartamento in centro, completamente ristrutturato
+        dataPubbl:
+          type: string
+          format: date-time
+          example: "2026-03-01T00:00:00.000Z"
+        appartamento:
+          $ref: '#/components/schemas/Appartamento'
+
+    Utente:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 665f1a2b3c4d5e6f7a8b9c0d
+        nome:
+          type: string
+          example: Mario
+        cognome:
+          type: string
+          example: Rossi
+        email:
+          type: string
+          format: email
+          example: mario.rossi@example.com
+        ruolo:
+          type: string
+          example: utente base
+        telefono:
+          type: string
+          nullable: true
+          description: Recapito telefonico (obbligatorio per gli amministratori, usato per il contatto WhatsApp)
+          example: "+39 351 1234567"
+
+    Contratto:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 665f1a2b3c4d5e6f7a8b9c10
+        idAppartamento:
+          $ref: '#/components/schemas/Appartamento'
+        idInquilini:
+          type: array
+          items:
+            type: string
+          description: Elenco degli inquilini associati al contratto.
+          example:
+            - 665f1a2b3c4d5e6f7a8b9c0d
+            - 665f1a2b3c4d5e6f7a8b9c0e
+        dataInizio:
+          type: string
+          format: date-time
+          example: "2025-09-01T00:00:00.000Z"
+        dataFine:
+          type: string
+          format: date-time
+          example: "2026-08-31T00:00:00.000Z"
+        canoneMensile:
+          type: number
+          example: 450
+        stato:
+          type: string
+          enum: [attivo, terminato, in chiusura]
+          example: attivo
+        tipoContratto:
+          type: string
+          example: 4+4
+
+    Guasto:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 665f1a2b3c4d5e6f7a8b9c20
+        idAppartamento:
+          type: string
+          example: 665f1a2b3c4d5e6f7a8b9c0d
+        idInquilino:
+          type: string
+          example: 665f1a2b3c4d5e6f7a8b9c01
+        descrizione:
+          type: string
+          example: Il rubinetto del bagno perde acqua
+        categoria:
+          type: string
+          example: Idraulica
+        priorita:
+          type: string
+          enum: [scarsa, media, urgente]
+          example: media
+        stato:
+          type: string
+          enum: [segnalato, in lavorazione, risolto, archiviato]
+          example: segnalato
+        foto:
+          type: array
+          items:
+            type: string
+            format: uri
+        createdAt:
+          type: string
+          format: date-time
+
+    Bolletta:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 665f1a2b3c4d5e6f7a8b9c30
+        idAppartamento:
+          type: string
+          example: 665f1a2b3c4d5e6f7a8b9c0d
+        utenza:
+          type: string
+          enum: [luce, gas, acqua, elettricità]
+          example: elettricità
+        periodoInizio:
+          type: string
+          format: date
+          example: "2026-01-01"
+        periodoFine:
+          type: string
+          format: date
+          example: "2026-03-31"
+        importo:
+          type: number
+          minimum: 0
+          example: 85.5
+        pagata:
+          type: boolean
+          default: false
+          example: false
+        pdfNomeFile:
+          type: string
+          nullable: true
+          description: Nome del PDF allegato, se presente
+          example: bolletta-gennaio.pdf
+
+    Paginazione:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          example: 1
+        totalPages:
+          type: integer
+          example: 5
+        totalItems:
+          type: integer
+          example: 48
+        itemsPerPage:
+          type: integer
+          example: 10
+
+    # -- US16: strutture dati per la dashboard statistica --
+
+    StatistichePerCAP:
+      type: object
+      description: Dati aggregati per codice di avviamento postale (zona)
+      properties:
+        cap:
+          type: string
+          example: "38122"
+        numAppartamenti:
+          type: integer
+          example: 3
+        prezzoMedioMq:
+          type: number
+          format: double
+          nullable: true
+          example: 8.95
+          description: >-
+            Prezzo medio mensile per metro quadro della zona, calcolato come
+            canone del contratto attivo diviso i m² totali dell'appartamento
+            (null se nessun appartamento della zona ha un contratto attivo).
+
+    StatistichePerTipo:
+      type: object
+      description: Distribuzione delle camere per tipologia
+      properties:
+        tipo:
+          type: string
+          enum: [SINGOLA, DOPPIA]
+          example: SINGOLA
+        count:
+          type: integer
+          example: 11
+        prezzoMedio:
+          type: number
+          format: double
+          example: 424.55
+          description: Prezzo medio mensile in euro
+
+    StatisticheContratti:
+      type: object
+      properties:
+        attivi:
+          type: integer
+          example: 5
+        terminati:
+          type: integer
+          example: 4
+        inChiusura:
+          type: integer
+          example: 1
+
+    StatisticheData:
+      type: object
+      description: Payload dei dati statistici aggregati e anonimizzati (RNF10)
+      properties:
+        totaleAppartamenti:
+          type: integer
+          example: 7
+        tassoOccupazione:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          example: 0
+          description: >-
+            Frazione di occupazione (0–1). Attualmente fissata a 0: la metrica è
+            in fase di ridefinizione perché i dati delle camere non sono popolati.
+        prezzoMedioGlobalePerMq:
+          type: number
+          format: double
+          example: 8.95
+          description: >-
+            Media globale del prezzo mensile per metro quadro, calcolata sui
+            singoli appartamenti come canone del contratto attivo diviso i m² totali.
+        contratti:
+          $ref: '#/components/schemas/StatisticheContratti'
+        turnoverUltimoAnno:
+          type: integer
+          example: 3
+          description: Numero di contratti terminati negli ultimi 12 mesi
+        capDisponibili:
+          type: array
+          description: Elenco completo dei CAP presenti, per popolare il filtro a tendina (indipendente dai filtri applicati)
+          items:
+            type: string
+          example: ["38122", "38123"]
+        distribuzionePerCAP:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatistichePerCAP'
+        distribuzionePerTipo:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatistichePerTipo'
+
+    # -- Risposte di errore comuni --
+
+    ErroreGenerico:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Errore interno del server
+
+    ErroreAutenticazione:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Token non fornito. Usa Authorization: Bearer <token>"
+
+    ErroreAutorizzazione:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Accesso non autorizzato
+
+# ---------------------------------------------------------------------------
+# PATH
+# ---------------------------------------------------------------------------
+
+paths:
+
+  # ── Health ────────────────────────────────────────────────────────────────
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Verifica stato server
+      description: Endpoint per verificare che il server sia operativo. Non richiede autenticazione.
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Server operativo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  message:
+                    type: string
+                    example: Server funzionante
+
+  # ── Annunci ───────────────────────────────────────────────────────────────
+
+  /api/v2/annunci:
+    get:
+      tags: [Annunci]
+      summary: Lista annunci attivi
+      description: |
+        Restituisce tutti gli annunci con stato `Attivo`, con i dati dell'appartamento popolati.
+        Usato dal frontend sia per la lista che per la mappa interattiva.
+        Risultato ordinato per data di pubblicazione decrescente.
+        Non richiede autenticazione.
+      operationId: getAnnunci
+      responses:
+        "200":
+          description: Lista annunci attivi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 2
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Annuncio'
+        "500":
+          description: Errore interno del server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  /api/v2/annunci/search/filter:
+    get:
+      tags: [Annunci]
+      summary: Ricerca annunci con filtri
+      description: |
+        Ricerca annunci attivi filtrando per proprietà dell'appartamento e delle camere.
+        Tutti i parametri sono opzionali.
+        Il filtro sulle camere (`prezzoMin`, `prezzoMax`, `tipoCam`) usa `$elemMatch`,
+        quindi almeno una camera deve soddisfare tutti i criteri contemporaneamente.
+      operationId: searchAnnunci
+      parameters:
+        - name: numStanze
+          in: query
+          schema:
+            type: integer
+          description: Numero esatto di stanze
+        - name: numBagni
+          in: query
+          schema:
+            type: integer
+          description: Numero esatto di bagni
+        - name: terrazzo
+          in: query
+          schema:
+            type: boolean
+          description: Presenza terrazzo
+        - name: classeEnergetica
+          in: query
+          schema:
+            type: string
+            enum: [A4, A3, A2, A1, B, C, D, E, F, G]
+          description: Classe energetica
+        - name: mqMin
+          in: query
+          schema:
+            type: number
+          description: Superficie minima totale in mq
+        - name: mqMax
+          in: query
+          schema:
+            type: number
+          description: Superficie massima totale in mq
+        - name: prezzoMin
+          in: query
+          schema:
+            type: number
+          description: Prezzo minimo della camera (€/mese)
+        - name: prezzoMax
+          in: query
+          schema:
+            type: number
+          description: Prezzo massimo della camera (€/mese)
+        - name: tipoCam
+          in: query
+          schema:
+            type: string
+            enum: [SINGOLA, DOPPIA]
+          description: Tipo di camera
+      responses:
+        "200":
+          description: Risultati della ricerca filtrata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 1
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Annuncio'
+        "500":
+          description: Errore interno del server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  /api/v2/annunci/{id}:
+    get:
+      tags: [Annunci]
+      summary: Dettaglio annuncio
+      description: |
+        Restituisce il dettaglio di un singolo annuncio con i dati dell'appartamento popolati.
+        Non richiede autenticazione.
+      operationId: getAnnuncioById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId dell'annuncio
+      responses:
+        "200":
+          description: Dettaglio annuncio
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Annuncio'
+        "404":
+          description: Annuncio non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "500":
+          description: Errore interno del server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  # ── Appartamenti ──────────────────────────────────────────────────────────
+
+  /api/v2/appartamenti:
+    get:
+      tags: [Appartamenti]
+      summary: Lista appartamenti
+      description: |
+        Restituisce la lista paginata degli appartamenti. Accessibile senza autenticazione.
+        Con `proprietario=me` e un token JWT valido restituisce solo gli appartamenti
+        dell'amministratore autenticato (l'`amministratoreId` è ricavato dal token).
+      operationId: getAppartamenti
+      security:
+        - {}
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Numero di pagina
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: Elementi per pagina
+        - name: perStudenti
+          in: query
+          schema:
+            type: boolean
+          description: Filtra appartamenti adatti agli studenti
+        - name: città
+          in: query
+          schema:
+            type: string
+          description: Filtra per città (case-insensitive, ricerca parziale)
+        - name: proprietario
+          in: query
+          schema:
+            type: string
+            enum: [me]
+          description: Se valorizzato a `me`, restituisce solo gli appartamenti dell'amministratore autenticato (richiede token JWT)
+      responses:
+        "200":
+          description: Lista paginata degli appartamenti
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Appartamenti recuperati
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Appartamento'
+                  pagination:
+                    $ref: '#/components/schemas/Paginazione'
+        "401":
+          description: Richiesto `proprietario=me` senza token JWT valido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "500":
+          description: Errore interno del server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+    post:
+      tags: [Appartamenti]
+      summary: Crea appartamento
+      description: |
+        Crea un nuovo appartamento. Richiede autenticazione JWT.
+        L'`amministratoreId` viene estratto automaticamente dal token JWT (`sub`).
+        La `posizione` (lat/lon) viene calcolata automaticamente dall'indirizzo
+        tramite geocoding (Nominatim/OpenStreetMap) se non fornita dal client.
+      operationId: creaAppartamento
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [indirizzo, numStanze, numBagni]
+              properties:
+                indirizzo:
+                  $ref: '#/components/schemas/Indirizzo'
+                mqTot:
+                  type: number
+                  example: 75
+                perStudenti:
+                  type: boolean
+                  default: false
+                numStanze:
+                  type: integer
+                  example: 3
+                numBagni:
+                  type: integer
+                  example: 1
+                foto:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+                terrazzo:
+                  type: boolean
+                  default: false
+                lavatrice:
+                  type: boolean
+                  default: false
+                classeEnergetica:
+                  type: string
+                  enum: [A4, A3, A2, A1, B, C, D, E, F, G]
+                posizione:
+                  $ref: '#/components/schemas/Posizione'
+                camere:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Camera'
+      responses:
+        "201":
+          description: Appartamento creato con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Appartamento registrato con successo
+                  data:
+                    $ref: '#/components/schemas/Appartamento'
+        "400":
+          description: Errore di validazione del body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: string
+        "401":
+          description: Token JWT assente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "403":
+          description: Token JWT non valido o scaduto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+
+  /api/v2/appartamenti/{appartamentoId}/annuncio:
+    get:
+      tags: [Annunci]
+      summary: Annuncio di un appartamento (vista amministratore)
+      description: |
+        Restituisce l'annuncio collegato all'appartamento dell'amministratore autenticato.
+        L'autorizzazione (ruolo e proprietà) è verificata dal token JWT.
+      operationId: getAnnuncioByAppartamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appartamentoId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId dell'appartamento
+      responses:
+        "200":
+          description: Annuncio dell'appartamento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Annuncio'
+        "401":
+          description: Token JWT assente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "403":
+          description: L'appartamento non appartiene all'amministratore autenticato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+        "404":
+          description: Annuncio non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+    post:
+      tags: [Annunci]
+      summary: Crea o aggiorna l'annuncio di un appartamento
+      description: |
+        Crea o aggiorna (upsert) l'annuncio collegato all'appartamento dell'amministratore autenticato.
+        Richiede ruolo `amministratore`; la proprietà è verificata dal token JWT.
+      operationId: upsertAnnuncioByAppartamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appartamentoId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId dell'appartamento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                descrizione:
+                  type: string
+                attivo:
+                  type: boolean
+      responses:
+        "200":
+          description: Annuncio salvato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Annuncio salvato
+                  data:
+                    $ref: '#/components/schemas/Annuncio'
+        "401":
+          description: Token JWT assente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "403":
+          description: Solo l'amministratore proprietario può gestire l'annuncio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+
+  /api/v2/appartamenti/{id}:
+    get:
+      tags: [Appartamenti]
+      summary: Dettaglio appartamento
+      description: Restituisce i dati completi di un singolo appartamento. Non richiede autenticazione.
+      operationId: getAppartamentoById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId dell'appartamento
+      responses:
+        "200":
+          description: Dati dell'appartamento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Appartamento recuperato
+                  data:
+                    $ref: '#/components/schemas/Appartamento'
+        "404":
+          description: Appartamento non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "500":
+          description: Errore interno del server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+    put:
+      tags: [Appartamenti]
+      summary: Aggiorna appartamento
+      description: |
+        Aggiorna i campi di un appartamento esistente.
+        Richiede autenticazione JWT e che l'utente sia il proprietario (`amministratoreId`).
+        Tutti i campi del body sono opzionali; i campi non inclusi non vengono modificati.
+        Se l'`indirizzo` viene modificato, la `posizione` viene ricalcolata via geocoding.
+      operationId: aggiornaAppartamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId dell'appartamento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                indirizzo:
+                  $ref: '#/components/schemas/Indirizzo'
+                mqTot:
+                  type: number
+                perStudenti:
+                  type: boolean
+                numStanze:
+                  type: integer
+                numBagni:
+                  type: integer
+                terrazzo:
+                  type: boolean
+                lavatrice:
+                  type: boolean
+                classeEnergetica:
+                  type: string
+                  enum: [A4, A3, A2, A1, B, C, D, E, F, G]
+                camere:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Camera'
+      responses:
+        "200":
+          description: Appartamento aggiornato con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Appartamento aggiornato con successo
+                  data:
+                    $ref: '#/components/schemas/Appartamento'
+        "400":
+          description: Errori di validazione
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "401":
+          description: Token assente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "403":
+          description: Token non valido o utente non proprietario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+        "404":
+          description: Appartamento non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+    delete:
+      tags: [Appartamenti]
+      summary: Elimina appartamento
+      description: |
+        Elimina un appartamento. Richiede autenticazione JWT e che l'utente sia il proprietario.
+        Se esistono annunci collegati, la risposta include il campo `warnings` con il conteggio degli annunci orfani.
+      operationId: eliminaAppartamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId dell'appartamento
+      responses:
+        "200":
+          description: Appartamento eliminato con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Appartamento eliminato con successo
+                  data:
+                    $ref: '#/components/schemas/Appartamento'
+                  warnings:
+                    type: string
+                    nullable: true
+                    example: Erano presenti 2 annunci associati
+        "401":
+          description: Token assente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "403":
+          description: Token non valido o utente non proprietario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+        "404":
+          description: Appartamento non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "500":
+          description: Errore interno del server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  /api/v2/appartamenti/{id}/contatto-admin:
+    get:
+      tags: [Appartamenti]
+      summary: Contatto WhatsApp dell'amministratore
+      description: >-
+        Restituisce nome e link WhatsApp dell'amministratore dell'appartamento.
+        Riservato agli utenti autenticati (registrati): alimenta il pulsante
+        "Contatta su WhatsApp" nella pagina dell'annuncio.
+      operationId: getContattoAdmin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID dell'appartamento
+      responses:
+        "200":
+          description: Contatto recuperato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      nome:
+                        type: string
+                        example: Luca
+                      cognome:
+                        type: string
+                        example: Bianchi
+                      telefono:
+                        type: string
+                        nullable: true
+                        example: "+39 351 1234567"
+                      linkWhatsApp:
+                        type: string
+                        nullable: true
+                        description: Link click-to-chat (wa.me) gia' pronto; null se l'admin non ha un numero valido
+                        example: "https://wa.me/393511234567?text=Salve%2C%20sono%20interessato..."
+        "401":
+          description: Token assente o non valido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "404":
+          description: Appartamento o amministratore non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "500":
+          description: Errore interno del server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  /api/v2/appartamenti/{appartamentoId}/associa-inquilino:
+    post:
+      tags: [Appartamenti]
+      summary: Associa un inquilino a un appartamento (contratto)
+      description: >-
+        Crea il legame amministratore->inquilino tramite contratto. Eseguibile
+        solo dall'amministratore proprietario. L'utente, indicato per email,
+        dev'essere verificato/inquilino e senza contratti attivi. Se l'appartamento
+        ha gia' un contratto attivo l'utente viene aggiunto come coinquilino,
+        altrimenti se ne crea uno nuovo (servono date, canone e tipo). A fine
+        operazione l'utente assume il ruolo `inquilino`.
+      operationId: associaInquilino
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appartamentoId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: greta.delai@example.com
+                dataInizio:
+                  type: string
+                  format: date
+                  description: Obbligatoria solo se si crea un nuovo contratto
+                  example: "2026-01-01"
+                dataFine:
+                  type: string
+                  format: date
+                  description: Obbligatoria solo se si crea un nuovo contratto
+                  example: "2026-12-31"
+                canoneMensile:
+                  type: number
+                  description: Obbligatorio solo se si crea un nuovo contratto
+                  example: 850
+                tipoContratto:
+                  type: string
+                  description: Obbligatorio solo se si crea un nuovo contratto
+                  example: Residenziale
+      responses:
+        "200":
+          description: Inquilino associato (contratto creato o aggiornato)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Greta Delai associato all'appartamento
+                  data:
+                    $ref: '#/components/schemas/Contratto'
+        "400":
+          description: Email mancante, utente non verificato o dati contratto incompleti
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "403":
+          description: Non autenticato come amministratore proprietario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+        "404":
+          description: Nessun utente registrato con questa email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "409":
+          description: L'utente ha gia' un contratto attivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "500":
+          description: Errore interno del server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  # ── Utenti ────────────────────────────────────────────────────────────────
+
+  /api/v2/users/register:
+    post:
+      tags: [Utenti]
+      summary: Registra un nuovo utente
+      description: |
+        Crea un nuovo account e restituisce il token JWT.
+
+        **Campi obbligatori per tutti i ruoli:** `nome`, `cognome`, `email`, `password`, `ruolo`.
+
+        **Campi aggiuntivi per `amministratore`:**
+        - `privato` (boolean, obbligatorio)
+        - `telefono` (string, obbligatorio) — usato per il contatto WhatsApp dagli utenti
+        - `pIVA` (string, obbligatorio se `privato: false`) — esattamente 11 cifre
+
+        **Campi aggiuntivi per `dipendente comune`:**
+        - `ruoloDipendente` (string, obbligatorio)
+        - `dipartimento` (string, obbligatorio)
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nome, cognome, email, password, ruolo]
+              properties:
+                nome:
+                  type: string
+                  example: Mario
+                cognome:
+                  type: string
+                  example: Rossi
+                email:
+                  type: string
+                  format: email
+                  example: mario.rossi@example.com
+                password:
+                  type: string
+                  format: password
+                  example: Password123
+                ruolo:
+                  type: string
+                  enum: [utente base, utente verificato, inquilino, amministratore, dipendente comune]
+                  example: utente base
+                privato:
+                  type: boolean
+                  description: Solo per ruolo `amministratore`
+                telefono:
+                  type: string
+                  description: Obbligatorio per ruolo `amministratore`. Usato per il contatto WhatsApp.
+                  example: "+39 351 1234567"
+                pIVA:
+                  type: string
+                  description: Solo per amministratori agenzia (privato=false). Deve essere 11 cifre.
+                  example: "12345678901"
+                ruoloDipendente:
+                  type: string
+                  description: Solo per ruolo `dipendente comune`
+                  example: Responsabile urbanistica
+                dipartimento:
+                  type: string
+                  description: Solo per ruolo `dipendente comune`
+                  example: Urbanistica
+            examples:
+              utente_base:
+                summary: Utente base
+                value:
+                  nome: Mario
+                  cognome: Rossi
+                  email: mario.rossi@example.com
+                  password: Password123
+                  ruolo: utente base
+              amministratore_privato:
+                summary: Amministratore privato
+                value:
+                  nome: Luca
+                  cognome: Bianchi
+                  email: luca.bianchi@example.com
+                  password: SecurePass99
+                  ruolo: amministratore
+                  privato: true
+                  telefono: "+39 351 1234567"
+              agenzia:
+                summary: Agenzia immobiliare
+                value:
+                  nome: Agenzia
+                  cognome: Casa
+                  email: info@agenziacasa.it
+                  password: AgenziaPass1
+                  ruolo: amministratore
+                  privato: false
+                  telefono: "+39 0461 123456"
+                  pIVA: "12345678901"
+              dipendente_comunale:
+                summary: Dipendente comunale
+                value:
+                  nome: Anna
+                  cognome: Verdi
+                  email: anna.verdi@comune.trento.it
+                  password: ComunePass5
+                  ruolo: dipendente comune
+                  ruoloDipendente: Responsabile urbanistica
+                  dipartimento: Urbanistica
+      responses:
+        "201":
+          description: Utente registrato con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+                    example: Utente registrato con successo
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  utente:
+                    $ref: '#/components/schemas/Utente'
+        "400":
+          description: Campo obbligatorio mancante, formato email non valido o ruolo non valido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+                    example: Nome campo obbligatorio mancante
+        "409":
+          description: Email già in uso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+                    example: Email già in uso
+
+  /api/v2/users/login:
+    post:
+      tags: [Utenti]
+      summary: Login
+      description: Autentica un utente esistente con email e password. Restituisce un token JWT valido per 7 giorni.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: mario.rossi@example.com
+                password:
+                  type: string
+                  format: password
+                  example: Password123
+      responses:
+        "200":
+          description: Login effettuato con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+                    example: Login effettuato con successo
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  utente:
+                    $ref: '#/components/schemas/Utente'
+        "400":
+          description: Campo obbligatorio mancante o formato email non valido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+                    example: Email campo obbligatorio mancante
+        "401":
+          description: Utente non trovato o password errata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+                    example: Password non valida
+
+  /api/v2/users/verifica-identita:
+    put:
+      tags: [Utenti]
+      summary: Verifica identità
+      description: |
+        Aggiorna il ruolo dell'utente da `utente base` a `utente verificato`.
+        Per gli altri ruoli (inquilino, amministratore, dipendente comune) non produce effetti.
+      operationId: verificaIdentita
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Verifica effettuata con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+                    example: Verifica identità effettuata con successo
+                  utente:
+                    $ref: '#/components/schemas/Utente'
+        "401":
+          description: Token assente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "404":
+          description: Utente non trovato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+                    example: Utente non trovato
+
+  /api/v2/users/password/forgot:
+    post:
+      tags: [Utenti]
+      summary: Richiedi reset password
+      description: |
+        Invia un link di reset password via email. La risposta è sempre generica per non
+        rivelare se l'indirizzo email è registrato nel sistema.
+      operationId: richiediResetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: mario.rossi@example.com
+      responses:
+        "200":
+          description: Risposta generica (indipendentemente dall'esito)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+                    example: "Se l'email è presente nel sistema, riceverai un messaggio con le istruzioni per il reset."
+        "400":
+          description: Email mancante o formato non valido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+
+  /api/v2/users/password/reset:
+    post:
+      tags: [Utenti]
+      summary: Completa reset password
+      description: Imposta la nuova password usando il token ricevuto via email.
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token:
+                  type: string
+                  description: Token di reset ricevuto via email (raw, non hashato)
+                  example: a1b2c3d4e5f6...
+                password:
+                  type: string
+                  format: password
+                  minLength: 6
+                  example: NuovaPassword123
+      responses:
+        "200":
+          description: Password aggiornata con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+                    example: Password aggiornata con successo
+        "400":
+          description: Token mancante, scaduto o password troppo corta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messaggio:
+                    type: string
+                    example: Token di reset non valido o scaduto
+
+  # ── Gestione Interna ──────────────────────────────────────────────────────
+
+  /api/v2/gestione-interna/contratti:
+    get:
+      tags: [Gestione Interna]
+      summary: Contratti dell'utente loggato
+      description: |
+        Restituisce tutti i contratti (attivi e passati) associati all'utente autenticato.
+        Un contratto può contenere più inquilini compresenti nell'appartamento.
+        Richiede autenticazione JWT. Accessibile solo agli utenti con ruolo `inquilino` o `utente verificato`.
+      operationId: getContratti
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista contratti dell'utente autenticato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contratti:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Contratto'
+        "401":
+          description: Token assente o utente non identificabile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Utente non autenticato
+        "403":
+          description: Ruolo non autorizzato (non è inquilino né utente verificato)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Utente non autorizzato
+        "404":
+          description: Utente non trovato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Utente non trovato
+
+  /api/v2/gestione-interna/guasti:
+    post:
+      tags: [Gestione Interna]
+      summary: Segnala un guasto
+      description: |
+        Crea una nuova segnalazione di guasto per l'appartamento dell'inquilino autenticato.
+        Richiede autenticazione JWT e ruolo `inquilino` con contratto attivo sull'appartamento indicato.
+      operationId: segnalaGuasto
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idAppartamento, descrizione, categoria]
+              properties:
+                idAppartamento:
+                  type: string
+                  example: 665f1a2b3c4d5e6f7a8b9c0d
+                  description: MongoDB ObjectId dell'appartamento
+                descrizione:
+                  type: string
+                  example: Il rubinetto del bagno perde acqua
+                categoria:
+                  type: string
+                  example: Idraulica
+                priorita:
+                  type: string
+                  enum: [scarsa, media, urgente]
+                  default: media
+                  example: media
+                foto:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+                  example: []
+      responses:
+        "201":
+          description: Guasto segnalato con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Guasto'
+        "400":
+          description: Dati mancanti o non validi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example: ["La descrizione del guasto è obbligatoria"]
+        "401":
+          description: Token assente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Ruolo non autorizzato o nessun contratto attivo per l'appartamento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Non hai un contratto attivo per questo appartamento
+
+  /api/v2/gestione-interna/guasti/{appId}:
+    get:
+      tags: [Gestione Interna]
+      summary: Guasti di un appartamento
+      description: |
+        Restituisce i guasti non archiviati dell'appartamento specificato.
+        Richiede autenticazione JWT e un contratto attivo sull'appartamento.
+      operationId: getGuastiAppartamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId dell'appartamento
+      responses:
+        "200":
+          description: Lista guasti attivi dell'appartamento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Guasto'
+        "401":
+          description: Token assente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Nessun contratto attivo per questo appartamento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Non autorizzato a visualizzare i guasti di questo appartamento
+          "404":
+            description: Appartamento non trovato
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    error:
+                      type: string
+                      example: Appartamento non trovato        
+
+  /api/v2/gestione-interna/guasti/{guastoId}/carico:
+    put:
+      tags: [Gestione Interna]
+      summary: Prendi in carico un guasto (amministratore)
+      description: |
+        L'amministratore proprietario dell'appartamento prende in carico il guasto.
+        Richiede ruolo `amministratore`; la proprietà è verificata dal token JWT.
+      operationId: prendiInCaricoGuastoAdmin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: guastoId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId del guasto
+      responses:
+        "200":
+          description: Guasto preso in carico
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Guasto'
+        "401":
+          description: Token assente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Solo l'amministratore proprietario può prendere in carico il guasto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "404":
+          description: Guasto non trovato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  # /api/v2/gestione-interna/spesa/{contrattoId}:
+  #  put:
+
+  
+  # ── Statistiche (US16) ────────────────────────────────────────────────────
+
+  # ── Bollette ──────────────────────────────────────────────────────────────
+
+  /api/v2/bollette/{appartamentoId}:
+    post:
+      tags: [Bollette]
+      summary: Carica una nuova bolletta (con PDF opzionale)
+      description: Solo l'amministratore proprietario dell'appartamento. Il PDF, se presente, deve essere in formato application/pdf.
+      operationId: caricaBolletta
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appartamentoId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [utenza, periodoInizio, periodoFine, importo]
+              properties:
+                utenza:
+                  type: string
+                  enum: [luce, gas, acqua, elettricità]
+                periodoInizio:
+                  type: string
+                  format: date
+                periodoFine:
+                  type: string
+                  format: date
+                importo:
+                  type: number
+                pdf:
+                  type: string
+                  format: binary
+                  description: File PDF della bolletta (opzionale, max 10 MB)
+      responses:
+        "201":
+          description: Bolletta creata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Bolletta'
+        "400":
+          description: Campi mancanti o file non PDF
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+        "403":
+          description: Non sei l'amministratore proprietario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+
+  /api/v2/appartamenti/{appId}/bollette:
+    get:
+      tags: [Bollette]
+      summary: Lista bollette di un appartamento
+      description: |
+        Restituisce le bollette dell'appartamento. Accessibile dall'amministratore proprietario
+        e dall'inquilino con contratto attivo o in chiusura; il ruolo e l'autorizzazione sono
+        determinati dal token JWT. Include i dati aggregati per i grafici dei consumi.
+      operationId: getBolletteAppartamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId dell'appartamento
+      responses:
+        "200":
+          description: Elenco bollette e dati per i grafici
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Bolletta'
+                  grafici:
+                    type: object
+                    description: Dataset pronto per i grafici (labels e datasets per utenza)
+        "401":
+          description: Token JWT assente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "403":
+          description: Non autorizzato (non proprietario o senza contratto attivo per l'appartamento)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+
+  /api/v2/bollette/{bollettaId}/paga:
+    put:
+      tags: [Bollette]
+      summary: Segna una bolletta come pagata
+      operationId: segnaBollettaPagata
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bollettaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Bolletta aggiornata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Bolletta'
+        "404":
+          description: Bolletta non trovata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  /api/v2/bollette/{bollettaId}:
+    delete:
+      tags: [Bollette]
+      summary: Elimina una bolletta
+      operationId: eliminaBolletta
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bollettaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Bolletta eliminata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Bolletta eliminata
+        "404":
+          description: Bolletta non trovata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  /api/v2/bollette/{bollettaId}/pdf:
+    get:
+      tags: [Bollette]
+      summary: Scarica/visualizza il PDF di una bolletta
+      description: >-
+        Restituisce il PDF (application/pdf) inline. Accessibile all'amministratore
+        proprietario e all'inquilino con contratto attivo/in chiusura. L'endpoint e'
+        protetto: il client deve inviare il token JWT nell'header Authorization
+        (un link diretto senza token riceve 401).
+      operationId: scaricaPdfBolletta
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: bollettaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: PDF della bolletta
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "403":
+          description: Non autorizzato a vedere questa bolletta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutorizzazione'
+        "404":
+          description: Bolletta non trovata o nessun PDF allegato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+  /api/v2/statistiche:
+    get:
+      tags: [Statistiche]
+      summary: Dashboard statistica TAS Data
+      description: |
+        Restituisce dati statistici **aggregati e anonimizzati** sul mercato degli affitti a Trento (RF29, RF30, RF33, RNF10).
+
+        Nessun dato personale viene esposto (no nomi, email o ID inquilini).
+
+        La "zona" è identificata dal campo `indirizzo.CAP` dell'appartamento.
+        Il prezzo al metro quadro è calcolato come `camera.prezzo / camera.mq` per ogni camera.
+
+        **Accesso riservato al ruolo `dipendente comune`.**
+        Il controllo avviene sul campo `ruolo` già presente nel payload JWT (senza query aggiuntive al DB).
+      operationId: getStatistiche
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cap
+          in: query
+          schema:
+            type: string
+          description: Filtra i risultati per CAP specifico
+          example: "38122"
+        - name: tipoCamera
+          in: query
+          schema:
+            type: string
+            enum: [SINGOLA, DOPPIA]
+          description: Filtra per tipo di camera
+        - name: perStudenti
+          in: query
+          schema:
+            type: boolean
+          description: Filtra per appartamenti dedicati agli studenti
+      responses:
+        "200":
+          description: Statistiche aggregate calcolate con successo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/StatisticheData'
+              example:
+                success: true
+                data:
+                  totaleAppartamenti: 5
+                  tassoOccupazione: 0
+                  prezzoMedioGlobalePerMq: 8.95
+                  contratti:
+                    attivi: 1
+                    terminati: 1
+                    inChiusura: 0
+                  turnoverUltimoAnno: 1
+                  capDisponibili: ["36066", "36100", "38122", "38123"]
+                  distribuzionePerCAP:
+                    - cap: "38122"
+                      numAppartamenti: 2
+                      prezzoMedioMq: 8.95
+                    - cap: "38123"
+                      numAppartamenti: 1
+                      prezzoMedioMq: null
+                  distribuzionePerTipo: []
+        "401":
+          description: Token JWT assente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreAutenticazione'
+        "403":
+          description: Ruolo non autorizzato (non è `dipendente comune`)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Accesso riservato ai dipendenti comunali
+        "500":
+          description: Errore interno del server durante l'aggregazione
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErroreGenerico'
+
+tags:
+  - name: Health
+    description: Verifica stato del server
+  - name: Annunci
+    description: Consultazione annunci pubblici
+  - name: Appartamenti
+    description: Gestione appartamenti (CRUD)
+  - name: Utenti
+    description: Registrazione, login e gestione account
+  - name: Gestione Interna
+    description: Contratti e guasti per inquilini autenticati
+  - name: Bollette
+    description: Caricamento e consultazione bollette (amministratore e inquilino)
+  - name: Statistiche
+    description: Dashboard TAS Data — dati aggregati per dipendenti comunali (US16)

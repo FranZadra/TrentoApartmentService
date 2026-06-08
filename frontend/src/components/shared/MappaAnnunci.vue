@@ -8,8 +8,6 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// Fix noto per Vite + Leaflet: le icone dei marker vengono perse dal bundler
-// perché Leaflet usa __dirname internamente, cosa non supportata in ES modules
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
 import markerIcon from 'leaflet/dist/images/marker-icon.png'
 import markerShadow from 'leaflet/dist/images/marker-shadow.png'
@@ -29,13 +27,13 @@ const props = defineProps({
   },
 })
 
-// Evento emesso quando l'utente clicca su un marker: passa l'ID dell'annuncio
+// Evento quando l'utente clicca su un marker
 const emit = defineEmits(['marker-click'])
 
 const mapContainer = ref(null) // riferimento al div DOM della mappa
-let mapInstance = null          // istanza Leaflet (tenuta fuori dal reattivo Vue)
+let mapInstance = null          // istanza Leaflet
 
-// Crea un marker personalizzato col colore TAS per segnalare gli annunci
+// Crea un marker personalizzato per segnalare gli annunci
 function creaIconaMarker() {
   return L.divIcon({
     className: '',
@@ -93,7 +91,7 @@ onMounted(() => {
     zoomControl: true,
   })
 
-  // Tile layer OpenStreetMap (gratuito, nessuna API key)
+  // Layer OpenStreetMap
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19,
@@ -102,7 +100,7 @@ onMounted(() => {
   aggiungiMarker()
 })
 
-// Se la lista degli annunci cambia (es. dopo il fetch), riaggiungi i marker
+// Se la lista degli annunci cambia, riaggiungi i marker
 watch(
   () => props.annunci,
   () => {
@@ -117,7 +115,7 @@ watch(
 )
 
 onUnmounted(() => {
-  // Pulizia: rimuovi la mappa per evitare memory leak
+  // Pulizia
   if (mapInstance) {
     mapInstance.remove()
     mapInstance = null

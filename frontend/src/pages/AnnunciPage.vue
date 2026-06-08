@@ -67,7 +67,6 @@
           v-if="annunci.length === 0"
           class="rounded-2xl border border-zinc-200 bg-white p-10 text-center text-zinc-500"
         >
-          <!-- Distingue tra "filtri troppo restrittivi" e "DB vuoto senza filtri" -->
           <template v-if="Object.keys(filtriAttivi).length > 0">
             <p class="text-lg font-semibold text-zinc-700">Nessun annuncio trovato con i filtri selezionati.</p>
             <p class="mt-2 text-sm">Prova a modificare o rimuovere alcuni filtri.</p>
@@ -90,7 +89,7 @@
           />
         </div>
 
-        <!-- Sezione mappa interattiva -->
+        <!-- Sezione delle mappa interattiva -->
         <div class="mt-14" v-if="annunci.length > 0">
           <h2 class="mb-4 font-display text-2xl font-bold text-zinc-900">
             Posizione sulla mappa
@@ -133,7 +132,7 @@ const errore = ref(null)
 const modaleFiltriAperta = ref(false)
 const filtriAttivi = ref({})      // filtri attualmente applicati
 
-// Carica annunci senza filtri (usa il metodo più appropriato a seconda che ci siano filtri)
+// Carica annunci
 async function caricaAnnunci() {
   caricamento.value = true
   errore.value = null
@@ -154,12 +153,10 @@ async function caricaAnnunci() {
   }
 }
 
-// Apre la modale filtri
 function apriModaleFiltri() {
   modaleFiltriAperta.value = true
 }
 
-// Chiude la modale filtri
 function chiudiModaleFiltri() {
   modaleFiltriAperta.value = false
 }
@@ -173,7 +170,7 @@ async function applicaFiltri(nuoviFiltri) {
 // Rimuove un singolo filtro e ricarica
 async function rimuoviFiltro(chiaveFiltro) {
   delete filtriAttivi.value[chiaveFiltro]
-  filtriAttivi.value = { ...filtriAttivi.value } // trigger reactivity
+  filtriAttivi.value = { ...filtriAttivi.value }
   await caricaAnnunci()
 }
 

@@ -15,7 +15,7 @@
         v-if="isOpen"
         class="fixed bottom-0 left-0 right-0 z-50 flex max-h-[90vh] flex-col rounded-t-3xl bg-white shadow-2xl"
       >
-        <!-- Header modale -->
+        <!-- Header modale dei filtri -->
         <div class="flex items-center justify-between border-b border-zinc-200 p-6">
           <h2 class="font-display text-2xl font-bold text-zinc-900">Filtra ricerca</h2>
           <button
@@ -35,10 +35,10 @@
           </button>
         </div>
 
-        <!-- Contenuto filtri (scrollabile) -->
+        <!-- Contenuto filtri -->
         <div class="flex-1 overflow-y-auto p-6">
           <div class="space-y-8 max-w-2xl">
-            <!-- SEZIONE: APPARTAMENTO -->
+            <!-- Sezione appartamento -->
             <div>
               <h3 class="mb-4 font-semibold text-zinc-900">Appartamento</h3>
               <div class="space-y-4">
@@ -144,7 +144,7 @@
               </div>
             </div>
 
-            <!-- SEZIONE: CAMERE -->
+            <!-- Sezione camere -->
             <div>
               <h3 class="mb-4 font-semibold text-zinc-900">Camere</h3>
               <div class="space-y-4">
@@ -248,9 +248,6 @@ const filtri = ref({
 })
 
 // Quando la modale si apre, popola i filtri con quelli attuali.
-// Usiamo il merge con i valori di default: i campi assenti in filtriAttuali
-// rimangono al loro valore iniziale (null, '', false) invece di diventare
-// undefined, evitando che le <select> perdano la selezione "Qualsiasi".
 watch(
   () => props.isOpen,
   (newVal) => {

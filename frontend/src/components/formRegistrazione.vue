@@ -9,7 +9,7 @@
 			</p>
 		</div>
 
-		<!-- Tab selector -->
+		<!-- Selettore tab -->
 		<div class="flex rounded-2xl border border-zinc-200 bg-zinc-50 p-1 gap-1">
 			<button
 				v-for="tab in tabs"
@@ -36,7 +36,7 @@
 				{{ successMessage }}
 			</div>
 
-			<!-- Nome + Cognome -->
+			<!-- Nome e cognome -->
 			<div class="grid gap-4 sm:grid-cols-2">
 				<label class="space-y-2">
 					<span class="text-sm font-semibold text-zinc-700">Nome</span>
@@ -108,8 +108,24 @@
 
 			<!-- Spazio flessibile che tiene la card stabile tra le tab -->
 			<div class="flex-1">
-				<!-- ── TAB: Amministratore ── -->
+				<!-- Tab amministratore -->
 				<div v-if="activeTab === 'amministratore'" class="space-y-4">
+					<label class="block space-y-2">
+						<span class="text-sm font-semibold text-zinc-700">
+							Telefono <span class="text-red-500">*</span>
+						</span>
+						<input
+							v-model="form.telefono"
+							type="tel"
+							autocomplete="tel"
+							:disabled="isLoading"
+							class="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 disabled:bg-zinc-100 disabled:text-zinc-500"
+							placeholder="es. +39 351 1234567"
+							required
+						/>
+						<span class="text-xs text-zinc-500">Verrà usato per il contatto WhatsApp con gli utenti interessati.</span>
+					</label>
+
 					<div class="space-y-2">
 						<span class="text-sm font-semibold text-zinc-700">Tipo account</span>
 						<div class="flex gap-3">
@@ -160,7 +176,7 @@
 					</transition>
 				</div>
 
-				<!-- ── TAB: Dipendente comunale ── -->
+				<!-- Tab dipendente del comune -->
 				<div v-else-if="activeTab === 'dipendente'" class="grid gap-4 sm:grid-cols-2">
 					<label class="space-y-2">
 						<span class="text-sm font-semibold text-zinc-700">Ruolo</span>
@@ -255,6 +271,7 @@ const form = reactive({
 	// amministratore
 	privato: true,
 	pIVA: '',
+	telefono: '',
 	// dipendente
 	ruolo: '',
 	dipartimento: '',
@@ -269,6 +286,7 @@ watch(activeTab, () => {
 	successMessage.value = ''
 	form.privato = true
 	form.pIVA = ''
+	form.telefono = ''
 	form.ruolo = ''
 	form.dipartimento = ''
 })
@@ -295,6 +313,10 @@ async function handleSubmit() {
 	}
 	if (form.password.length < 6) {
 		errorMessage.value = 'La password deve contenere almeno 6 caratteri.'
+		return
+	}
+	if (activeTab.value === 'amministratore' && !form.telefono.trim()) {
+		errorMessage.value = 'Il numero di telefono è obbligatorio.'
 		return
 	}
 	if (activeTab.value === 'amministratore' && form.privato === false) {
@@ -333,6 +355,7 @@ async function handleSubmit() {
 				...basePayload,
 				ruolo: 'amministratore',
 				privato: form.privato,
+				telefono: form.telefono.trim(),
 				...(form.privato === false && { pIVA: form.pIVA.trim() }),
 			}
 		} else if (activeTab.value === 'dipendente') {
@@ -353,9 +376,9 @@ async function handleSubmit() {
 			const ruolo = response.data.utente.ruolo
 			setTimeout(() => {
 				if (ruolo === 'dipendente comune') {
-					router.push('/dashboardComune')
+					router.push('/dashboard-statistica')
 				} else if (ruolo === 'amministratore') {
-					router.push('/admin/appartamenti')
+					router.push('/i-miei-appartamenti')
 				} else {
 					router.push('/')
 				}

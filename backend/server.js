@@ -1,5 +1,4 @@
-// server.js — punto di partenza dell'applicazione.
-// Qui viene caricato l'ambiente, collegato il database e avviato Express.
+// Entrypoint dell'applicazione: collega il DB e avvia Express
 
 require('dotenv').config();
 const app = require('./src/app');

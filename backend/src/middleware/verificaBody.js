@@ -1,17 +1,6 @@
-// src/middleware/verificaBody.js — Validazione body per Appartamento
-//
-// Controlla che il body della richiesta contenga i campi richiesti
-// e che rispettino i tipi attesi.
+// Middleware per la validazione del body nelle richieste di creazione e aggiornamento di appartamenti
 
-/**
- * Valida il body per la creazione di un appartamento.
- * Campi richiesti:
- *   - indirizzo (object con via, numero, città, CAP, Stato)
- *   - mqTot (number)
- *   - numStanze (number)
- *   - numBagni (number)
- *   [Opzionali: foto, perStudenti, terrazzo, lavatrice, classeEnergetica, amministratoreId]
- */
+// Verifica del body di creazione appartamento
 function verificaBodyCreazione(req, res, next) {
   const data = req.body;
   const errors = [];
@@ -66,12 +55,12 @@ function verificaBodyCreazione(req, res, next) {
     errors.push('numBagni deve essere un numero intero non negativo');
   }
 
-  // Validazione amministratoreId (opzionale nel body, ma consigliato)
+  // Validazione amministratoreId
   if (data.amministratoreId !== undefined && typeof data.amministratoreId !== 'string') {
     errors.push('amministratoreId deve essere una stringa (ObjectId)');
   }
 
-  // Validazione classeEnergetica (opzionale)
+  // Validazione classeEnergetica
   if (data.classeEnergetica !== undefined) {
     const classiValide = ['A4', 'A3', 'A2', 'A1', 'B', 'C', 'D', 'E', 'F', 'G'];
     if (!classiValide.includes(data.classeEnergetica)) {
@@ -79,22 +68,22 @@ function verificaBodyCreazione(req, res, next) {
     }
   }
 
-  // Validazione foto (opzionale)
+  // Validazione foto
   if (data.foto !== undefined && !Array.isArray(data.foto)) {
     errors.push('foto deve essere un array di stringhe (URL)');
   }
 
-  // Validazione perStudenti (opzionale)
+  // Validazione perStudenti
   if (data.perStudenti !== undefined && typeof data.perStudenti !== 'boolean') {
     errors.push('perStudenti deve essere un booleano');
   }
 
-  // Validazione terrazzo (opzionale)
+  // Validazione terrazzo
   if (data.terrazzo !== undefined && typeof data.terrazzo !== 'boolean') {
     errors.push('terrazzo deve essere un booleano');
   }
 
-  // Validazione lavatrice (opzionale)
+  // Validazione lavatrice
   if (data.lavatrice !== undefined && typeof data.lavatrice !== 'boolean') {
     errors.push('lavatrice deve essere un booleano');
   }
@@ -108,14 +97,10 @@ function verificaBodyCreazione(req, res, next) {
     });
   }
 
-  // Se tutto è valido, passa al prossimo middleware/controller
   next();
 }
 
-/**
- * Valida il body per l'aggiornamento (PATCH/PUT) di un appartamento.
- * Tutti i campi sono opzionali, ma se presenti devono essere validi.
- */
+// Valida il body per l'aggiornamento di un appartamento.
 function verificaBodyAggiornamento(req, res, next) {
   const data = req.body;
   const errors = [];
@@ -128,7 +113,7 @@ function verificaBodyAggiornamento(req, res, next) {
     });
   }
 
-  // Validazione indirizzo (opzionale)
+  // Validazione indirizzo
   if (data.indirizzo !== undefined) {
     if (typeof data.indirizzo !== 'object') {
       errors.push('indirizzo deve essere un oggetto');
@@ -157,28 +142,28 @@ function verificaBodyAggiornamento(req, res, next) {
     }
   }
 
-  // Validazione mqTot (opzionale)
+  // Validazione mqTot
   if (data.mqTot !== undefined) {
     if (Number.isNaN(Number(data.mqTot)) || Number(data.mqTot) < 0) {
       errors.push('mqTot deve essere un numero non negativo');
     }
   }
 
-  // Validazione numStanze (opzionale)
+  // Validazione numStanze
   if (data.numStanze !== undefined) {
     if (!Number.isInteger(Number(data.numStanze)) || Number(data.numStanze) < 0) {
       errors.push('numStanze deve essere un numero intero non negativo');
     }
   }
 
-  // Validazione numBagni (opzionale)
+  // Validazione numBagni
   if (data.numBagni !== undefined) {
     if (!Number.isInteger(Number(data.numBagni)) || Number(data.numBagni) < 0) {
       errors.push('numBagni deve essere un numero intero non negativo');
     }
   }
 
-  // Validazione classeEnergetica (opzionale)
+  // Validazione classeEnergetica
   if (data.classeEnergetica !== undefined) {
     const classiValide = ['A4', 'A3', 'A2', 'A1', 'B', 'C', 'D', 'E', 'F', 'G'];
     if (!classiValide.includes(data.classeEnergetica)) {
@@ -186,22 +171,22 @@ function verificaBodyAggiornamento(req, res, next) {
     }
   }
 
-  // Validazione foto (opzionale)
+  // Validazione foto
   if (data.foto !== undefined && !Array.isArray(data.foto)) {
     errors.push('foto deve essere un array di stringhe (URL)');
   }
 
-  // Validazione perStudenti (opzionale)
+  // Validazione perStudenti
   if (data.perStudenti !== undefined && typeof data.perStudenti !== 'boolean') {
     errors.push('perStudenti deve essere un booleano');
   }
 
-  // Validazione terrazzo (opzionale)
+  // Validazione terrazzo
   if (data.terrazzo !== undefined && typeof data.terrazzo !== 'boolean') {
     errors.push('terrazzo deve essere un booleano');
   }
 
-  // Validazione lavatrice (opzionale)
+  // Validazione lavatrice
   if (data.lavatrice !== undefined && typeof data.lavatrice !== 'boolean') {
     errors.push('lavatrice deve essere un booleano');
   }
@@ -215,7 +200,6 @@ function verificaBodyAggiornamento(req, res, next) {
     });
   }
 
-  // Se tutto è valido, passa al prossimo middleware
   next();
 }
 

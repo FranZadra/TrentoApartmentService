@@ -1,12 +1,8 @@
-// src/models/Camera.js — Schema per le camere all'interno di un Appartamento
-//
-// Le camere sono memorizzate come sotto-documenti annidati dentro Appartamento,
-// non come collezione separata. Questo schema è usato come sotto-schema.
+// Model per le camere
 
 const mongoose = require('mongoose');
 
 // Schema per una singola camera
-// Questo NON ha un .model() perché è un sotto-schema, non una collezione separata
 const CameraSchema = new mongoose.Schema(
   {
     prezzo: {
@@ -31,7 +27,7 @@ const CameraSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { _id: false } // Ogni camera non ha un ID separato, solo il genitore lo ha
+  { _id: false }
 );
 
 module.exports = CameraSchema;

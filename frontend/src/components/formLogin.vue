@@ -39,7 +39,7 @@
 					<button
 						type="button"
 						class="text-xs font-medium text-primary transition hover:text-primary-dark hover:underline"
-						@click="$emit('forgot-password')"
+						@click="$emit('forgot-password', form.email)"
 					>
 						Password dimenticata?
 					</button>
@@ -55,7 +55,6 @@
 				/>
 			</label>
 
-			<!-- Spazio flessibile per allinearsi con il form registrazione -->
 			<div class="flex-1" />
 
 			<!-- Azioni + link registrazione -->
@@ -141,10 +140,12 @@ async function handleSubmit() {
 			const ruolo = response.data.utente.ruolo
 			setTimeout(() => {
 				if (ruolo === 'dipendente comune') {
-					router.push('/dashboardComune')
+					router.push('/dashboard-statistica')
 				} else if (ruolo === 'amministratore') {
 							router.push({ name: 'admin-appartamenti' })
-				} else {
+				} else if (ruolo === 'utente verificato' || ruolo === 'inquilino') {
+					router.push('/gestione-interna')
+				}else {
 					router.push('/')
 				}
 			}, 1000)

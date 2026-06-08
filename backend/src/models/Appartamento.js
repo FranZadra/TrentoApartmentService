@@ -1,21 +1,9 @@
-// src/models/Appartamento.js — Modello Appartamento
-//
-// Attributi dall'UML delle classi:
-//   indirizzo : Address, perStudenti : Boolean, numStanze : Integer,
-//   numBagni : Integer, foto : Image[0..*], terrazzo : Boolean,
-//   lavatrice : Boolean, classeEnergetica : String
-//
-// Relazioni dal diagramma UML:
-//   - Un Appartamento comprende una o più Camera (1..*)
-//   - Un Annuncio pubblicizza un Appartamento
-//
-// Le coordinate geografiche (latitudine/longitudine) sono necessarie per la mappa interattiva della US9: vanno discusse col team.
+// Model per gli appartamenti
 
 const mongoose = require('mongoose');
 const CameraSchema = require('./Camera');
 
-// Sotto-schema per l'indirizzo (DataType Address dall'UML)
-// È un oggetto annidato, non una collezione separata
+// Sotto-schema per l'indirizzo
 const AddressSchema = new mongoose.Schema(
   {
     via: { type: String, required: true },
@@ -24,7 +12,7 @@ const AddressSchema = new mongoose.Schema(
     CAP: { type: String, required: true },
     Stato: { type: String, required: true },
   },
-  { _id: false } // Non serve un ID separato per questo sotto-documento
+  { _id: false }
 );
 
 const AppartamentoSchema = new mongoose.Schema(
@@ -77,11 +65,12 @@ const AppartamentoSchema = new mongoose.Schema(
       ref: 'User', 
       required: true 
     },
-    // Le camere sono memorizzate come sotto-documenti annidati (non reference)
+    // Le camere sono memorizzate come sotto-documenti annidati
     camere: [CameraSchema],
   },
   {
     timestamps: true,
+    collection: 'Appartamenti',
   }
 );
 

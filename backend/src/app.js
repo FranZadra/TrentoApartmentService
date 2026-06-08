@@ -1,29 +1,32 @@
-// src/app.js — Configurazione Express
-// Qui si registrano i middleware globali e le route
+// Configurazione middleware e routes principali dell'app
 
 const express = require('express');
+const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
 const annunciRoutes = require('./routes/annunciRoutes');
 const userRoutes = require('./routes/userRoutes');
 const routesAppartamenti = require('./routes/routesAppartamenti');
+const routesGestioneInterna = require('./routes/routesGestioneInterna');
+const routesStatistiche = require('./routes/routesStatistiche');
+const routesBollette = require('./routes/routesBollette');
 
 const app = express();
+app.use(cors({ origin: process.env.FRONTEND_URL }));
+app.use(express.json()); 
+// Routes
+app.use('/api/v2/annunci', annunciRoutes);
+app.use('/api/v2/users', userRoutes);
+app.use('/api/v2/appartamenti', routesAppartamenti);
+app.use('/api/v2/gestione-interna', routesGestioneInterna);
+app.use('/api/v2/statistiche', routesStatistiche);
+app.use('/api/v2/bollette', routesBollette);
 
-// Middleware globali
-app.use(express.json()); // Permette di leggere il body JSON nelle richieste
-
-// Route
-// Tutte le route degli annunci saranno precedute da /api/v1/annunci
-app.use('/api/v1/annunci', annunciRoutes);
-app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/appartamenti', routesAppartamenti);
-
-// Route di "health": check utile per verificare che il server sia ok
+// Route di "health": check utile per verificare che il server funzioni
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server funzionante' });
 });
 
-// Gestione errori (deve stare dopo le route)
+// Middleware di gestione errori
 app.use(errorHandler);
 
 module.exports = app;

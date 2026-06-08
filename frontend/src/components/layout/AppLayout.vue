@@ -1,5 +1,5 @@
 <template>
-	<!-- Wrapper di ogni pagina: header in cima, contenuto nel mezzo, footer in fondo -->
+	<!-- Wrapper di ogni pagina: header, contenuto, footer -->
 	<div class="min-h-screen bg-white text-zinc-900">
 		<AppHeader />
 

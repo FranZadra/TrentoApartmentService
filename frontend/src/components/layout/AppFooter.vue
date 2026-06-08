@@ -1,5 +1,5 @@
 <template>
-	<!-- Footer con i marchi del progetto e una chiusura pulita della pagina. -->
+	<!-- Footer per tutte la pagine del sito -->
 	<footer class="border-t border-[#7f1020] bg-[#9a1528] text-white">
 		<div class="mx-auto flex max-w-[1200px] flex-col gap-6 px-6 py-8 text-sm text-white/90 lg:px-8">
 			<div class="flex items-start justify-between gap-6">
@@ -15,7 +15,7 @@
 					</p>
 				</div>
 
-				<!-- Loghi istituzionali -->
+				<!-- Loghi del comune e dell'Università -->
 				<div class="flex items-center gap-5">
 					<img
 						:src="logoComune"

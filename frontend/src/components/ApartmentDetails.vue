@@ -42,8 +42,6 @@
 
 <script setup>
 // Componente che mostra i dettagli di un appartamento.
-// Props: apartmentId (string)
-// Emissioni: close, updated
 
 import { ref, watch, onMounted } from 'vue'
 
@@ -55,7 +53,7 @@ const emits = defineEmits(['close', 'updated'])
 const apt = ref(null)
 const loading = ref(false)
 
-const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v2'
 
 function getAuthHeaders() {
   const token = localStorage.getItem('tas_token') || localStorage.getItem('token') || ''
@@ -97,7 +95,6 @@ async function onDelete() {
 }
 
 function onEdit() {
-  // Emetti evento globale per chiedere al parent di aprire il form con i dati
   emits('close')
   window.dispatchEvent(new CustomEvent('admin:editApartment', { detail: apt.value }))
 }
@@ -112,5 +109,4 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Usa Tailwind per layout */
 </style>
