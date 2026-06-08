@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // baseURL '/api/v2' con versioning
 const api = axios.create({
-  baseURL: '/api/v2',
+  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v2`,
   headers: { 'Content-Type': 'application/json' },
 })
 
