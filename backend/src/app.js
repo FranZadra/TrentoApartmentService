@@ -11,7 +11,12 @@ const routesStatistiche = require('./routes/routesStatistiche');
 const routesBollette = require('./routes/routesBollette');
 
 const app = express();
-app.use(cors({ origin: process.env.FRONTEND_URL }));
+app.use(cors({
+  origin: [
+    'https://trentoapartmentservice-frontend.onrender.com',
+    'http://localhost:5173'
+  ]
+}));
 app.use(express.json()); 
 // Routes
 app.use('/api/v2/annunci', annunciRoutes);
