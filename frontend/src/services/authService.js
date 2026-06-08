@@ -2,8 +2,9 @@ import axios from 'axios'
 
 // baseURL '/api/v2' con versioning
 const apiClient = axios.create({
-  baseURL: '/api/v2',
+  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/v2`,
   timeout: 10000,
+  headers: { 'Content-Type': 'application/json' }
 })
 
 // Registra un nuovo utente nel sistema
