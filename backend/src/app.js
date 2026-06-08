@@ -13,7 +13,7 @@ const routesBollette = require('./routes/routesBollette');
 const app = express();
 app.use(cors({
   origin: [
-    'https://trentoapartmentservice-frontend.onrender.com',
+    process.env.FRONTEND_URL,
     'http://localhost:5173'
   ]
 }));
