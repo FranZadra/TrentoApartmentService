@@ -282,7 +282,7 @@ async function associaInquilino(req, res) {
       return res.status(409).json({ success: false, message: 'L\'utente ha già un contratto attivo' });
     }
 
-    // Se l'appartamento ha già un contratto attivo, aggiungiamo l'utente come inquilino, altrimenti creiamo un nuovo contratto.
+    // Se l'appartamento ha già un contratto attivo, aggiunge l'utente come inquilino, altrimenti crea un nuovo contratto.
     let contratto = await Contratto.findOne({
       idAppartamento: appartamentoId,
       stato: { $in: ['attivo', 'in chiusura'] },
@@ -309,7 +309,7 @@ async function associaInquilino(req, res) {
       });
     }
 
-    // L'utente diventa a tutti gli effetti un inquilino
+    // Il ruolo dell'utente viene aggiornato a inquilino
     if (utente.ruolo !== 'inquilino') {
       utente.ruolo = 'inquilino';
       await utente.save();

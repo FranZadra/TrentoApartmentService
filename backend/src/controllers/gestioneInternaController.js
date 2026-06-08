@@ -421,13 +421,13 @@ const caricaContrattoInquilino = async (req) => {
     return { contratto, userId: String(userId) };
 };
 
-// GET della faccende
+// GET delle faccende
 const getFaccende = async (req, res) => {
     try {
         const { errore, status, contratto, userId } = await caricaContrattoInquilino(req);
         if (errore) return res.status(status).json({ error: errore });
 
-        // Mostra le faccende condivise + le private del'user.
+        // Mostra le faccende condivise e quelle private dello user.
         const faccende = (contratto.faccende || [])
             .filter((f) => f.visibilita === 'condivisa' || String(f.idCreatore) === userId)
             .map((f) => ({ ...f.toObject(), isMia: String(f.idCreatore) === userId }));

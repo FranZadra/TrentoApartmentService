@@ -31,7 +31,7 @@ const register = async (req, res) => {
     dipartimento,
   } = req.body;
 
-  // Validazione campi comuni obbligatori
+  // Validazione campi obbligatori
   if (!nome || nome.trim() === '') {
     return res.status(400).json({ messaggio: 'Nome: campo obbligatorio mancante' });
   }

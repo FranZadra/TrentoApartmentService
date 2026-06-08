@@ -52,7 +52,7 @@ const caricaBolletta = async (req, res) => {
       return res.status(400).json({ error: 'Campi obbligatori mancanti: utenza, periodoInizio, periodoFine, importo' });
     }
 
-    // Il file è opzionale (e in caso deve essere PDF)
+    // Il file è opzionale (se presente deve essere PDF)
     let pdfData = null;
     let pdfNomeFile = null;
     if (req.file) {

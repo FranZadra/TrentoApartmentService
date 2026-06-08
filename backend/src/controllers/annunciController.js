@@ -101,7 +101,7 @@ const getAnnunciAttivi = async (req, res, next) => {
  }
 };
 
-// GET degli annunci da ID
+// GET dell'annuncio da ID
 // Ritorna il dettaglio di un annuncio
 const getAnnuncioById = async (req, res, next) => {
  try {
@@ -226,7 +226,8 @@ const getAnnuncioByAppartamento = async (req, res, next) => {
  }
 };
 
-// POST dell'annuncio associato a un appartamento dell'admin autenticato
+// POST dell'annuncio di un appartamento dell'admin autenticato
+// Crea o aggiorna l'annuncio legato a un appartamento 
 const upsertAnnuncioByAppartamento = async (req, res, next) => {
  try {
    if (req.user?.ruolo !== 'amministratore') {
@@ -279,6 +280,7 @@ const upsertAnnuncioByAppartamento = async (req, res, next) => {
 };
 
 // PUT dell'annuncio tramite ID
+// Aggiorna un annuncio dall'ID
 const updateAnnuncioById = async (req, res, next) => {
  try {
    const annuncioEsistente = await Annuncio.findById(req.params.id)
@@ -321,6 +323,7 @@ const updateAnnuncioById = async (req, res, next) => {
 };
 
 // DELETE annuncio esistente tramite ID
+// Elimina un annuncio dall'ID
 const deleteAnnuncioById = async (req, res, next) => {
  try {
    const annuncioEsistente = await Annuncio.findById(req.params.id)

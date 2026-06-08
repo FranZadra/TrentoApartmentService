@@ -1,6 +1,7 @@
 // Configurazione middleware e routes principali dell'app
 
 const express = require('express');
+const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
 const annunciRoutes = require('./routes/annunciRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -10,8 +11,8 @@ const routesStatistiche = require('./routes/routesStatistiche');
 const routesBollette = require('./routes/routesBollette');
 
 const app = express();
+app.use(cors({ origin: process.env.FRONTEND_URL }));
 app.use(express.json()); 
-
 // Routes
 app.use('/api/v2/annunci', annunciRoutes);
 app.use('/api/v2/users', userRoutes);
