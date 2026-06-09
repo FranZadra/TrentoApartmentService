@@ -53,7 +53,7 @@ const emits = defineEmits(['close', 'updated'])
 const apt = ref(null)
 const loading = ref(false)
 
-const API_BASE = import.meta.env.VITE_API_BASE || '/api/v2'
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL}/api/v2` || '/api/v2'
 
 function getAuthHeaders() {
   const token = localStorage.getItem('tas_token') || localStorage.getItem('token') || ''
